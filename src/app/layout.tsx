@@ -1,26 +1,36 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
+import { LogoLoader } from "@/components/LogoLoader";
+import { AuthProvider } from "@/lib/contexts/AuthContext";
 
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap",
+  variable: "--font-inter",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
 });
 
 export const metadata: Metadata = {
-  title: "InsurCRM | מערכת ניהול סוכנות ביטוח ופנסיה",
-  description: "מערכת CRM מתקדמת לניהול תיקי ביטוח, פנסיה וקשרי לקוחות",
+  title: "InsurCRM",
+  description: "Advanced Insurance CRM",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="he" dir="rtl">
-      <body className={`${inter.className} antialiased selection:bg-accent-soft selection:text-accent`}>
-        {children}
+    <html lang="he" dir="rtl" className={`${inter.variable} ${outfit.variable}`}>
+      <body className="font-sans antialiased text-slate-900 selection:bg-accent/10 selection:text-accent overflow-x-hidden">
+        <AuthProvider>
+          <LogoLoader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

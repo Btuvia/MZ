@@ -1,147 +1,354 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card } from "@/components/ui/base";
+import { Card, Button, Badge } from "@/components/ui/base";
+import Link from "next/link";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { Zap, Activity, Users, FileText, ArrowLeft, Bell, TrendingUp } from "lucide-react";
 
-export default function AdminDashboard() {
-    const navItems = [
-        { label: "ראשי (לוח בקרה)", href: "/admin/dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg> },
-        { label: "ניהול לקוחות", href: "/admin/clients", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
-        { label: "ניהול לידים", href: "/admin/leads", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg> },
-        { label: "ניהול מכירות (Kanban)", href: "/admin/sales", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M7 7v10" /><path d="M12 7v10" /><path d="M17 7v10" /></svg> },
-        { label: "יומן ומשימות", href: "/admin/calendar", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> },
-        { label: "אנליטיקס", href: "/admin/analytics", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg> },
-        { label: "כלי AI", href: "/admin/ai-tools", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2V4" /><path d="M12 20V22" /><path d="M20.66 7l-1.73 1" /><path d="M5.07 16l-1.73 1" /><path d="M17.32 19l-1 1.73" /><path d="M7.68 3.27l-1 1.73" /><path d="M22 12h-2" /><path d="M4 12H2" /><path d="M20.66 17l-1.73-1" /><path d="M5.07 8l-1.73-1" /><path d="M17.32 5l-1-1.73" /><path d="M7.68 20.73l-1-1.73" /><circle cx="12" cy="12" r="3" /></svg> },
-        { label: "מרכז הדרכה", href: "/admin/training", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg> },
-        { label: "שותפים", href: "/admin/partners", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
-        { label: "ניהול סוכנות", href: "/admin/agency", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
-        { label: "ניהול משתמשים", href: "/admin/users", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
-    ];
+interface ClientData {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    status: "active" | "inactive" | "lead";
+    policies: any[];
+    pensionSales?: any[];
+    insuranceSales?: any[];
+    tasks?: any[];
+}
+
+// Visual "Commissions Rain" Effect Component
+const CommissionsRain = ({ isActive, onComplete }: { isActive: boolean, onComplete: () => void }) => {
+    const [particles, setParticles] = useState<{ id: number; left: number; duration: number; delay: number }[]>([]);
+
+    useEffect(() => {
+        if (isActive) {
+            const newParticles = Array.from({ length: 50 }).map((_, i) => ({
+                id: i,
+                left: Math.random() * 100,
+                duration: 1 + Math.random() * 2,
+                delay: Math.random() * 0.5
+            }));
+            setParticles(newParticles);
+
+            const timer = setTimeout(() => {
+                setParticles([]);
+                onComplete();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [isActive, onComplete]);
+
+    if (!isActive) return null;
 
     return (
-        <DashboardShell role="מנהל" navItems={navItems}>
-            <div className="space-y-8 animate-in fade-in duration-700">
-                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-black text-primary">סקירה כללית</h2>
-                        <p className="text-slate-500">נתוני הסוכנות בזמן אמת</p>
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+            {particles.map((p) => (
+                <div
+                    key={p.id}
+                    className="absolute top-0 text-2xl animate-fall"
+                    style={{
+                        left: `${p.left}%`,
+                        animationDuration: `${p.duration}s`,
+                        animationDelay: `${p.delay}s`
+                    }}
+                >
+                    💰
+                </div>
+            ))}
+            <style jsx>{`
+                @keyframes fall {
+                    0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+                    10% { opacity: 1; }
+                    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+                }
+                .animate-fall {
+                    animation-name: fall;
+                    animation-timing-function: linear;
+                    animation-fill-mode: forwards;
+                }
+            `}</style>
+        </div>
+    );
+};
+
+
+export default function AdminDashboard() {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [clients, setClients] = useState<any[]>([]);
+    const [showRain, setShowRain] = useState(false);
+    const [stats, setStats] = useState([
+        { label: "סה״כ לקוחות", value: "0", change: "+0%", icon: "👤", trend: "up" },
+        { label: "עמלות (ש״ח)", value: "₪0", change: "+0%", icon: "💰", trend: "up" },
+        { label: "יעד חודשי", value: "84%", change: "עוד ₪12k", icon: "🎯", trend: "neutral" },
+        { label: "לידים חדשים", value: "0", change: "השבוע", icon: "⚡", trend: "up" },
+    ]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Mock Live Pulse Feed
+    const [pulseFeed, setPulseFeed] = useState([
+        { id: 1, text: "רועי כהן סגר מכירה: ביטוח בריאות (₪250)", time: "לפני 2 דק'", type: "sale" },
+        { id: 2, text: "ליד חדש נכנס מקמפיין פייסבוק", time: "לפני 15 דק'", type: "lead" },
+        { id: 3, text: "משימת חידוש בוצעה עבור לקוח: דני דין", time: "לפני 32 דק'", type: "task" },
+        { id: 4, text: "מסמך חדש הועלה לתיק: מנחם גולן", time: "לפני שעה", type: "doc" }
+    ]);
+
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            try {
+                const clientsData = await firestoreService.getClients();
+
+                const loadedClients: any[] = [];
+                let totalPremium = 0;
+
+                clientsData.forEach((clientData: any) => {
+                    // Calculate client specific derived data
+                    const hasPension = (clientData.pensionSales?.length || 0) > 0;
+                    const hasInsurance = (clientData.insuranceSales?.length || 0) > 0;
+                    const hasPolicies = (clientData.policies?.length || 0) > 0;
+
+                    // Calculate Premiums (Clean "₪" and ",")
+                    const policyPremiums = (clientData.policies || []).reduce((sum: number, p: any) => {
+                        const val = parseFloat(p.premium?.toString().replace(/[^\d.-]/g, '') || "0");
+                        return sum + (isNaN(val) ? 0 : val);
+                    }, 0);
+                    const insurancePremiums = (clientData.insuranceSales || []).reduce((sum: number, p: any) => {
+                        const val = parseFloat(p.premium?.toString().replace(/[^\d.-]/g, '') || "0");
+                        return sum + (isNaN(val) ? 0 : val);
+                    }, 0);
+
+                    totalPremium += policyPremiums + insurancePremiums;
+
+                    // Format for table
+                    loadedClients.push({
+                        ...clientData,
+                        fullName: clientData.name || `${clientData.firstName || ''} ${clientData.lastName || ''}`.trim(),
+                        salesStatus: (hasPension || hasInsurance)
+                            ? { label: "נמכר בהצלחה", color: "bg-emerald-50 text-emerald-600 border-emerald-100" }
+                            : (hasPolicies ? { label: "לקוח קיים", color: "bg-indigo-50 text-indigo-600 border-indigo-100" } : { label: "ליד חדש", color: "bg-amber-50 text-amber-600 border-amber-100" }),
+                        activity: { label: "פעיל", color: "bg-slate-50 text-slate-500 border-slate-100" }, // Mock activity
+                        portfolio: `₪${(policyPremiums + insurancePremiums).toLocaleString()}`,
+                        agent: "רועי כהן", // Mock
+                        policiesMap: {
+                            life: clientData.policies?.some((p: any) => p.type?.includes("חיים") || p.type?.includes("ריסק")) || clientData.insuranceSales?.some((p: any) => p.product?.includes("ריסק")),
+                            health: clientData.policies?.some((p: any) => p.type?.includes("בריאות")) || clientData.insuranceSales?.some((p: any) => p.product?.includes("בריאות")),
+                            pension: clientData.policies?.some((p: any) => p.type?.includes("פנסיה") || p.type?.includes("גמל")) || (clientData.pensionSales?.length || 0) > 0,
+                            car: clientData.policies?.some((p: any) => p.type?.includes("רכב")),
+                            home: clientData.policies?.some((p: any) => p.type?.includes("דירה")),
+                            child: false
+                        }
+                    });
+                });
+
+                setClients(loadedClients);
+
+                // Update Stats
+                setStats([
+                    { label: "סה״כ לקוחות", value: loadedClients.length.toString(), change: "+12.5%", icon: "👥", trend: "up" },
+                    { label: "עמלות (ש״ח)", value: `₪${totalPremium.toLocaleString()}`, change: "+8.2%", icon: "💰", trend: "up" },
+                    { label: "יעד חודשי", value: "84%", change: "נשאר ₪12k", icon: "🎯", trend: "up" },
+                    { label: "לידים חדשים", value: "14", change: "+4 השבוע", icon: "⚡", trend: "up" },
+                ]);
+
+            } catch (error) {
+                console.error("Failed to load dashboard data", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadDashboardData();
+    }, []);
+
+    const filteredClients = clients.filter(client =>
+        client.fullName?.includes(searchTerm) ||
+        client.id?.includes(searchTerm) ||
+        client.email?.includes(searchTerm)
+    );
+
+    return (
+        <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
+            <div className="space-y-10 animate-in fade-in duration-700" dir="rtl">
+
+                {/* Header & Search */}
+                <header className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-right">
+                        <h2 className="text-4xl font-black text-primary italic leading-none font-display mb-2">
+                            היי רועי, בוקר טוב! 👋
+                        </h2>
+                        <p className="text-slate-500 font-medium">הנה מה שקורה בסוכנות היום.</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-border text-sm font-bold text-primary hover:bg-slate-50 transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                            ייצוא דוחות
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-accent rounded-xl text-sm font-bold text-white shadow-lg shadow-accent/20 hover:bg-blue-700 transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                            הוספת סוכן
-                        </button>
+
+                    <div className="w-full md:w-auto flex-1 max-w-md">
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                placeholder="חיפוש מהיר של לקוח..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pr-12 pl-6 py-4 rounded-2xl bg-white border border-slate-100 shadow-sm focus:ring-4 focus:ring-accent/5 outline-none font-bold text-sm transition-all"
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-accent transition-colors">🔍</span>
+                        </div>
                     </div>
                 </header>
 
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="hover:translate-y-[-2px] transition-transform">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                            </div>
-                            <span className="text-xs font-bold text-success bg-success/10 px-2 py-1 rounded-full">+12%</span>
-                        </div>
-                        <p className="text-sm font-bold text-slate-400">סה״כ לקוחות</p>
-                        <p className="text-3xl font-black text-primary">1,284</p>
-                    </Card>
+                {/* Visual Effects */}
+                <CommissionsRain isActive={showRain} onComplete={() => setShowRain(false)} />
 
-                    <Card className="hover:translate-y-[-2px] transition-transform">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                            </div>
-                            <span className="text-xs font-bold text-success bg-success/10 px-2 py-1 rounded-full">+8%</span>
-                        </div>
-                        <p className="text-sm font-bold text-slate-400">עמלות (ש״ח)</p>
-                        <p className="text-3xl font-black text-primary">₪420,500</p>
-                    </Card>
+                <div className="grid lg:grid-cols-4 gap-8">
 
-                    <Card className="hover:translate-y-[-2px] transition-transform">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                            </div>
-                            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">ממוצע</span>
+                    {/* Live Pulse Feed - NEW */}
+                    <div className="lg:col-span-1 space-y-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Live Pulse</h3>
                         </div>
-                        <p className="text-sm font-bold text-slate-400">זמן טיפול (SLA)</p>
-                        <p className="text-3xl font-black text-primary">2.4 ימים</p>
-                    </Card>
 
-                    <Card className="hover:translate-y-[-2px] transition-transform text-white bg-accent border-none shadow-blue-500/20">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="p-2 bg-white/20 text-white rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg>
-                            </div>
-                            <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full">LIVE</span>
-                        </div>
-                        <p className="text-sm font-bold text-blue-100">דירוג איכות נתונים</p>
-                        <p className="text-3xl font-black">94%</p>
-                    </Card>
-                </div>
-
-                <div className="grid gap-6 lg:grid-cols-3">
-                    <Card title="פעילות סוכנים אחרונה" className="lg:col-span-2 border-none shadow-md">
-                        <div className="space-y-6 mt-2">
-                            {[
-                                { name: "מיכל כהן", action: "הפיקה פוליסת בריאות חדשה - הראל", time: "לפני 12 דק׳", img: "M" },
-                                { name: "דניאל לוי", action: "סגר עסקת פנסיה גדולה (ניוד)", time: "לפני 45 דק׳", img: "D" },
-                                { name: "שי גבאי", action: "עדכן פרטי מוטבים ללקוח", time: "לפני שעה", img: "S" },
-                                { name: "רונית אשכנזי", action: "הזמינה מסלקה ל-3 לידים חדשים", time: "לפני שעתיים", img: "R" },
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center justify-between border-b border-slate-50 pb-5 last:border-0 last:pb-0 group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center font-bold text-slate-600 border border-slate-100 group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all duration-300">
-                                            {item.img}
-                                        </div>
+                        <div className="space-y-4">
+                            {pulseFeed.map(item => (
+                                <Card key={item.id} className="p-4 border-none shadow-md bg-white hover:bg-slate-50 transition-colors cursor-default">
+                                    <div className="flex gap-3">
+                                        <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${item.type === 'sale' ? 'bg-emerald-500' :
+                                            item.type === 'lead' ? 'bg-amber-500' :
+                                                item.type === 'task' ? 'bg-indigo-500' : 'bg-slate-300'
+                                            }`}></div>
                                         <div>
-                                            <p className="font-bold text-primary group-hover:text-accent transition-colors">{item.name}</p>
-                                            <p className="text-sm text-slate-500">{item.action}</p>
+                                            <p className="text-xs font-bold text-slate-700 leading-snug">{item.text}</p>
+                                            <p className="text-[10px] text-slate-400 mt-1">{item.time}</p>
                                         </div>
                                     </div>
-                                    <span className="text-[11px] font-bold text-slate-400">{item.time}</span>
-                                </div>
+                                </Card>
                             ))}
                         </div>
-                    </Card>
 
-                    <div className="space-y-6">
-                        <Card className="bg-primary border-none text-white shadow-xl shadow-primary/10">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-white/10 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z" /><path d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 0 0-8-8V2z" /></svg>
+                        {/* Mini Charts Widget */}
+                        <Card className="p-5 border-none shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700 text-white mt-8">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-xs font-bold text-indigo-200">צמיחה שנתית</p>
+                                    <p className="text-2xl font-black">+22%</p>
                                 </div>
-                                <h3 className="font-bold">AI Insights</h3>
+                                <TrendingUp size={20} className="text-emerald-300" />
                             </div>
-                            <p className="text-sm text-slate-300 leading-relaxed">
-                                מערכת ה-AI זיהתה פוטנציאל לחיסכון של 15% בדמי הניהול עבור 12 לקוחות פנסיה פעילים החודש.
-                            </p>
-                            <button className="mt-4 w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all border border-white/10">
-                                הפק דו״ח המלצות
-                            </button>
+                            <div className="flex gap-1 items-end h-12 opacity-80">
+                                {[40, 65, 50, 80, 75, 90, 85].map((h, i) => (
+                                    <div key={i} className="flex-1 bg-white/30 rounded-t-sm hover:bg-white/50 transition-colors" style={{ height: `${h}%` }}></div>
+                                ))}
+                            </div>
                         </Card>
+                    </div>
 
-                        <Card title="התראות מערכת" className="border-none shadow-md">
-                            <ul className="space-y-4">
-                                <li className="flex gap-4 p-3 bg-error/5 rounded-xl border border-error/10">
-                                    <div className="h-5 w-5 rounded-full bg-error text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">!</div>
-                                    <div>
-                                        <p className="text-sm font-bold text-error">4 פוליסות בעיכוב</p>
-                                        <p className="text-xs text-slate-500">ממתינות לאישור חברה מעל 7 ימים</p>
+                    {/* Main Content */}
+                    <div className="lg:col-span-3 space-y-8">
+                        {/* Stats Grid */}
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            {stats.map((stat, i) => (
+                                <Card
+                                    key={i}
+                                    onClick={() => stat.label.includes("עמלות") && setShowRain(true)}
+                                    className={`group overflow-hidden relative border-none shadow-xl bg-white p-6 ${stat.label.includes("עמלות") ? "cursor-pointer hover:scale-105 transition-transform active:scale-95" : ""}`}
+                                >
+                                    <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-transparent via-slate-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="text-2xl h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-accent/10 group-hover:text-accent transition-colors shadow-sm">{stat.icon}</div>
+                                        <div className={`px-2 py-1 rounded-lg text-[10px] font-black border ${stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>{stat.change}</div>
                                     </div>
-                                </li>
-                                <li className="flex gap-4 p-3 bg-accent/5 rounded-xl border border-accent/10">
-                                    <div className="h-5 w-5 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">i</div>
-                                    <div>
-                                        <p className="text-sm font-bold text-accent">עדכון מחשבון הנחות</p>
-                                        <p className="text-xs text-slate-500">קובץ תעריפי מנורה עודכן בהצלחה</p>
-                                    </div>
-                                </li>
-                            </ul>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-2 italic">{stat.label}</p>
+                                    <h4 className="text-3xl font-black text-primary tracking-tighter font-display">{stat.value}</h4>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {/* Recent Clients Table */}
+                        <Card className="border-none shadow-2xl bg-white p-0 overflow-hidden min-h-[400px]">
+                            <div className="p-8 border-b border-slate-50 flex justify-between items-center">
+                                <h3 className="text-xl font-black text-primary italic font-display flex items-center gap-2">
+                                    <Users size={20} className="text-slate-400" />
+                                    ניהול תיקים
+                                </h3>
+                                <Link href="/admin/clients/new">
+                                    <Button size="sm" className="bg-slate-900 text-white hover:bg-accent rounded-xl text-xs font-black px-4 shadow-lg shadow-slate-200">
+                                        + לקוח חדש
+                                    </Button>
+                                </Link>
+                            </div>
+
+                            {isLoading ? (
+                                <div className="p-12 text-center text-slate-400 animate-pulse">טוען נתונים...</div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right text-sm">
+                                        <thead className="bg-slate-50/50">
+                                            <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                                <th className="px-6 py-5">לקוח</th>
+                                                <th className="px-6 py-5">סטטוס מכירה</th>
+                                                <th className="px-6 py-5 text-center">פוליסות</th>
+                                                <th className="px-6 py-5">תיק (שנתי)</th>
+                                                <th className="px-6 py-5"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            {filteredClients.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="p-12 text-center text-slate-400 font-medium">
+                                                        לא נמצאו לקוחות מתאימים לחיפוש.
+                                                    </td>
+                                                </tr>
+                                            ) : filteredClients.slice(0, 5).map((client, i) => (
+                                                <tr key={i} className="hover:bg-indigo-50/50 transition-colors group">
+                                                    <td className="px-6 py-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-black text-[10px] shadow-inner group-hover:bg-white transition-colors">
+                                                                {client.firstName?.[0] || client.name?.[0]}{client.lastName?.[0]}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-primary leading-tight">{client.fullName}</p>
+                                                                <p className="text-[10px] text-slate-400 font-display">{client.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        <span className={`px-3 py-1.5 rounded-xl font-black text-[10px] border ${client.salesStatus.color}`}>
+                                                            {client.salesStatus.label}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        <div className="flex justify-center -space-x-2 space-x-reverse">
+                                                            {Object.keys(client.policiesMap).filter(k => client.policiesMap[k]).map((key, j) => (
+                                                                <div key={j} className="h-8 w-8 rounded-full bg-white border border-slate-100 shadow-sm flex items-center justify-center text-xs relative z-0 hover:z-10 hover:scale-110 transition-transform"
+                                                                    title={key === 'car' ? 'רכב' : key === 'health' ? 'בריאות' : key === 'life' ? 'חיים' : 'אחר'}>
+                                                                    {key === 'car' ? '🚗' : key === 'health' ? '🩺' : key === 'life' ? '❤️' : key === 'pension' ? '💰' : key === 'home' ? '🏠' : '📄'}
+                                                                </div>
+                                                            ))}
+                                                            {Object.keys(client.policiesMap).filter(k => client.policiesMap[k]).length === 0 && <span className="text-slate-300">-</span>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        <span className="font-black text-slate-700 font-display">{client.portfolio}</span>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        <Link href={`/admin/clients/${client.id}`} className="block h-8 w-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm">
+                                                            <ArrowLeft size={14} />
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                            {filteredClients.length > 5 && (
+                                <div className="p-4 bg-slate-50 text-center border-t border-slate-100">
+                                    <button className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors">
+                                        צפה ב- {filteredClients.length - 5} לקוחות נוספים
+                                    </button>
+                                </div>
+                            )}
                         </Card>
                     </div>
                 </div>

@@ -1,70 +1,66 @@
 @import "tailwindcss";
 
-:root {
-  /* Premium Insurance Palette */
-  --primary: #0f172a; /* Deep Navy */
-  --primary-light: #1e293b;
-  --accent: #2563eb; /* Trust Blue */
-  --accent-soft: #dbeafe;
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --border: #e2e8f0;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
+@theme {
+  --font-sans: var(--font-inter), sans-serif;
+  --font-display: var(--font-outfit), sans-serif;
+
+  --color-primary: #020617;
+  --color-accent: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
-@theme inline {
-  --color-primary: var(--primary);
-  --color-primary-light: var(--primary-light);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-border: var(--border);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-error: var(--error);
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 min-h-screen relative;
+  }
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
+  }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  background-color: var(--background);
-  color: var(--foreground);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-}
+  .glass-dark {
+    @apply bg-slate-900/90 backdrop-blur-md border border-white/10 shadow-2xl;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
+  /* Using CSS linear-gradient which is safer than radial-gradient for Turbopack in some versions */
+  .mesh-gradient {
+    background: fixed linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #f1f5f9 100%);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 font-black;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
+  width: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
 }

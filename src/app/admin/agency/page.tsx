@@ -1,0 +1,568 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { Card, Button, Badge } from "@/components/ui/base";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { generateGeminiContent } from "@/lib/gemini-client";
+import { Copy, Plus, Trash2, Edit2, Save, X, Check, RefreshCw, Power } from "lucide-react";
+
+// Types
+type TeamMember = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    status: "פעיל" | "לא פעיל";
+};
+
+type Integration = {
+    id: string;
+    name: string;
+    icon: string;
+    status: "מחובר" | "לא מחובר";
+    color: string;
+    lastSync?: string;
+};
+
+type AgencySettings = {
+    name: string;
+    color: string;
+    logo: string | null;
+};
+
+// Initial Data
+const INITIAL_TEAM: TeamMember[] = [
+    { id: "1", name: "רועי כהן", email: "roei@insurcrm.com", role: "נציג מכירות", status: "פעיל" },
+    { id: "2", name: "מיכל לוי", email: "michal@insurcrm.com", role: "מנהלת תיקי לקוחות", status: "פעיל" },
+    { id: "3", name: "דני אברהם", email: "danny@insurcrm.com", role: "סוכן ביטוח", status: "פעיל" },
+];
+
+const INITIAL_INTEGRATIONS: Integration[] = [
+    { id: "whatsapp", name: "WhatsApp Business API", icon: "💬", status: "לא מחובר", color: "emerald" },
+    { id: "sms", name: "SMS Gateway", icon: "📱", status: "לא מחובר", color: "blue" },
+    { id: "email", name: "Email Service (SMTP)", icon: "📧", status: "מחובר", color: "indigo", lastSync: "2024-01-15 14:30" },
+    { id: "gcal", name: "Google Calendar", icon: "📅", status: "לא מחובר", color: "orange" },
+    { id: "external_crm", name: "CRM External", icon: "🔗", status: "לא מחובר", color: "slate" },
+];
+
+export default function AgencyManagementPage() {
+    const [apiKey, setApiKey] = useState("");
+    const [activeTab, setActiveTab] = useState("צוות וסוכנים");
+
+    // Persistent State
+    const [team, setTeam] = useState<TeamMember[]>([]);
+    const [integrations, setIntegrations] = useState<Integration[]>([]);
+    const [settings, setSettings] = useState<AgencySettings>({ name: "Magen Zahav", color: "indigo", logo: null });
+
+    // Field & Automation State (Persisted)
+    const [customFields, setCustomFields] = useState<any[]>([]);
+    const [automations, setAutomations] = useState<any[]>([]);
+
+    // Loading State
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Modals
+    const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+    const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+    const [teamForm, setTeamForm] = useState<Partial<TeamMember>>({ name: "", email: "", role: "נציג מכירות", status: "פעיל" });
+
+    // AI Builders State
+    const [fieldInput, setFieldInput] = useState("");
+    const [isGeneratingField, setIsGeneratingField] = useState(false);
+    const [generatedField, setGeneratedField] = useState<any>(null);
+    const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
+    const [manualField, setManualField] = useState({ label: "", type: "text", options: [], description: "" });
+
+    const [automationInput, setAutomationInput] = useState("");
+    const [isGeneratingAutomation, setIsGeneratingAutomation] = useState(false);
+    const [automationChat, setAutomationChat] = useState<{ role: 'user' | 'ai', content: string }[]>([
+        { role: 'ai', content: "היי! אני בונה האוטומציות. תאר לי מה תרצה שיקרה ואני אבנה את הלוגיקה." }
+    ]);
+    const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
+    const [manualAutomation, setManualAutomation] = useState({ title: "", desc: "", icon: "⚡", active: true });
+
+    // --- Persistence Effects ---
+    useEffect(() => {
+        // Load Data
+        const load = (key: string, fallback: any) => {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : fallback;
+        };
+
+        setTeam(load("agency_team", INITIAL_TEAM));
+        setIntegrations(load("agency_integrations", INITIAL_INTEGRATIONS));
+        setSettings(load("agency_settings", { name: "Magen Zahav", color: "indigo", logo: null }));
+        setCustomFields(load("agency_fields", [
+            { id: "1", label: "תאריך הצטרפות", type: "date", description: "תאריך התחלת פעילות בסוכנות" },
+            { id: "2", label: "מקור ליד", type: "select", options: ["פייסבוק", "גוגל", "חבר מביא חבר"], description: "מהיכן הגיע הלקוח" }
+        ]));
+        setAutomations(load("agency_automations", [
+            { title: "חלוקת לידים אוטומטית (Round Robin)", desc: "ליד חדש נכנס -> הקצאה אוטומטית לסוכן הבא בתור", active: true, icon: "⚖️" },
+            { title: "ברכת יום הולדת", desc: "יום הולדת ללקוח -> שלח הודעת ברכה אישית בוואטסאפ", active: true, icon: "🎂" }
+        ]));
+
+        const storedKey = localStorage.getItem("gemini_api_key");
+        if (storedKey) setApiKey(storedKey);
+
+        setIsLoading(false);
+    }, []);
+
+    // Save Data Effects
+    useEffect(() => { if (!isLoading) localStorage.setItem("agency_team", JSON.stringify(team)); }, [team, isLoading]);
+    useEffect(() => { if (!isLoading) localStorage.setItem("agency_integrations", JSON.stringify(integrations)); }, [integrations, isLoading]);
+    useEffect(() => { if (!isLoading) localStorage.setItem("agency_settings", JSON.stringify(settings)); }, [settings, isLoading]);
+    useEffect(() => { if (!isLoading) localStorage.setItem("agency_fields", JSON.stringify(customFields)); }, [customFields, isLoading]);
+    useEffect(() => { if (!isLoading) localStorage.setItem("agency_automations", JSON.stringify(automations)); }, [automations, isLoading]);
+
+    // --- Handlers ---
+
+    // Team Management
+    const handleSaveTeamMember = () => {
+        if (!teamForm.name || !teamForm.email) return;
+
+        if (editingMember) {
+            setTeam(team.map(m => m.id === editingMember.id ? { ...m, ...teamForm } as TeamMember : m));
+        } else {
+            const newMember: TeamMember = {
+                id: Date.now().toString(),
+                name: teamForm.name!,
+                email: teamForm.email!,
+                role: teamForm.role || "נציג מכירות",
+                status: teamForm.status || "פעיל"
+            };
+            setTeam([...team, newMember]);
+        }
+        closeTeamModal();
+    };
+
+    const handleDeleteTeamMember = (id: string) => {
+        if (confirm("האם למחוק איש צוות זה?")) {
+            setTeam(team.filter(m => m.id !== id));
+        }
+    };
+
+    const openTeamModal = (member?: TeamMember) => {
+        if (member) {
+            setEditingMember(member);
+            setTeamForm(member);
+        } else {
+            setEditingMember(null);
+            setTeamForm({ name: "", email: "", role: "נציג מכירות", status: "פעיל" });
+        }
+        setIsTeamModalOpen(true);
+    };
+
+    const closeTeamModal = () => {
+        setIsTeamModalOpen(false);
+        setEditingMember(null);
+    };
+
+    // Integrations
+    const toggleIntegration = (id: string) => {
+        setIntegrations(integrations.map(int => {
+            if (int.id === id) {
+                const newStatus = int.status === "מחובר" ? "לא מחובר" : "מחובר";
+                return {
+                    ...int,
+                    status: newStatus,
+                    lastSync: newStatus === "מחובר" ? new Date().toLocaleString("he-IL") : undefined
+                };
+            }
+            return int;
+        }));
+    };
+
+    // Settings
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSettings(prev => ({ ...prev, logo: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // AI Handlers (Same as before, simplified for brevity)
+    const handleGenerateField = async () => {
+        if (!apiKey || !fieldInput) return;
+        setIsGeneratingField(true);
+        setGeneratedField(null);
+        try {
+            const prompt = `Create a CRM field schema JSON for: ${fieldInput}. Return ONLY JSON: { "label": string, "type": "text"|"number"|"select"|"date", "options"?: string[], "description": string }`;
+            const result = await generateGeminiContent(prompt, apiKey);
+            if (!result.error) setGeneratedField(JSON.parse(result.text.replace(/```json/g, '').replace(/```/g, '').trim()));
+        } catch (e) { console.error(e); } finally { setIsGeneratingField(false); }
+    };
+
+    const handleGenerateAutomation = async () => {
+        if (!apiKey || !automationInput) return;
+        const msg = automationInput;
+        setAutomationChat(p => [...p, { role: 'user', content: msg }]);
+        setAutomationInput("");
+        setIsGeneratingAutomation(true);
+        try {
+            const prompt = `Act as automation architect. User Request: "${msg}". Return JSON: { "title": string, "desc": string, "icon": emoji, "active": true }`;
+            const result = await generateGeminiContent(prompt, apiKey);
+            if (!result.error) {
+                const newAuto = JSON.parse(result.text.replace(/```json/g, '').replace(/```/g, '').trim());
+                setAutomations(p => [...p, newAuto]);
+                setAutomationChat(p => [...p, { role: 'ai', content: `בוצע! הוספתי: ${newAuto.title}` }]);
+            }
+        } catch (e) { setAutomationChat(p => [...p, { role: 'ai', content: "שגיאה או מפתח API חסר." }]); } finally { setIsGeneratingAutomation(false); }
+    };
+
+    const tabs = [
+        { id: "צוות וסוכנים", label: "צוות וסוכנים", icon: "👥" },
+        { id: "שדות מותאמים", label: "שדות מותאמים", icon: "📝" },
+        { id: "אוטומציות", label: "אוטומציות", icon: "⚡" },
+        { id: "הגדרות מערכת", label: "הגדרות מערכת", icon: "⚙️" },
+    ];
+
+    return (
+        <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
+            <div className="space-y-8 animate-in fade-in duration-1000" dir="rtl">
+                {/* Header */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 className="text-3xl font-black text-primary font-display tracking-tight italic">ניהול סוכנות</h2>
+                        <p className="text-slate-500 font-medium">ניהול {settings.name}, צוות, ואוטומציות</p>
+                    </div>
+                    <div className="flex items-center gap-4 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+                        <div className={`flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl shadow-sm border border-slate-200 transition-colors ${apiKey ? 'border-emerald-200' : ''}`}>
+                            <span className={`h-2 w-2 rounded-full animate-pulse ${apiKey ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{apiKey ? 'API פעיל' : 'API חסר'}</span>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="border-b border-slate-200">
+                    <nav className="flex gap-8 overflow-x-auto no-scrollbar pb-px">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`relative pb-4 px-1 text-sm font-black transition-all ${activeTab === tab.id ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
+                            >
+                                <span className="flex items-center gap-2"><span className="text-lg">{tab.icon}</span>{tab.label}</span>
+                                {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.4)] animate-in slide-in-from-bottom-1 transition-all"></div>}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+
+                <div className="mt-8 transition-all duration-500 ease-out">
+                    {activeTab === "צוות וסוכנים" && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="flex justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+                                <Button onClick={() => openTeamModal()} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl px-8 shadow-xl shadow-indigo-500/10 font-black italic gap-2">
+                                    <Plus size={16} /> הוסף חבר צוות
+                                </Button>
+                                <div className="text-right">
+                                    <h3 className="text-lg font-black text-primary italic">ניהול צוות הסוכנות</h3>
+                                    <p className="text-xs text-slate-400 font-bold">הוסף וערוך סוכנים, מפיקים ומנהלים</p>
+                                </div>
+                            </div>
+
+                            <Card className="overflow-hidden border-none shadow-xl bg-white rounded-[2.5rem]">
+                                <table className="w-full text-right">
+                                    <thead>
+                                        <tr className="border-b border-slate-50">
+                                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">שם</th>
+                                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">תפקיד</th>
+                                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">אימייל</th>
+                                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">סטטוס</th>
+                                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">פעולות</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {team.map((member) => (
+                                            <tr key={member.id} className="group hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-10 w-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-black text-slate-400 shadow-inner group-hover:bg-white transition-colors">
+                                                            {member.name.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <p className="font-bold text-primary group-hover:text-indigo-600 transition-colors">{member.name}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6"><p className="text-xs font-black text-slate-500 italic uppercase tracking-tighter">{member.role}</p></td>
+                                                <td className="px-8 py-6 font-mono text-[11px] text-slate-400">{member.email}</td>
+                                                <td className="px-8 py-6 text-center">
+                                                    <Badge variant="outline" className={`border-none text-[9px] font-black shadow-sm ${member.status === "פעיל" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{member.status}</Badge>
+                                                </td>
+                                                <td className="px-8 py-6 text-left">
+                                                    <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => openTeamModal(member)} className="p-2 text-slate-300 hover:text-indigo-600 bg-white hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={14} /></button>
+                                                        <button onClick={() => handleDeleteTeamMember(member.id)} className="p-2 text-slate-300 hover:text-red-500 bg-white hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={14} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Modals for Custom Fields & Automations remain similar but connected to persisted state */}
+                    {activeTab === "שדות מותאמים" && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                            {/* ... Field Builder UI (Condensed for brevity, kept functional logic) ... */}
+                            <div className="flex justify-between items-center px-4">
+                                <Button onClick={() => setIsFieldModalOpen(true)} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl px-8 shadow-xl shadow-indigo-500/10 font-black italic">+ שדה חדש</Button>
+                                <div className="text-right">
+                                    <h3 className="text-lg font-black text-primary italic">שדות מותאמים ({customFields.length})</h3>
+                                    <p className="text-xs text-slate-400 font-bold">הגדרת שדות לכרטיסי לקוח ופוליסות</p>
+                                </div>
+                            </div>
+
+                            {/* AI Builder Card */}
+                            <div className="relative overflow-hidden bg-gradient-to-l from-indigo-600 to-purple-600 rounded-[3rem] p-12 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
+                                <div className="relative z-10 text-center md:text-right space-y-4 flex-1">
+                                    <div className="flex items-center gap-3 justify-center md:justify-start">
+                                        <Badge className="bg-white/20 text-white border-none py-1.5 px-3 backdrop-blur-md text-[10px] font-black uppercase tracking-widest">Premium AI Feature</Badge>
+                                        <h3 className="text-3xl font-black italic tracking-tighter">בונה שדות AI</h3>
+                                    </div>
+                                    <p className="text-indigo-100/80 font-medium max-w-md">תאר את השדה שאתה צריך והמערכת תבנה אותו אוטומטית</p>
+                                    <div className="flex gap-4 pt-4 justify-center md:justify-start">
+                                        <input type="text" value={fieldInput} onChange={(e) => setFieldInput(e.target.value)} placeholder='לדוגמה: "שדה פנסיה שנתי..."' className="flex-1 bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-md text-white placeholder-white/40 text-sm font-bold outline-none" />
+                                        <Button onClick={handleGenerateField} disabled={isGeneratingField} className="bg-white text-indigo-600 hover:bg-slate-900 hover:text-white rounded-2xl px-8 shadow-xl font-black italic transition-all">{isGeneratingField ? "..." : "בנה"}</Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {generatedField && (
+                                <Card className="p-6 bg-emerald-50/50 border-emerald-100 rounded-[2rem] flex items-center justify-between">
+                                    <div>
+                                        <h4 className="font-black text-lg text-emerald-800">{generatedField.label}</h4>
+                                        <p className="text-xs text-emerald-600">{generatedField.description}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button onClick={() => setGeneratedField(null)} variant="ghost" className="text-slate-400">ביטול</Button>
+                                        <Button onClick={() => { setCustomFields([...customFields, { ...generatedField, id: Date.now() }]); setGeneratedField(null); }} className="bg-emerald-600 text-white rounded-xl">אישור</Button>
+                                    </div>
+                                </Card>
+                            )}
+
+                            {/* Manual Modal */}
+                            {isFieldModalOpen && (
+                                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4">
+                                        <h3 className="text-xl font-black mb-4">הוספת שדה חדש</h3>
+                                        <input type="text" placeholder="שם השדה" value={manualField.label} onChange={e => setManualField({ ...manualField, label: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                        <select value={manualField.type} onChange={e => setManualField({ ...manualField, type: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none">
+                                            <option value="text">טקסט</option><option value="number">מספר</option><option value="date">תאריך</option><option value="select">בחירה</option>
+                                        </select>
+                                        <Button onClick={() => { setCustomFields([...customFields, { ...manualField, id: Date.now() }]); setIsFieldModalOpen(false); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black">שמור</Button>
+                                        <button onClick={() => setIsFieldModalOpen(false)} className="w-full text-slate-400 text-xs font-bold mt-2">ביטול</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {customFields.map((field, i) => (
+                                    <Card key={i} className="p-6 border-none shadow-lg bg-white rounded-[2rem] relative group">
+                                        <Badge className="absolute top-6 left-6 bg-slate-50 text-slate-500">{field.type}</Badge>
+                                        <h4 className="font-black text-primary italic mb-1">{field.label}</h4>
+                                        <p className="text-xs text-slate-400">{field.description || "ללא תיאור"}</p>
+                                        <button onClick={() => setCustomFields(customFields.filter((_, idx) => idx !== i))} className="absolute bottom-6 left-6 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "אוטומציות" && (
+                        <div className="grid lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                            {/* AI Chat Logic reused here for Automation Builder */}
+                            <Card className="p-8 bg-slate-900 text-white rounded-[3rem] min-h-[500px] flex flex-col">
+                                <div className="flex-1 space-y-4 mb-4 overflow-y-auto max-h-[400px] px-2 custom-scrollbar">
+                                    {automationChat.map((msg, i) => (
+                                        <div key={i} className={`p-4 rounded-2xl max-w-[85%] ${msg.role === 'ai' ? 'bg-white/10 self-end mr-auto' : 'bg-indigo-600 self-start ml-auto'}`}>{msg.content}</div>
+                                    ))}
+                                    {isGeneratingAutomation && <div className="text-slate-400 text-xs animate-pulse mr-auto">חושב...</div>}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input type="text" value={automationInput} onChange={e => setAutomationInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleGenerateAutomation()} placeholder="תאר אוטומציה..." className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none font-bold" />
+                                    <button onClick={handleGenerateAutomation} className="bg-white text-indigo-900 p-3 rounded-xl hover:scale-105 transition-transform"><span className="rotate-90 block">➤</span></button>
+                                </div>
+                            </Card>
+
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center px-2">
+                                    <Button onClick={() => setIsAutomationModalOpen(true)} className="bg-indigo-600 text-white rounded-xl px-4 py-2 text-xs font-black">+ ידני</Button>
+                                    <h3 className="font-black italic">אוטומציות פעילות</h3>
+                                </div>
+                                {automations.map((auto, i) => (
+                                    <Card key={i} className={`p-6 border-none shadow-lg rounded-[2rem] flex items-center justify-between ${auto.active ? 'bg-white' : 'bg-slate-50 opacity-60'}`}>
+                                        <div className="flex items-center gap-4">
+                                            <button onClick={() => { const n = [...automations]; n[i].active = !n[i].active; setAutomations(n); }} className={`w-12 h-7 rounded-full relative transition-colors ${auto.active ? 'bg-emerald-400' : 'bg-slate-200'}`}>
+                                                <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all shadow-sm ${auto.active ? 'right-6' : 'right-1'}`}></div>
+                                            </button>
+                                            <div className="text-right">
+                                                <h4 className="font-black text-sm">{auto.title}</h4>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase">{auto.desc}</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-2xl">{auto.icon}</span>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            {/* Manual Automation Modal */}
+                            {isAutomationModalOpen && (
+                                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4">
+                                        <h3 className="text-xl font-black mb-4">אוטומציה חדשה</h3>
+                                        <input type="text" placeholder="שם" value={manualAutomation.title} onChange={e => setManualAutomation({ ...manualAutomation, title: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                        <textarea placeholder="תיאור" value={manualAutomation.desc} onChange={e => setManualAutomation({ ...manualAutomation, desc: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none resize-none" rows={3}></textarea>
+                                        <Button onClick={() => { setAutomations([...automations, { ...manualAutomation, active: true }]); setIsAutomationModalOpen(false); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black">שמור</Button>
+                                        <button onClick={() => setIsAutomationModalOpen(false)} className="w-full text-slate-400 text-xs font-bold mt-2">ביטול</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === "הגדרות מערכת" && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-12">
+                            {/* Branding & Config */}
+                            <div className="grid lg:grid-cols-2 gap-8">
+                                <Card className="p-8 border-none shadow-xl bg-white rounded-[2.5rem]">
+                                    <h4 className="text-lg font-black italic mb-6 text-primary border-b border-slate-50 pb-4">מיתוג והגדרות בסיס</h4>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="text-xs font-black text-slate-400 block mb-2 uppercase">שם הסוכנות</label>
+                                            <input
+                                                type="text"
+                                                value={settings.name}
+                                                onChange={e => setSettings({ ...settings, name: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 font-bold outline-none focus:ring-2 focus:ring-indigo-100"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-black text-slate-400 block mb-2 uppercase">צבע ראשי</label>
+                                            <div className="flex gap-3">
+                                                {['indigo', 'emerald', 'blue', 'rose', 'purple', 'amber'].map(c => (
+                                                    <button
+                                                        key={c}
+                                                        onClick={() => setSettings({ ...settings, color: c })}
+                                                        className={`h-10 w-10 rounded-full border-4 transition-all ${settings.color === c ? 'border-slate-800 scale-110' : 'border-transparent'}`}
+                                                        style={{ backgroundColor: `var(--color-${c}-500, ${c})` }} // Simplified for demo
+                                                    >
+                                                        <div className={`w-full h-full rounded-full bg-${c}-500`}></div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-black text-slate-400 block mb-2 uppercase">לוגו מערכת</label>
+                                            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-colors relative overflow-hidden">
+                                                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                                {settings.logo ? (
+                                                    <img src={settings.logo} alt="Logo" className="h-full object-contain" />
+                                                ) : (
+                                                    <>
+                                                        <span className="text-2xl mb-2">📷</span>
+                                                        <span className="text-xs font-bold text-slate-400">לחץ להעלאת לוגו</span>
+                                                    </>
+                                                )}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                <Card className="p-8 border-none shadow-xl bg-gradient-to-br from-slate-900 to-indigo-900 text-white rounded-[2.5rem]">
+                                    <h4 className="text-lg font-black italic mb-6">Gemini API Key</h4>
+                                    <p className="text-indigo-200 text-sm mb-6">מפתח זה משמש את כל רכיבי ה-AI במערכת. שמור עליו מכל משמר.</p>
+                                    <div className="bg-white/10 border border-white/20 p-2 rounded-2xl flex items-center backdrop-blur-md">
+                                        <input
+                                            type="password"
+                                            value={apiKey}
+                                            onChange={e => { setApiKey(e.target.value); localStorage.setItem("gemini_api_key", e.target.value); }}
+                                            placeholder="sk-..."
+                                            className="bg-transparent border-none text-white w-full outline-none px-4 font-mono text-sm"
+                                        />
+                                        <div className="h-8 w-8 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">✓</div>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            {/* Integrations */}
+                            <Card className="p-8 border-none shadow-xl bg-white rounded-[2.5rem]">
+                                <h4 className="text-lg font-black italic mb-8 text-primary border-b border-slate-50 pb-4">אינטגרציות וחיבורים</h4>
+                                <div className="space-y-4">
+                                    {integrations.map((int) => (
+                                        <div key={int.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-2xl bg-white p-2 rounded-xl shadow-sm">{int.icon}</span>
+                                                <div>
+                                                    <h5 className="font-black text-sm text-primary">{int.name}</h5>
+                                                    <p className={`text-[10px] font-bold ${int.status === "מחובר" ? "text-emerald-500" : "text-slate-400"}`}>
+                                                        {int.status} {int.lastSync && `• סונכרן לאחרונה: ${int.lastSync}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                onClick={() => toggleIntegration(int.id)}
+                                                variant="outline"
+                                                className={`text-xs font-black border-2 ${int.status === "מחובר" ? "border-red-100 text-red-500 hover:bg-red-50" : "border-emerald-100 text-emerald-600 hover:bg-emerald-50"}`}
+                                            >
+                                                {int.status === "מחובר" ? "התנתק" : "התחבר"}
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Team Modal */}
+            {isTeamModalOpen && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                        <h3 className="text-2xl font-black mb-6 italic text-slate-800">{editingMember ? "עריכת איש צוות" : "הוספת איש צוות"}</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-black text-slate-400 block mb-1">שם מלא</label>
+                                <input type="text" value={teamForm.name} onChange={e => setTeamForm({ ...teamForm, name: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-black text-slate-400 block mb-1">אימייל</label>
+                                <input type="email" value={teamForm.email} onChange={e => setTeamForm({ ...teamForm, email: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-indigo-100" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 block mb-1">תפקיד</label>
+                                    <select value={teamForm.role} onChange={e => setTeamForm({ ...teamForm, role: e.target.value })} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold outline-none">
+                                        <option>נציג מכירות</option>
+                                        <option>סוכן ביטוח</option>
+                                        <option>מנהל משרד</option>
+                                        <option>חיתום</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 block mb-1">סטטוס</label>
+                                    <select value={teamForm.status} onChange={e => setTeamForm({ ...teamForm, status: e.target.value as any })} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold outline-none">
+                                        <option>פעיל</option>
+                                        <option>לא פעיל</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 mt-8">
+                            <Button onClick={closeTeamModal} variant="ghost" className="flex-1">ביטול</Button>
+                            <Button onClick={handleSaveTeamMember} className="flex-1 bg-indigo-600 text-white shadow-lg shadow-indigo-200">שמור</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </DashboardShell>
+    );
+}

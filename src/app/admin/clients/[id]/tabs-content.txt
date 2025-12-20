@@ -1,0 +1,94 @@
+// Temporary file to hold the new tabs content
+// This will be inserted into the client file page
+
+{/* Policies Tab */}
+{activeTab === "פוליסות" && (
+    <div className="space-y-6">
+        {[
+            { name: "ביטוח בריאות - הראל", type: "בריאות", status: "פעיל", premium: "₪450", company: "הראל", policyNumber: "12345678", startDate: "01/01/2020", endDate: "31/12/2025", icon: "🛡️" },
+            { name: "פנסיה - מגדל", type: "פנסיה", status: "פעיל", premium: "₪1,200", company: "מגדל", policyNumber: "87654321", startDate: "15/03/2018", endDate: "פתוח", icon: "💰" },
+        ].map((policy, i) => (
+            <Card key={i} className="border-none shadow-xl bg-white p-6">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-2xl">{policy.icon}</div>
+                        <div>
+                            <h4 className="font-black text-primary text-lg">{policy.name}</h4>
+                            <p className="text-xs text-slate-400 font-bold">{policy.company}</p>
+                        </div>
+                    </div>
+                    <span className="px-4 py-2 bg-success/10 text-success rounded-full font-black text-xs">{policy.status}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">מספר פוליסה</p>
+                        <p className="font-black text-primary">{policy.policyNumber}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">פרמיה</p>
+                        <p className="font-black text-primary">{policy.premium}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">תחילה</p>
+                        <p className="font-black text-primary text-sm">{policy.startDate}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">סיום</p>
+                        <p className="font-black text-primary text-sm">{policy.endDate}</p>
+                    </div>
+                </div>
+            </Card>
+        ))}
+    </div>
+)}
+
+{/* Documents Tab */}
+{activeTab === "מסמכים" && (
+    <div className="space-y-6">
+        <Card className="border-none shadow-xl bg-white p-8">
+            <div className="border-4 border-dashed border-slate-200 rounded-3xl p-16 text-center hover:border-accent transition-all cursor-pointer">
+                <div className="text-6xl mb-4">📁</div>
+                <h3 className="text-xl font-black text-primary mb-2">גרור קבצים לכאן</h3>
+                <p className="text-slate-400 font-medium">או לחץ לבחירה</p>
+            </div>
+        </Card>
+        {["תעודת זהות.pdf", "אישור ניכויים.pdf", "פוליסה בריאות.pdf"].map((doc, i) => (
+            <Card key={i} className="border-none shadow-md bg-white p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">📄</div>
+                    <span className="font-black text-primary">{doc}</span>
+                </div>
+                <div className="flex gap-2">
+                    <button className="h-8 w-8 rounded-lg bg-slate-50 hover:bg-accent hover:text-white transition-all">👁️</button>
+                    <button className="h-8 w-8 rounded-lg bg-slate-50 hover:bg-red-500 hover:text-white transition-all">🗑️</button>
+                </div>
+            </Card>
+        ))}
+    </div>
+)}
+
+{/* Tasks Tab */}
+{activeTab === "משימות" && (
+    <div className="space-y-6">
+        <Card className="border-none shadow-xl bg-slate-900 text-white p-6">
+            <div className="flex gap-4">
+                <input type="text" placeholder="הוסף משימה..." className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 font-bold text-sm placeholder:text-white/40 outline-none" />
+                <Button className="bg-accent">הוסף</Button>
+            </div>
+        </Card>
+        {[
+            { task: "לשלוח הצעת מחיר", done: false, date: "20/11/2023" },
+            { task: "לעדכן פרטי מוטבים", done: true, date: "15/11/2023" },
+        ].map((item, i) => (
+            <Card key={i} className={`border-none shadow-lg bg-white p-5 ${item.done ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-4">
+                    <input type="checkbox" defaultChecked={item.done} className="h-5 w-5 rounded" />
+                    <div className="flex-1">
+                        <p className={`font-black text-primary ${item.done ? 'line-through' : ''}`}>{item.task}</p>
+                        <p className="text-xs text-slate-400 font-bold mt-1">📅 {item.date}</p>
+                    </div>
+                </div>
+            </Card>
+        ))}
+    </div>
+)}

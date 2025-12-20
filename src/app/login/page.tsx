@@ -2,96 +2,122 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/base";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase/firebase";
+import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
+        setLoading(true);
         setError("");
 
-        // Temporary mock authentication
-        setTimeout(() => {
-            if (email === "admin@insurcrm.com" && password === "admin123") {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // Redirect is handled by the AuthContext or we can do it here. 
+            // Determining role/destination usually requires checking a user profile in Firestore.
+            // For now, we'll default to admin dashboard as requested in the mock, 
+            // or we could check the email domain/pattern if we want to keep some simple logic.
+
+            if (email.includes("admin")) {
                 router.push("/admin/dashboard");
-            } else if (email === "agent@insurcrm.com" && password === "agent123") {
+            } else if (email.includes("agent")) {
                 router.push("/agent/dashboard");
-            } else if (email === "client@insurcrm.com" && password === "client123") {
-                router.push("/client/dashboard");
             } else {
-                setError("אימייל או סיסמה שגויים. נסו שוב.");
+                router.push("/client/dashboard");
             }
-            setIsLoading(false);
-        }, 1000);
+        } catch (err: any) {
+            console.error("Login error:", err);
+            let errorMessage = "שגיאה בהתחברות";
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                errorMessage = "אימייל או סיסמה שגויים";
+            } else if (err.code === 'auth/too-many-requests') {
+                errorMessage = "יותר מדי ניסיונות התחברות, נסה שוב מאוחר יותר";
+            }
+            setError(errorMessage);
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-6 bg-slate-50">
-            <div className="w-full max-w-md space-y-8 rounded-3xl bg-white p-10 shadow-xl border border-border">
-                <div className="text-center">
-                    <h2 className="text-3xl font-extrabold text-primary">Insur<span className="text-accent">CRM</span></h2>
-                    <p className="mt-2 text-slate-500">התחברות למערכת הניהול</p>
+        <div className="min-h-screen mesh-gradient flex items-center justify-center p-6" dir="rtl">
+
+            <div className="w-full max-w-[480px] animate-in fade-in zoom-in-95 duration-1000">
+                <div className="mb-12 text-center flex flex-col items-center">
+                    <div className="relative h-24 w-24 mb-6 drop-shadow-2xl animate-float">
+                        <Image src="/logo.jpg" fill alt="Magen Zahav Logo" className="object-contain" />
+                    </div>
+                    <h1 className="text-4xl font-black text-primary font-display tracking-tighter">Magen<span className="text-accent">Zahav</span></h1>
+                    <p className="text-slate-500 mt-2 font-bold uppercase tracking-widest text-xs">Magen Zahav Platinum</p>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="space-y-4">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-slate-700">אימייל</label>
+                <div className="glass rounded-[2rem] p-10 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 h-1.5 w-full bg-gradient-to-l from-accent to-blue-400"></div>
+
+                    <h2 className="text-2xl font-black text-primary mb-8 text-center italic">כניסה למערכת</h2>
+
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest pr-2" htmlFor="email">דואר אלקטרוני</label>
                             <input
                                 id="email"
                                 type="email"
-                                required
-                                className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all"
-                                placeholder="you@company.com"
+                                placeholder="magen@insurcrm.co.il"
+                                className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                required
                             />
                         </div>
-                        <div>
-                            <label htmlFor="password" colSpan={1} className="block text-sm font-medium text-slate-700">סיסמה</label>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center pr-2">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest" htmlFor="password">סיסמה</label>
+                                <Link href="#" className="text-[10px] font-black text-accent hover:underline uppercase tracking-wider">שכחתי סיסמה</Link>
+                            </div>
                             <input
                                 id="password"
                                 type="password"
-                                required
-                                className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-all"
                                 placeholder="••••••••"
+                                className="w-full px-6 py-4 rounded-2xl bg-white/50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold tracking-widest"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                required
                             />
                         </div>
-                    </div>
 
-                    {error && (
-                        <div className="rounded-lg bg-error/10 p-3 text-sm text-error text-center">
-                            {error}
-                        </div>
-                    )}
+                        {error && (
+                            <div className="p-4 rounded-2xl bg-error/10 border border-error/20 text-error text-xs font-black text-center animate-in shake-in">
+                                {error}
+                            </div>
+                        )}
 
-                    <div>
-                        <button
+                        <Button
                             type="submit"
-                            disabled={isLoading}
-                            className="flex w-full justify-center rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 transition-all"
+                            className="w-full py-5 text-base shadow-2xl shadow-accent/30 tracking-tighter"
+                            variant="secondary"
+                            disabled={loading}
                         >
-                            {isLoading ? (
-                                <svg className="h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            ) : (
-                                "התחברות למערכת"
-                            )}
-                        </button>
-                    </div>
-                </form>
+                            {loading ? "מתחבר..." : "התחברות לחשבון"}
+                        </Button>
+                    </form>
 
-                <div className="mt-6 text-center text-xs text-slate-400 space-y-1">
-                    <p>חשבונות לדוגמה:</p>
-                    <p>admin@insurcrm.com | admin123</p>
-                    <p>agent@insurcrm.com | agent123</p>
-                    <p>client@insurcrm.com | client123</p>
+                    <div className="mt-10 pt-8 border-t border-slate-100 text-center">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">אין לך חשבון? <Link href="#" className="text-accent hover:underline">צור קשר עם מנהל המערכת</Link></p>
+                    </div>
+                </div>
+
+                <div className="mt-12 text-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Built for Champions by Antigravity</p>
                 </div>
             </div>
         </div>
