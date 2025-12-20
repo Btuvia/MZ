@@ -1,295 +1,197 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { motion } from "framer-motion";
+import { Send, Phone, User, FileText, Calendar, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
-export default function ContactPage() {
+export default function ClientContactPage() {
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+
     const [formData, setFormData] = useState({
-        subject: "",
-        message: "",
-        priority: "רגיל",
-        category: "שאלה כללית"
+        topic: "service",
+        scheduledTime: "",
+        phone: "",
+        contactName: "",
+        description: "",
     });
-    const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitted(true);
-        setTimeout(() => {
-            setSubmitted(false);
-            setFormData({ subject: "", message: "", priority: "רגיל", category: "שאלה כללית" });
-        }, 3000);
+        setIsLoading(true);
+
+        try {
+            await firestoreService.addContactRequest({
+                ...formData,
+                source: "client_portal"
+            });
+
+            setIsSuccess(true);
+            toast.success("בקשתך נשלחה בהצלחה! נציג יחזור אליך בהקדם.");
+
+            // Reset form after 2 seconds or redirect
+            setTimeout(() => {
+                // Optional: router.push("/client/dashboard");
+                setFormData({
+                    topic: "service",
+                    scheduledTime: "",
+                    phone: "",
+                    contactName: "",
+                    description: "",
+                });
+                setIsSuccess(false);
+            }, 3000);
+
+        } catch (error) {
+            console.error("Error sending contact request:", error);
+            toast.error("אירעה שגיאה בשליחת הבקשה. אנא נסה שנית.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const agentInfo = {
-        name: "רועי כהן",
-        title: "סוכן ביטוח מוסמך",
-        phone: "054-123-4567",
-        email: "roei.cohen@insurcrm.co.il",
-        whatsapp: "972541234567",
-        availability: "א׳-ה׳ 9:00-18:00",
-        responseTime: "תוך 2 שעות",
-        image: "👨‍💼"
-    };
-
-    const contactMethods = [
-        {
-            icon: "📞",
-            title: "שיחת טלפון",
-            description: "התקשר ישירות לסוכן שלך",
-            action: "התקשר עכשיו",
-            color: "from-blue-600 to-indigo-700",
-            link: `tel:${agentInfo.phone}`
-        },
-        {
-            icon: "💬",
-            title: "וואטסאפ",
-            description: "שלח הודעה מהירה בוואטסאפ",
-            action: "פתח וואטסאפ",
-            color: "from-success to-emerald-600",
-            link: `https://wa.me/${agentInfo.whatsapp}`
-        },
-        {
-            icon: "✉️",
-            title: "דואר אלקטרוני",
-            description: "שלח מייל מפורט",
-            action: "שלח מייל",
-            color: "from-purple-600 to-indigo-700",
-            link: `mailto:${agentInfo.email}`
-        },
-        {
-            icon: "📅",
-            title: "קביעת פגישה",
-            description: "קבע פגישת ייעוץ אישית",
-            action: "קבע פגישה",
-            color: "from-amber-500 to-orange-600",
-            link: "#schedule"
-        }
-    ];
-
-    const faq = [
-        {
-            question: "כיצד אני מגיש תביעה?",
-            answer: "ניתן להגיש תביעה דרך המערכת, בטלפון לסוכן, או ישירות לחברת הביטוח. הסוכן שלך ילווה אותך בכל התהליך."
-        },
-        {
-            question: "מתי מתבצע חידוש הפוליסה?",
-            answer: "הפוליסה מתחדשת אוטומטית בתאריך החידוש. תקבל תזכורת חודש לפני החידוש."
-        },
-        {
-            question: "איך אני משנה פרטים אישיים?",
-            answer: "ניתן לעדכן פרטים אישיים דרך הסוכן שלך או בטלפון לחברת הביטוח."
-        },
-        {
-            question: "מה זמן התגובה לפניות?",
-            answer: "הסוכן שלך מתחייב לחזור אליך תוך 2 שעות בימי עבודה."
-        }
-    ];
+    if (isSuccess) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+                <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="bg-white rounded-3xl p-12 text-center shadow-xl max-w-md w-full"
+                >
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+                        <CheckCircle2 className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-800 mb-2 font-display">פנייתך התקבלה!</h2>
+                    <p className="text-slate-500 mb-8">נציג מגן זהב יחזור אליך במועד שציינת.</p>
+                    <button
+                        onClick={() => setIsSuccess(false)}
+                        className="text-primary font-bold hover:underline"
+                    >
+                        שלח פנייה נוספת
+                    </button>
+                </motion.div>
+            </div>
+        );
+    }
 
     return (
-        <DashboardShell role="לקוח" navItems={CLIENT_NAV_ITEMS}>
-            <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2"></div>
-                    <div className="relative z-10">
-                        <h1 className="text-4xl font-black font-display leading-none mb-4">צור קשר</h1>
-                        <p className="text-sm font-medium text-white/80 max-w-2xl">
-                            הסוכן שלך כאן בשבילך. יש לך שאלה? צריך עזרה? רוצה לעדכן משהו? אנחנו זמינים עבורך.
-                        </p>
-                    </div>
-                </div>
+        <div className="max-w-2xl mx-auto p-6 space-y-8">
+            <header className="mb-8">
+                <h1 className="text-3xl font-black text-slate-800 font-display mb-2">צור קשר עם נציג</h1>
+                <p className="text-slate-500 text-lg">אנחנו כאן בשבילך. מלא את הפרטים ונחזור אליך בהקדם.</p>
+            </header>
 
-                {/* Agent Info Card */}
-                <Card className="border-none shadow-2xl bg-white overflow-hidden">
-                    <div className="h-2 w-full bg-gradient-to-r from-accent to-blue-600"></div>
-                    <div className="p-8">
-                        <div className="flex items-center gap-6 mb-6">
-                            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-accent to-blue-700 flex items-center justify-center text-4xl shadow-xl">
-                                {agentInfo.image}
-                            </div>
-                            <div className="flex-1">
-                                <h2 className="text-2xl font-black text-primary">{agentInfo.name}</h2>
-                                <p className="text-sm font-bold text-slate-400 mt-1">{agentInfo.title}</p>
-                                <div className="flex items-center gap-4 mt-3">
-                                    <Badge className="bg-success/10 text-success border-success/20">
-                                        זמין עכשיו
-                                    </Badge>
-                                    <span className="text-xs font-bold text-slate-400">{agentInfo.availability}</span>
-                                </div>
-                            </div>
-                        </div>
+            <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 space-y-6 relative overflow-hidden">
+                {/* Decorative Background Blob */}
+                <div className="absolute -top-20 -left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-slate-50 rounded-2xl">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                    📞
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">טלפון</p>
-                                    <p className="text-sm font-bold text-primary">{agentInfo.phone}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
-                                    ✉️
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">אימייל</p>
-                                    <p className="text-sm font-bold text-primary">{agentInfo.email}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                    ⏱️
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">זמן תגובה</p>
-                                    <p className="text-sm font-bold text-primary">{agentInfo.responseTime}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* Contact Methods */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {contactMethods.map((method, i) => (
-                        <a
-                            key={i}
-                            href={method.link}
-                            target={method.link.startsWith('http') ? '_blank' : undefined}
-                            rel={method.link.startsWith('http') ? 'noopener noreferrer' : undefined}
-                            className="block"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Topic Selection */}
+                    <div className="space-y-2 col-span-2">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            נושא הפנייה
+                        </label>
+                        <select
+                            value={formData.topic}
+                            onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                         >
-                            <Card className={`border-none p-6 text-white bg-gradient-to-br ${method.color} shadow-xl hover:shadow-2xl transition-all cursor-pointer group h-full`}>
-                                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">{method.icon}</div>
-                                <h3 className="text-lg font-black mb-2">{method.title}</h3>
-                                <p className="text-sm text-white/80 mb-4 font-medium">{method.description}</p>
-                                <div className="flex items-center gap-2 text-sm font-black">
-                                    {method.action}
-                                    <span className="group-hover:translate-x-[-4px] transition-transform">←</span>
-                                </div>
-                            </Card>
-                        </a>
-                    ))}
-                </div>
-
-                {/* Contact Form */}
-                <div className="grid lg:grid-cols-3 gap-8">
-                    <Card className="lg:col-span-2 border-none shadow-xl bg-white p-8">
-                        <h2 className="text-2xl font-black text-primary mb-6">שלח הודעה</h2>
-                        {submitted ? (
-                            <div className="p-12 text-center animate-in zoom-in-95 duration-500">
-                                <div className="h-20 w-20 rounded-full bg-success/10 flex items-center justify-center text-success text-4xl mx-auto mb-4 animate-bounce">
-                                    ✓
-                                </div>
-                                <h3 className="text-xl font-black text-primary mb-2">ההודעה נשלחה בהצלחה!</h3>
-                                <p className="text-sm text-slate-500 font-medium">הסוכן שלך יחזור אליך בהקדם</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest pr-2">קטגוריה</label>
-                                        <select
-                                            value={formData.category}
-                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 font-bold text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
-                                        >
-                                            <option>שאלה כללית</option>
-                                            <option>תביעה</option>
-                                            <option>עדכון פרטים</option>
-                                            <option>ייעוץ</option>
-                                            <option>תלונה</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest pr-2">עדיפות</label>
-                                        <select
-                                            value={formData.priority}
-                                            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 font-bold text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
-                                        >
-                                            <option>רגיל</option>
-                                            <option>גבוה</option>
-                                            <option>דחוף</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest pr-2">נושא</label>
-                                    <input
-                                        type="text"
-                                        value={formData.subject}
-                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                        placeholder="למשל: שאלה לגבי פוליסת הבריאות"
-                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 font-bold text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest pr-2">הודעה</label>
-                                    <textarea
-                                        value={formData.message}
-                                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                        placeholder="כתוב את הפנייה שלך כאן..."
-                                        rows={6}
-                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 font-medium text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
-                                        required
-                                    />
-                                </div>
-
-                                <Button type="submit" variant="secondary" className="w-full py-4 shadow-xl shadow-accent/20">
-                                    שלח הודעה
-                                </Button>
-                            </form>
-                        )}
-                    </Card>
-
-                    {/* FAQ */}
-                    <Card className="border-none shadow-xl bg-slate-900 text-white p-8">
-                        <h3 className="text-xl font-black mb-6 flex items-center gap-2">
-                            <span className="text-accent">❓</span> שאלות נפוצות
-                        </h3>
-                        <div className="space-y-4">
-                            {faq.map((item, i) => (
-                                <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all">
-                                    <h4 className="text-sm font-black mb-2">{item.question}</h4>
-                                    <p className="text-xs text-slate-300 font-medium leading-relaxed">{item.answer}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Emergency Contact */}
-                <Card className="border-2 border-error/20 bg-error/5 p-8">
-                    <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-error/20 flex items-center justify-center text-error text-xl">
-                            🚨
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-lg font-black text-error mb-2">מקרה חירום?</h3>
-                            <p className="text-sm text-slate-600 font-medium mb-4">
-                                במקרה של תאונה או מצב חירום, התקשר מיד למוקד החירום של חברת הביטוח:
-                            </p>
-                            <div className="flex gap-4">
-                                <Button variant="outline" className="border-error text-error hover:bg-error hover:text-white">
-                                    מוקד הראל: *2700
-                                </Button>
-                                <Button variant="outline" className="border-error text-error hover:bg-error hover:text-white">
-                                    מוקד הפניקס: *6226
-                                </Button>
-                            </div>
-                        </div>
+                            <option value="sales">מכירות (רוצה הצעה חדשה)</option>
+                            <option value="service">שירות לקוחות</option>
+                            <option value="claims">תביעות</option>
+                            <option value="other">אחר</option>
+                        </select>
                     </div>
-                </Card>
-            </div>
-        </DashboardShell>
+
+                    {/* Contact Name */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <User className="w-4 h-4 text-primary" />
+                            איש קשר
+                        </label>
+                        <input
+                            type="text"
+                            required
+                            placeholder="שם מלא"
+                            value={formData.contactName}
+                            onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Phone */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-primary" />
+                            טלפון לחזרה
+                        </label>
+                        <input
+                            type="tel"
+                            required
+                            placeholder="05X-XXXXXXX"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Schedule Time */}
+                    <div className="space-y-2 col-span-2">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-primary" />
+                            מתי נוח לך שנתקשר?
+                        </label>
+                        <input
+                            type="datetime-local"
+                            required
+                            value={formData.scheduledTime}
+                            onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2 col-span-2">
+                        <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            מהות הפנייה
+                        </label>
+                        <textarea
+                            required
+                            rows={4}
+                            placeholder="נא פרט בקצרה..."
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none resize-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="pt-4">
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? (
+                            <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <Send className="w-5 h-5 rtl:-scale-x-100" />
+                                שלח בקשה לנציג
+                            </>
+                        )}
+                    </button>
+                    <p className="text-center text-xs text-slate-400 mt-4">
+                        * פנייתך תטופל בשעות הפעילות (א'-ה' 09:00-17:00)
+                    </p>
+                </div>
+            </form>
+        </div>
     );
 }

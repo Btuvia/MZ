@@ -1,4 +1,4 @@
-import { LucideIcon, Home, Users, BarChart3, Calendar, Layers, ShieldCheck, UserCircle, Briefcase, Sparkles, GraduationCap, FileText, Settings, HelpCircle, MessageSquare, Wallet, Zap } from "lucide-react";
+import { LucideIcon, Home, Users, BarChart3, Calendar, Layers, ShieldCheck, UserCircle, Briefcase, Sparkles, GraduationCap, FileText, Settings, HelpCircle, MessageSquare, Wallet, Zap, Gift } from "lucide-react";
 
 export interface NavItem {
     label: string;
@@ -36,5 +36,6 @@ export const CLIENT_NAV_ITEMS: NavItem[] = [
     { label: "הפוליסות שלי", href: "/client/policies", icon: <ShieldCheck size={18} /> },
     { label: "חסכונות ופנסיה", href: "/client/savings", icon: <Wallet size={18} /> },
     { label: "מסמכים ואישורים", href: "/client/documents", icon: <FileText size={18} /> },
+    { label: "חבר מביא חבר", href: "/client/referral", icon: <Gift size={18} /> },
     { label: "צור קשר", href: "/client/contact", icon: <MessageSquare size={18} /> },
 ];

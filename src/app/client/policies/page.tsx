@@ -4,6 +4,7 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
+import { PolicyTimeline } from "@/components/client/PolicyTimeline";
 
 export default function PoliciesPage() {
     const [selectedPolicy, setSelectedPolicy] = useState<number | null>(null);
@@ -206,6 +207,11 @@ export default function PoliciesPage() {
                                     <Button variant="outline" size="sm" className="px-6">
                                         צור קשר
                                     </Button>
+                                </div>
+
+                                <div className="mt-8 pt-6 border-t border-slate-100">
+                                    <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">סטטוס טיפול</h5>
+                                    <PolicyTimeline status={policy.status === "פעיל" ? "active" : "underwriting"} />
                                 </div>
                             </div>
                         </Card>
