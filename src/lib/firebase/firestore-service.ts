@@ -167,4 +167,14 @@ export const firestoreService = {
 
     // --- Sub-collections or Arrays? ---
     // For simplicity in this phase, we are keeping policies/family as arrays within the Client document.
+
+    // --- Contact Requests ---
+    async addContactRequest(data: any) {
+        const docRef = await addDoc(collection(db, "contactRequests"), {
+            ...data,
+            createdAt: Timestamp.now(),
+            status: "new"
+        });
+        return docRef.id;
+    },
 };
