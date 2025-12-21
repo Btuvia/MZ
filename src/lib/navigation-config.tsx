@@ -17,6 +17,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     { label: "מרכז תקשורת", href: "/admin/communication", icon: <MessageSquare size={18} /> },
     { label: "ניתוח מסמכים (AI)", href: "/admin/ai-analysis", icon: <FileText size={18} /> },
     { label: "ניהול מבצעים", href: "/admin/campaigns", icon: <Zap size={18} /> },
+    { label: "כספים ועמלות", href: "/admin/finance", icon: <Wallet size={18} /> },
     { label: "כלי AI", href: "/admin/ai-tools", icon: <Sparkles size={18} /> },
     { label: "ניהול סוכנות", href: "/admin/agency", icon: <ShieldCheck size={18} /> },
 ];
