@@ -17,28 +17,39 @@ interface ExtractedPolicy {
     expirationDate: string; // YYYY-MM-DD
 }
 
+import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
+
 export default function DocumentIntelligencePage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<{ clientName: string, policies: ExtractedPolicy[] } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleUpload = (file: File) => {
+    const handleUpload = async (file: File) => {
         setIsAnalyzing(true);
         setAnalysisResult(null);
 
-        // Mock Analysis Delay & Har HaBituach Extraction
-        setTimeout(() => {
+        try {
+            const apiKey = localStorage.getItem("gemini_api_key");
+            if (!apiKey) {
+                toast.error("חסר מפתח API. נא להגדיר בהגדרות סוכנות.");
+                setIsAnalyzing(false);
+                return;
+            }
+
+            const result = await analyzeInsuranceDocument(file, apiKey);
+
+            if (result) {
+                setAnalysisResult(result);
+                toast.success("הקובץ פוענח בהצלחה!");
+            } else {
+                toast.error("לא ניתן היה לפענח את הקובץ.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("שגיאה בניתוח הקובץ");
+        } finally {
             setIsAnalyzing(false);
-            setAnalysisResult({
-                clientName: "ישראל ישראלי",
-                policies: [
-                    { id: "1", company: "הראל", type: "ביטוח רכב (חובה + מקיף)", premium: 4500, expirationDate: "2024-06-15" },
-                    { id: "2", company: "מנורה מבטחים", type: "ביטוח דירה", premium: 600, expirationDate: "2024-08-01" },
-                    { id: "3", company: "הפניקס", type: "ביטוח בריאות", premium: 120, expirationDate: "2024-12-31" }
-                ]
-            });
-            toast.success("הקובץ ניתוח בהצלחה!");
-        }, 2000);
+        }
     };
 
     const handleSmartSchedule = async () => {
@@ -127,6 +138,20 @@ export default function DocumentIntelligencePage() {
                                     <div className="flex items-center gap-3 text-sm font-medium text-slate-500 opacity-60">
                                         <FileText size={14} /> הר הביטוח 2023 - כהן
                                     </div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-slate-200">
+                                    <button
+                                        onClick={() => setAnalysisResult({
+                                            clientName: "ישראל ישראלי (הדגמה)",
+                                            policies: [
+                                                { id: "p1", company: "מנורה מבטחים", type: "ביטוח רכב", premium: 4500, expirationDate: "2024-05-01" },
+                                                { id: "p2", company: "הראל", type: "ביטוח בריאות", premium: 1200, expirationDate: "2024-06-15" }
+                                            ]
+                                        })}
+                                        className="text-xs text-indigo-500 font-bold hover:underline"
+                                    >
+                                        הטען דוח לדוגמה (בדיקה)
+                                    </button>
                                 </div>
                             </div>
                         </Card>

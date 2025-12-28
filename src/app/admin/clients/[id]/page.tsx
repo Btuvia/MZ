@@ -7,9 +7,39 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Edit2, Copy, Save, Trash2, Plus, X, Upload, Share2, Send } from "lucide-react";
+import { Edit2, Copy, Save, Trash2, Plus, X, Upload, Share2, Send, FileText, Download } from "lucide-react";
+import { FileUpload } from "@/components/ui/file-upload";
+import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
+import { toast } from "sonner";
 
 // --- Types & Interfaces ---
+
+type ClientDocument = {
+    id: string;
+    name: string;
+    type: string;
+    url: string;
+    date: string;
+    size: string;
+};
+
+type Interaction = {
+    id: string;
+    type: 'call' | 'meeting' | 'whatsapp' | 'email';
+    direction: 'inbound' | 'outbound';
+    date: string;
+    summary: string;
+    sentiment: 'positive' | 'neutral' | 'negative';
+};
+
+type ExternalPolicy = {
+    id: string;
+    company: string;
+    productType: string;
+    premium: string;
+    endDate: string;
+    status: string;
+};
 
 type FamilyMember = {
     id: string;
@@ -82,6 +112,9 @@ type ClientData = {
     tasks: Task[];
     pensionSales: PensionProduct[];
     insuranceSales: InsuranceProduct[];
+    documents: ClientDocument[];
+    interactions: Interaction[];
+    externalPolicies?: ExternalPolicy[];
     aiInsights?: any;
 };
 
@@ -108,7 +141,14 @@ const INITIAL_CLIENT: ClientData = {
         { id: "1", title: "שליחת הצעת ביטוח חיים", priority: "גבוהה", dueDate: "2024-02-20", status: "ממתינה", assignee: "רועי כהן" }
     ],
     pensionSales: [],
-    insuranceSales: []
+    insuranceSales: [],
+
+    documents: [],
+    interactions: [
+        { id: "1", type: "call", direction: "inbound", date: "2024-02-15 10:30", summary: "הלקוחה התקשרה לשאול לגבי כיסוי ניתוחים בחו״ל בפוליסת הבריאות", sentiment: "neutral" },
+        { id: "2", type: "whatsapp", direction: "outbound", date: "2024-02-14 14:00", summary: "נשלחה תזכורת לחידוש ביטוח רכב", sentiment: "positive" }
+    ],
+    externalPolicies: []
 };
 
 export default function ClientDetailsPage() {
@@ -124,6 +164,7 @@ export default function ClientDetailsPage() {
     // AI State
     const [aiInsight, setAiInsight] = useState<any>(null);
     const [loadingAi, setLoadingAi] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     // Modals & Forms
     const [editMode, setEditMode] = useState<{ type: string; item?: any } | null>(null);
@@ -413,6 +454,127 @@ export default function ClientDetailsPage() {
         if (activeTab === "תובנות AI" && !aiInsight) fetchAiInsights();
     }, [activeTab]);
 
+
+    const handleUploadDocument = async (file: File) => {
+        // Mock upload - in real app would upload to Storage and get URL
+        const newDoc: ClientDocument = {
+            id: Date.now().toString(),
+            name: file.name,
+            type: file.type.includes("pdf") ? "PDF" : "IMG",
+            url: URL.createObjectURL(file), // Temporary local URL for demo
+            date: new Date().toLocaleDateString("he-IL"),
+            size: (file.size / 1024 / 1024).toFixed(2) + " MB"
+        };
+
+        const updatedDocs = [...(client.documents || []), newDoc];
+        saveData("documents", updatedDocs);
+    };
+
+    const handleDeleteDocument = async (docId: string) => {
+        if (!confirm("האם למחוק מסמך זה?")) return;
+        const updatedDocs = client.documents.filter(d => d.id !== docId);
+        saveData("documents", updatedDocs);
+    };
+
+    const handleDeleteExternalPolicy = async (policyId: string) => {
+        if (!confirm("האם למחוק פוליסה חיצונית זו?")) return;
+        const updatedPolicies = (client.externalPolicies || []).filter(p => p.id !== policyId);
+        saveData("externalPolicies", updatedPolicies);
+        toast.success("הפוליסה הוסרה בהצלחה");
+    };
+
+    const [newNote, setNewNote] = useState("");
+    const handleSaveNote = () => {
+        if (!newNote) return;
+        const note: Interaction = {
+            id: Date.now().toString(),
+            type: 'call', // Default to call for quick note
+            direction: 'outbound',
+            date: new Date().toLocaleString("he-IL"),
+            summary: newNote,
+            sentiment: 'neutral'
+        };
+        const updated = [note, ...(client.interactions || [])];
+        saveData("interactions", updated);
+        setNewNote("");
+    };
+
+    const handleUploadHarHabituach = async (file: File) => {
+        setIsAnalyzing(true);
+        try {
+            const apiKey = localStorage.getItem("gemini_api_key");
+            if (!apiKey) {
+                toast.error("חסר מפתח API. נא להגדיר בהגדרות סוכנות.");
+                setIsAnalyzing(false);
+                return;
+            }
+
+            toast.info("מפענח דוח... אנא תמתין מספר שניות");
+            const result = await analyzeInsuranceDocument(file, apiKey);
+
+            if (result && result.policies.length > 0) {
+                const newPolicies: ExternalPolicy[] = result.policies.map((p: any, idx: number) => ({
+                    id: Date.now().toString() + idx,
+                    company: p.company,
+                    productType: p.type,
+                    premium: `₪${p.premium}`,
+                    endDate: p.expirationDate,
+                    status: "פעיל"
+                }));
+
+                saveData("externalPolicies", [...(client.externalPolicies || []), ...newPolicies]);
+                toast.success(`הקובץ פוענח בהצלחה! אותרו ${newPolicies.length} פוליסות.`);
+            } else {
+                toast.error("לא נמצאו פוליסות בדוח או שהפענוח נכשל.");
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("שגיאה בפענוח הקובץ");
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleImportLead = (policy: ExternalPolicy) => {
+        // Create a new task for this lead
+        const taskData = {
+            title: `ליד חדש: ${policy.productType} - ${policy.company}`,
+            priority: "high",
+            dueDate: new Date().toISOString().split('T')[0],
+            status: "pending",
+            type: "lead",
+            clientName: client.name,
+            description: `פרמיה נוכחית: ${policy.premium}, מסתיים ב: ${policy.endDate}`
+        };
+
+        firestoreService.addTask(taskData).then(() => {
+            toast.success(`נוצר ליד חדש עבור פוליסת ${policy.productType}`);
+        });
+    };
+
+    const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+    const handleGenerateAIInsights = async () => {
+        setIsGeneratingInsights(true);
+        // Simulate AI delay
+        setTimeout(() => {
+            const mockInsights = {
+                gaps: [
+                    { title: "חוסר בביטוח מחלות קשות", description: "ללקוח אין כיסוי למחלות קשות. בהתחשב בגיל (40), מומלץ להציע כיסוי בסיסי.", severity: "high" },
+                    { title: "תמיל פנסיוני לא אופטימלי", description: "דמי הניהול בקרן הפנסיה (0.7%) גבוהים מהממוצע בשוק (0.2%).", severity: "medium" }
+                ],
+                savings: [
+                    { title: "הוזלת דמי ניהול", amount: "₪4,500", description: "צפי חיסכון ל-5 שנים ע\"י ניוד קרן השתלמות." },
+                    { title: "ביטול כפל ביטוח תאונות", amount: "₪720", description: "קיים כפל ביטוחי עם הפוליסה הקבוצתית." }
+                ],
+                opportunities: [
+                    { title: "פתיחת חיסכון לילד", description: "הילדה נועה הגיעה לגיל 12 - זמן טוב לפתוח חיסכון לבר מצווה/לימודים." },
+                    { title: "ביטוח נסיעות לחו\"ל", description: "הלקוח טס בממוצע 3 פעמים בשנה. שקול להציע פספורט כארד שנתי." }
+                ]
+            };
+            saveData("aiInsights", mockInsights);
+            setIsGeneratingInsights(false);
+        }, 2000);
+    };
 
     const tabs = ["סטטוס", "לביצוע מכירה", "פרטים אישיים", "אלמנטרי", "פוליסות", "מסמכים", "משימות", "תקשורת", "פיננסי", "הר הביטוח", "תובנות AI"];
 
@@ -709,220 +871,597 @@ export default function ClientDetailsPage() {
                     </div>
                 )}
 
-                {/* --- Tab Content: Tasks --- */}
-                {activeTab === "משימות" && (
-                    <div className="space-y-8 animate-in fade-in duration-700">
-                        <div className="flex justify-between items-center">
-                            <h4 className="font-black text-primary text-xl italic">משימות פתוחות</h4>
-                            <Button onClick={() => handleEdit("task")} className="bg-slate-900 text-white rounded-xl shadow-lg px-6 font-black text-xs">+ משימה חדשה</Button>
-                        </div>
-                        <div className="space-y-4">
-                            {clientTasks.map((task) => {
-                                const priorityLabel = { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[task.priority as string] || 'בינונית';
-                                const statusLabel = { pending: 'ממתינה', overdue: 'באיחור', completed: 'הושלמה', transferred: 'הועבר' }[task.status as string] || 'ממתינה';
+                {/* --- Tab Content: Documents --- */}
+                {activeTab === "מסמכים" && (
+                    <div className="space-y-6 animate-in fade-in duration-700">
+                        <Card className="border-none shadow-xl bg-white p-8">
+                            <FileUpload
+                                onUpload={handleUploadDocument}
+                                label="גרור מסמכים לכאן (ת.ז, פוליסות, טפסים)"
+                            />
+                        </Card>
 
-                                return (
-                                    <Card key={task.id} className="border-none shadow-lg bg-white p-6 hover:shadow-xl transition-all relative group">
-                                        <div className="absolute top-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                            <button onClick={() => handleEdit("task", { ...task, priority: priorityLabel, status: statusLabel, dueDate: task.date })} className="text-slate-300 hover:text-indigo-600"><Edit2 size={16} /></button>
-                                            <button onClick={() => deleteItem("tasks", task.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
-                                        </div>
-                                        <div className="flex items-start gap-4">
-                                            <div className={`mt-1 h-3 w-3 rounded-full ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
-                                            <div>
-                                                <h5 className="font-black text-primary">{task.title}</h5>
-                                                <div className="flex gap-3 mt-2 text-xs text-slate-400 font-bold">
-                                                    <span>📅 {task.date || task.dueDate}</span>
-                                                    <span className="bg-slate-100 px-2 rounded text-slate-600">{statusLabel}</span>
-                                                    <span>👤 {task.assignee}</span>
-                                                </div>
+                        <div className="grid gap-4">
+                            {client.documents && client.documents.length > 0 ? (
+                                client.documents.map((doc) => (
+                                    <Card key={doc.id} className="border-none shadow-md bg-white p-4 flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                                <FileText size={20} />
                                             </div>
+                                            <div>
+                                                <h4 className="font-black text-primary text-sm mb-1">{doc.name}</h4>
+                                                <p className="text-xs text-slate-400 font-bold flex gap-2">
+                                                    <span>📅 {doc.date}</span>
+                                                    <span>💾 {doc.size}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <a
+                                                href={doc.url}
+                                                download={doc.name}
+                                                className="h-9 w-9 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-400 flex items-center justify-center transition-all"
+                                                title="הורד"
+                                            >
+                                                <Download size={16} />
+                                            </a>
+                                            <button
+                                                onClick={() => handleDeleteDocument(doc.id)}
+                                                className="h-9 w-9 rounded-xl bg-slate-50 hover:bg-red-50 hover:text-red-500 text-slate-400 flex items-center justify-center transition-all"
+                                                title="מחק"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
                                     </Card>
-                                );
-                            })}
-                            {clientTasks.length === 0 && <div className="text-center py-10 opacity-50 font-black italic">אין משימות פתוחות</div>}
+                                ))
+                            ) : (
+                                <div className="text-center py-10 opacity-40">
+                                    <p className="font-black text-slate-400">אין מסמכים עדיין</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
+                {/* --- Tab Content: Communication --- */}
+                {activeTab === "תקשורת" && (
+                    <div className="space-y-6 animate-in fade-in duration-700">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Input Area */}
+                            <div className="lg:col-span-1 space-y-4">
+                                <Card className="border-none shadow-xl bg-white p-6">
+                                    <h4 className="font-black text-primary text-lg mb-4">תיעוד אינטרקציה חדשה</h4>
+                                    <textarea
+                                        className="w-full bg-slate-50 p-4 rounded-xl border border-slate-100 min-h-[150px] font-medium outline-none focus:border-indigo-500 transition-all"
+                                        placeholder="כתוב סיכום שיחה, פגישה או הודעה..."
+                                        value={newNote}
+                                        onChange={(e) => setNewNote(e.target.value)}
+                                    ></textarea>
+                                    <div className="flex gap-2 mt-4">
+                                        <Button onClick={handleSaveNote} className="flex-1 bg-indigo-600 text-white rounded-xl py-3 font-black shadow-lg hover:bg-indigo-700 transition-all">
+                                            <Save size={16} className="ml-2" /> שמור תיעוד
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-4 text-center">התיעוד ישמר בציר הזמן ויהיה גלוי לכל הצוות</p>
+                                </Card>
+                            </div>
+
+                            {/* Timeline */}
+                            <div className="lg:col-span-2 space-y-6">
+                                <h4 className="font-black text-primary text-xl px-2">היסטוריית התקשרויות</h4>
+                                <div className="space-y-4 relative before:absolute before:right-8 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-100">
+                                    {client.interactions && client.interactions.length > 0 ? (
+                                        client.interactions.map((interaction) => (
+                                            <Card key={interaction.id} className="border-none shadow-md bg-white p-5 relative z-10 mr-4">
+                                                <div className="absolute right-[-29px] top-6 h-6 w-6 rounded-full bg-white border-4 border-indigo-100 z-20"></div>
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-xl shrink-0 ${interaction.type === 'whatsapp' ? 'bg-green-100 text-green-600' :
+                                                        interaction.type === 'email' ? 'bg-blue-100 text-blue-600' :
+                                                            'bg-indigo-100 text-indigo-600'
+                                                        }`}>
+                                                        {interaction.type === 'whatsapp' ? '💬' : interaction.type === 'email' ? '✉️' : '📞'}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <span className="text-xs font-black text-slate-400 block mb-1">{interaction.date} • {interaction.direction === 'inbound' ? 'נכנס' : 'יוצא'}</span>
+                                                                <h5 className="font-bold text-primary text-sm">{interaction.summary}</h5>
+                                                            </div>
+                                                            <Badge variant="outline" className={
+                                                                interaction.sentiment === 'positive' ? 'bg-green-50 text-green-600 border-green-100' :
+                                                                    interaction.sentiment === 'negative' ? 'bg-red-50 text-red-600 border-red-100' :
+                                                                        'bg-slate-50 text-slate-500 border-slate-100'
+                                                            }>
+                                                                {interaction.sentiment === 'positive' ? 'חיובי' : interaction.sentiment === 'negative' ? 'שלילי' : 'ניטרלי'}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-10 opacity-50 font-black italic">אין תיעוד במערכת</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Tab Content: Har HaBituach --- */}
+                {activeTab === "הר הביטוח" && (
+                    <div className="space-y-6 animate-in fade-in duration-700">
+                        <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
+                            <div>
+                                <h4 className="font-black text-primary text-xl">ייבוא נתונים מהר הביטוח</h4>
+                                <p className="text-sm text-slate-500 mt-1">העלה דוח מסלקה או הר הביטוח (Excel/PDF) כדי לזהות כפל ביטוחי והזדמנויות.</p>
+                            </div>
+                            <div className="w-1/3">
+                                {isAnalyzing ? (
+                                    <div className="flex items-center justify-center h-full p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                            <span className="text-xs font-bold text-indigo-600">מפענח...</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <FileUpload onUpload={handleUploadHarHabituach} label="גרור דוח לכאן" />
+                                )}
+                            </div>
+                        </div>
+
+                        {client.externalPolicies && client.externalPolicies.length > 0 && (
+                            <Card className="border-none shadow-xl bg-white p-8">
+                                <h4 className="font-black text-primary text-xl mb-6">פוליסות חיצוניות שאותרו</h4>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right">
+                                        <thead>
+                                            <tr className="text-xs text-slate-400 border-b border-slate-100">
+                                                <th className="pb-3 pr-2">חברה</th>
+                                                <th className="pb-3">סוג מוצר</th>
+                                                <th className="pb-3">פרמיה שנתית</th>
+                                                <th className="pb-3">תום תקופה</th>
+                                                <th className="pb-3">סטטוס</th>
+                                                <th className="pb-3 pl-2">פעולות</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100/50 text-sm font-bold text-slate-600">
+                                            {client.externalPolicies.map((policy) => (
+                                                <tr key={policy.id} className="group hover:bg-slate-50 transition-colors">
+                                                    <td className="py-4 pr-2">{policy.company}</td>
+                                                    <td className="py-4">{policy.productType}</td>
+                                                    <td className="py-4 font-mono text-slate-800">{policy.premium}</td>
+                                                    <td className="py-4">{new Date(policy.endDate).toLocaleDateString("he-IL")}</td>
+                                                    <td className="py-4"><Badge variant="outline" className="bg-slate-100 text-slate-500 border-slate-200">{policy.status}</Badge></td>
+                                                    <td className="py-4 pl-2 flex items-center gap-2">
+                                                        <Button onClick={() => handleImportLead(policy)} size="sm" className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200">
+                                                            + צור ליד
+                                                        </Button>
+                                                        <button onClick={() => handleDeleteExternalPolicy(policy.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="מחק">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
+                        )}
+
+                        {(!client.externalPolicies || client.externalPolicies.length === 0) && (
+                            <div className="text-center py-20 opacity-40">
+                                <div className="text-6xl mb-4">🏔️</div>
+                                <h3 className="text-xl font-black text-slate-400">טרם הועלו נתונים</h3>
+                            </div>
+                        )}
+                    </div>
+                )}
+                {/* --- Tab Content: AI Insights --- */}
+                {activeTab === "תובנות AI" && (
+                    <div className="space-y-8 animate-in fade-in duration-700">
+                        {!client.aiInsights && (
+                            <div className="text-center py-20 bg-white rounded-3xl shadow-xl">
+                                <div className="text-6xl mb-6">🧠</div>
+                                <h3 className="text-2xl font-black text-primary mb-2">המערכת מוכנה לנתח את התיק</h3>
+                                <p className="text-slate-500 mb-8 max-w-md mx-auto">האלגוריתם יסרוק את כל הפוליסות, הנתונים הפיננסיים והמסמכים כדי לאתר חוסרים, הזדמנויות וחיסכון כספי.</p>
+                                <Button
+                                    onClick={handleGenerateAIInsights}
+                                    disabled={isGeneratingInsights}
+                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl px-10 py-6 font-black shadow-lg text-lg hover:shadow-2xl transition-all"
+                                >
+                                    {isGeneratingInsights ? "מנתח נתונים..." : "✨ הרץ ניתוח AI מלא"}
+                                </Button>
+                            </div>
+                        )}
+
+                        {client.aiInsights && (
+                            <div className="space-y-8">
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    <Card className="border-none shadow-xl bg-red-50 p-6 border-t-4 border-red-400">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-xl">🛡️</div>
+                                            <h4 className="font-black text-red-900 text-lg">פערי כיסוי (Gaps)</h4>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {client.aiInsights.gaps.map((gap: any, i: number) => (
+                                                <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-red-100">
+                                                    <h5 className="font-bold text-red-800 text-sm mb-1">{gap.title}</h5>
+                                                    <p className="text-xs text-slate-500">{gap.description}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+
+                                    <Card className="border-none shadow-xl bg-emerald-50 p-6 border-t-4 border-emerald-400">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl">💰</div>
+                                            <h4 className="font-black text-emerald-900 text-lg">פוטנציאל חיסכון</h4>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {client.aiInsights.savings.map((saving: any, i: number) => (
+                                                <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 text-right">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <h5 className="font-bold text-emerald-800 text-sm">{saving.title}</h5>
+                                                        <Badge className="bg-emerald-100 text-emerald-700 font-mono">{saving.amount}</Badge>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500">{saving.description}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+
+                                    <Card className="border-none shadow-xl bg-purple-50 p-6 border-t-4 border-purple-400">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xl">🚀</div>
+                                            <h4 className="font-black text-purple-900 text-lg">הזדמנויות צמיחה</h4>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {client.aiInsights.opportunities.map((opp: any, i: number) => (
+                                                <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-purple-100">
+                                                    <h5 className="font-bold text-purple-800 text-sm mb-1">{opp.title}</h5>
+                                                    <p className="text-xs text-slate-500">{opp.description}</p>
+                                                    <Button size="sm" className="w-full mt-3 bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200 text-xs font-bold">צור קשר עם הלקוח</Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+                                </div>
+                                <div className="text-center">
+                                    <Button onClick={handleGenerateAIInsights} variant="ghost" className="text-slate-400 hover:text-indigo-600 text-xs">🔄 רענן ניתוח</Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+                {activeTab === "פיננסי" && (
+                    <div className="space-y-8 animate-in fade-in duration-700">
+                        {/* Financial Overview Cards using derived data */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card className="border-none shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl">💰</div>
+                                    <span className="bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-xs font-black">+2.5%</span>
+                                </div>
+                                <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">סך פרמיות חודשי</p>
+                                <h3 className="text-3xl font-black font-mono">
+                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(curr.premium?.replace(/[^\d.-]/g, '')) || 0), 0) +
+                                        client.insuranceSales.reduce((acc, curr) => acc + (parseFloat(curr.premium?.replace(/[^\d.-]/g, '')) || 0), 0) +
+                                        client.pensionSales.reduce((acc, curr) => acc + (parseFloat(curr.managementFeeDeposit?.replace(/[^\d.-]/g, '')) || 0), 0) // Naive estimate for pension
+                                    }
+                                </h3>
+                            </Card>
+
+                            <Card className="border-none shadow-xl bg-white p-8">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl">🛡️</div>
+                                    <span className="text-slate-300 text-xs font-bold">כיסוי כולל</span>
+                                </div>
+                                <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">שווי תיק ביטוחי</p>
+                                <h3 className="text-3xl font-black text-primary font-mono">
+                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(curr.coverage?.replace(/[^\d.-]/g, '')) || 0), 0).toLocaleString()}
+                                </h3>
+                            </Card>
+
+                            <Card className="border-none shadow-xl bg-white p-8">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="h-12 w-12 rounded-2xl bg-purple-50 flex items-center justify-center text-2xl">📊</div>
+                                    <span className="text-slate-300 text-xs font-bold">{client.policies.length + client.pensionSales.length + client.insuranceSales.length} מוצרים</span>
+                                </div>
+                                <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">חלוקת תיק</p>
+                                <div className="flex h-2 rounded-full overflow-hidden gap-1 mt-3">
+                                    <div className="bg-emerald-500" style={{ width: '40%' }}></div>
+                                    <div className="bg-blue-500" style={{ width: '35%' }}></div>
+                                    <div className="bg-purple-500" style={{ width: '25%' }}></div>
+                                </div>
+                                <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2">
+                                    <span>פנסיוני</span>
+                                    <span>בריאות</span>
+                                    <span>סיכונים</span>
+                                </div>
+                            </Card>
+                        </div >
+
+                        <div className="grid lg:grid-cols-2 gap-8">
+                            <Card className="border-none shadow-xl bg-white p-8">
+                                <h4 className="text-xl font-black text-primary mb-6">התפלגות פרמיות</h4>
+                                <div className="space-y-4">
+                                    {[...client.policies, ...client.insuranceSales].map((item, i) => (
+                                        <div key={i} className="flex items-center justify-between group">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`h-2 w-2 rounded-full ${i % 2 === 0 ? 'bg-indigo-500' : 'bg-fuchsia-500'}`}></div>
+                                                <span className="font-bold text-slate-600 text-sm">{(item as any).type || (item as any).productType} - {(item as any).company}</span>
+                                            </div>
+                                            <span className="font-black text-primary font-mono group-hover:text-accent transition-colors">{item.premium}</span>
+                                        </div>
+                                    ))}
+                                    {client.policies.length === 0 && client.insuranceSales.length === 0 && (
+                                        <p className="text-center text-slate-400 text-sm">אין נתונים להצגה</p>
+                                    )}
+                                </div>
+                            </Card>
+
+                            <Card className="border-none shadow-xl bg-white p-8 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                                <h4 className="text-xl font-black text-primary mb-6 relative z-10">הזדמנויות עסקיות</h4>
+                                <div className="space-y-3 relative z-10">
+                                    {client.pensionSales.length === 0 && (
+                                        <div className="flex items-center gap-4 p-4 rounded-xl bg-red-50 border border-red-100">
+                                            <div className="text-2xl">⚠️</div>
+                                            <div>
+                                                <h5 className="font-black text-red-800 text-sm">חסר מוצר פנסיוני</h5>
+                                                <p className="text-xs text-red-600/80">ללקוח אין קופת גמל או קרן פנסיה פעילה</p>
+                                            </div>
+                                            <Button onClick={() => setActiveTab("לביצוע מכירה")} size="sm" className="mr-auto bg-white text-red-600 border border-red-200 hover:bg-red-50">טפל</Button>
+                                        </div>
+                                    )}
+                                    {!client.policies.some(p => p.type.includes("בריאות")) && (
+                                        <div className="flex items-center gap-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                                            <div className="text-2xl">🏥</div>
+                                            <div>
+                                                <h5 className="font-black text-emerald-800 text-sm">הזדמנות לביטוחי בריאות</h5>
+                                                <p className="text-xs text-emerald-600/80">מומלץ להציע ביטוח משלים או פרטי</p>
+                                            </div>
+                                            <Button onClick={() => setActiveTab("לביצוע מכירה")} size="sm" className="mr-auto bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50">הצע</Button>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                        <div className="text-2xl">👨‍👩‍👧‍👦</div>
+                                        <div>
+                                            <h5 className="font-black text-slate-800 text-sm">ביטוח למשפחה</h5>
+                                            <p className="text-xs text-slate-500">בדוק אפשרות לצירוף בני משפחה לפוליסות קיימות</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    </div >
+                )
+                }
+
+                {/* --- Tab Content: Tasks --- */}
+                {
+                    activeTab === "משימות" && (
+                        <div className="space-y-8 animate-in fade-in duration-700">
+                            <div className="flex justify-between items-center">
+                                <h4 className="font-black text-primary text-xl italic">משימות פתוחות</h4>
+                                <Button onClick={() => handleEdit("task")} className="bg-slate-900 text-white rounded-xl shadow-lg px-6 font-black text-xs">+ משימה חדשה</Button>
+                            </div>
+                            <div className="space-y-4">
+                                {clientTasks.map((task) => {
+                                    const priorityLabel = { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[task.priority as string] || 'בינונית';
+                                    const statusLabel = { pending: 'ממתינה', overdue: 'באיחור', completed: 'הושלמה', transferred: 'הועבר' }[task.status as string] || 'ממתינה';
+
+                                    return (
+                                        <Card key={task.id} className="border-none shadow-lg bg-white p-6 hover:shadow-xl transition-all relative group">
+                                            <div className="absolute top-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                <button onClick={() => handleEdit("task", { ...task, priority: priorityLabel, status: statusLabel, dueDate: task.date })} className="text-slate-300 hover:text-indigo-600"><Edit2 size={16} /></button>
+                                                <button onClick={() => deleteItem("tasks", task.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <div className={`mt-1 h-3 w-3 rounded-full ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                                                <div>
+                                                    <h5 className="font-black text-primary">{task.title}</h5>
+                                                    <div className="flex gap-3 mt-2 text-xs text-slate-400 font-bold">
+                                                        <span>📅 {task.date || task.dueDate}</span>
+                                                        <span className="bg-slate-100 px-2 rounded text-slate-600">{statusLabel}</span>
+                                                        <span>👤 {task.assignee}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
+                                {clientTasks.length === 0 && <div className="text-center py-10 opacity-50 font-black italic">אין משימות פתוחות</div>}
+                            </div>
+                        </div>
+                    )
+                }
 
                 {/* --- Modal Overlay --- */}
-                {editMode && (
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl relative">
-                            <button onClick={() => setEditMode(null)} className="absolute top-6 left-6 text-slate-300 hover:text-slate-600"><X /></button>
-                            <h3 className="text-xl font-black italic mb-6 text-primary">
-                                {editMode.type === 'family' ? 'עריכת בן משפחה' : editMode.type === 'policy' ? 'עריכת פוליסה' : editMode.type === 'task' ? 'עריכת משימה' : 'עריכת פרטים'}
-                            </h3>
+                {
+                    editMode && (
+                        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl relative">
+                                <button onClick={() => setEditMode(null)} className="absolute top-6 left-6 text-slate-300 hover:text-slate-600"><X /></button>
+                                <h3 className="text-xl font-black italic mb-6 text-primary">
+                                    {editMode.type === 'family' ? 'עריכת בן משפחה' : editMode.type === 'policy' ? 'עריכת פוליסה' : editMode.type === 'task' ? 'עריכת משימה' : 'עריכת פרטים'}
+                                </h3>
 
-                            <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-                                {editMode.type === 'family' && (
-                                    <>
-                                        <input placeholder="שם מלא" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <input placeholder="קירבה (ילד/בן זוג)" value={formData.relation || ''} onChange={e => setFormData({ ...formData, relation: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <div className="flex gap-4">
-                                            <input type="number" placeholder="גיל" value={formData.age || ''} onChange={e => setFormData({ ...formData, age: +e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <label className="flex items-center gap-2 font-bold text-sm text-slate-500"><input type="checkbox" checked={formData.insured || false} onChange={e => setFormData({ ...formData, insured: e.target.checked })} /> מבוטח?</label>
-                                        </div>
-                                    </>
-                                )}
-                                {editMode.type === 'policy' && (
-                                    <>
-                                        <select value={formData.type || ''} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none">
-                                            <option value="">סוג פוליסה</option><option>ביטוח חיים</option><option>ביטוח בריאות</option><option>פנסיה</option><option>ביטוח רכב</option><option>ביטוח דירה</option>
-                                        </select>
-                                        <input placeholder="חברה מבטחת" value={formData.company || ''} onChange={e => setFormData({ ...formData, company: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <input placeholder="מספר פוליסה" value={formData.policyNumber || ''} onChange={e => setFormData({ ...formData, policyNumber: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <div className="flex gap-2">
-                                            <input placeholder="פרמיה (₪)" value={formData.premium || ''} onChange={e => setFormData({ ...formData, premium: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <input placeholder="כיסוי (₪)" value={formData.coverage || ''} onChange={e => setFormData({ ...formData, coverage: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        </div>
-                                    </>
-                                )}
-                                {editMode.type === 'task' && (
-                                    <>
-                                        <input placeholder="כותרת המשימה" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <div className="flex gap-2">
-                                            <select value={formData.priority || 'נמוכה'} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none"><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select>
-                                            <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        </div>
-                                        <select value={formData.status || 'ממתינה'} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none"><option>ממתינה</option><option>בתהליך</option><option>הושלמה</option></select>
-                                    </>
-                                )}
-                                {editMode.type === 'personal' && (
-                                    <>
-                                        <input placeholder="שם מלא" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <input placeholder="טלפון" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <input placeholder="אימייל" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                    </>
-                                )}
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+                                    {editMode.type === 'family' && (
+                                        <>
+                                            <input placeholder="שם מלא" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <input placeholder="קירבה (ילד/בן זוג)" value={formData.relation || ''} onChange={e => setFormData({ ...formData, relation: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <div className="flex gap-4">
+                                                <input type="number" placeholder="גיל" value={formData.age || ''} onChange={e => setFormData({ ...formData, age: +e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                                <label className="flex items-center gap-2 font-bold text-sm text-slate-500"><input type="checkbox" checked={formData.insured || false} onChange={e => setFormData({ ...formData, insured: e.target.checked })} /> מבוטח?</label>
+                                            </div>
+                                        </>
+                                    )}
+                                    {editMode.type === 'policy' && (
+                                        <>
+                                            <select value={formData.type || ''} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none">
+                                                <option value="">סוג פוליסה</option><option>ביטוח חיים</option><option>ביטוח בריאות</option><option>פנסיה</option><option>ביטוח רכב</option><option>ביטוח דירה</option>
+                                            </select>
+                                            <input placeholder="חברה מבטחת" value={formData.company || ''} onChange={e => setFormData({ ...formData, company: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <input placeholder="מספר פוליסה" value={formData.policyNumber || ''} onChange={e => setFormData({ ...formData, policyNumber: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <div className="flex gap-2">
+                                                <input placeholder="פרמיה (₪)" value={formData.premium || ''} onChange={e => setFormData({ ...formData, premium: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                                <input placeholder="כיסוי (₪)" value={formData.coverage || ''} onChange={e => setFormData({ ...formData, coverage: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            </div>
+                                        </>
+                                    )}
+                                    {editMode.type === 'task' && (
+                                        <>
+                                            <input placeholder="כותרת המשימה" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <div className="flex gap-2">
+                                                <select value={formData.priority || 'נמוכה'} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none"><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select>
+                                                <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            </div>
+                                            <select value={formData.status || 'ממתינה'} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none"><option>ממתינה</option><option>בתהליך</option><option>הושלמה</option></select>
+                                        </>
+                                    )}
+                                    {editMode.type === 'personal' && (
+                                        <>
+                                            <input placeholder="שם מלא" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <input placeholder="טלפון" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                            <input placeholder="אימייל" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                        </>
+                                    )}
+                                </div>
+
+                                <Button onClick={handleSaveModal} className="w-full mt-6 bg-indigo-600 text-white rounded-xl py-4 font-black shadow-lg">שמור שינויים</Button>
                             </div>
-
-                            <Button onClick={handleSaveModal} className="w-full mt-6 bg-indigo-600 text-white rounded-xl py-4 font-black shadow-lg">שמור שינויים</Button>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* --- Market Analysis Modal --- */}
-                {showMarketModal && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
-                        <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-3xl border-none">
-                            <div className="p-8 space-y-8">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-3xl font-black text-slate-800 flex items-center gap-3 font-display">
-                                            <span className="text-4xl">🤖</span> ניתוח שוק והשוואת תשואות
-                                        </h2>
-                                        <p className="text-slate-500 font-medium mt-1">האלגוריתם סורק את ביצועי הקרנות המובילות במסלול S&P 500</p>
-                                    </div>
-                                    <button onClick={() => setShowMarketModal(false)} className="h-10 w-10 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xl">✕</button>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Sources */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">מקורות מידע חיצוניים</h4>
-                                        <a href="https://www.mygemel.net/%D7%A7%D7%A8%D7%A0%D7%95%D7%AA-%D7%94%D7%A9%D7%AA%D7%9C%D7%9E%D7%95%D7%AA" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 transition-all group">
-                                            <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-lg group-hover:scale-110 transition-transform">📈</div>
-                                            <div>
-                                                <div className="font-black text-slate-700 group-hover:text-emerald-700">MyGemel</div>
-                                                <div className="text-xs text-slate-400">השוואת קרנות השתלמות</div>
-                                            </div>
-                                        </a>
-                                        <a href="https://pensyanet.cma.gov.il/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all group">
-                                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg group-hover:scale-110 transition-transform">🏛️</div>
-                                            <div>
-                                                <div className="font-black text-slate-700 group-hover:text-blue-700">פנסיה-נט</div>
-                                                <div className="text-xs text-slate-400">מערכת משרד האוצר</div>
-                                            </div>
-                                        </a>
-                                        <a href="https://big.hcsra.co.il/graph/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-purple-50 border border-slate-100 hover:border-purple-200 transition-all group">
-                                            <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-lg group-hover:scale-110 transition-transform">📊</div>
-                                            <div>
-                                                <div className="font-black text-slate-700 group-hover:text-purple-700">ביטוח-נט (Big)</div>
-                                                <div className="text-xs text-slate-400">גרפים וניתוח ביטוח</div>
-                                            </div>
-                                        </a>
+                {
+                    showMarketModal && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
+                            <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-3xl border-none">
+                                <div className="p-8 space-y-8">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-3xl font-black text-slate-800 flex items-center gap-3 font-display">
+                                                <span className="text-4xl">🤖</span> ניתוח שוק והשוואת תשואות
+                                            </h2>
+                                            <p className="text-slate-500 font-medium mt-1">האלגוריתם סורק את ביצועי הקרנות המובילות במסלול S&P 500</p>
+                                        </div>
+                                        <button onClick={() => setShowMarketModal(false)} className="h-10 w-10 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xl">✕</button>
                                     </div>
 
-                                    {/* Comparison Table */}
-                                    <div className="lg:col-span-2 bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                                        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">השוואת מסלולי S&P 500 (תשואה מצטברת)</h4>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-right">
-                                                <thead>
-                                                    <tr className="text-xs text-slate-400 border-b border-slate-200">
-                                                        <th className="pb-3 pr-2">שם הקרן</th>
-                                                        <th className="pb-3">מתחילת שנה</th>
-                                                        <th className="pb-3">3 שנים</th>
-                                                        <th className="pb-3">5 שנים</th>
-                                                        <th className="pb-3">דמי ניהול ממוצע</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-200/50 text-sm font-bold text-slate-600">
-                                                    {[
-                                                        { name: "אלטשולר שחם S&P 500", ytd: "18.4%", y3: "42.1%", y5: "76.5%", fee: "0.7%" },
-                                                        { name: "הפניקס S&P 500", ytd: "17.9%", y3: "40.8%", y5: "74.2%", fee: "0.65%" },
-                                                        { name: "מיטב S&P 500", ytd: "18.1%", y3: "41.5%", y5: "75.1%", fee: "0.68%" },
-                                                        { name: "מנורה מבטחים S&P 500", ytd: "17.6%", y3: "39.9%", y5: "73.0%", fee: "0.62%" },
-                                                        { name: "הראל S&P 500", ytd: "17.8%", y3: "40.3%", y5: "73.8%", fee: "0.65%" },
-                                                    ].map((fund, i) => (
-                                                        <tr key={i} className="group hover:bg-white transition-colors">
-                                                            <td className="py-4 pr-2 font-black text-slate-700">{fund.name}</td>
-                                                            <td className="py-4 text-emerald-600 ltr">{fund.ytd}</td>
-                                                            <td className="py-4 text-emerald-600 ltr">{fund.y3}</td>
-                                                            <td className="py-4 text-emerald-600 ltr">{fund.y5}</td>
-                                                            <td className="py-4 text-slate-400 ltr">{fund.fee}</td>
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Sources */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">מקורות מידע חיצוניים</h4>
+                                            <a href="https://www.mygemel.net/%D7%A7%D7%A8%D7%A0%D7%95%D7%AA-%D7%94%D7%A9%D7%AA%D7%9C%D7%9E%D7%95%D7%AA" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 transition-all group">
+                                                <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-lg group-hover:scale-110 transition-transform">📈</div>
+                                                <div>
+                                                    <div className="font-black text-slate-700 group-hover:text-emerald-700">MyGemel</div>
+                                                    <div className="text-xs text-slate-400">השוואת קרנות השתלמות</div>
+                                                </div>
+                                            </a>
+                                            <a href="https://pensyanet.cma.gov.il/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all group">
+                                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg group-hover:scale-110 transition-transform">🏛️</div>
+                                                <div>
+                                                    <div className="font-black text-slate-700 group-hover:text-blue-700">פנסיה-נט</div>
+                                                    <div className="text-xs text-slate-400">מערכת משרד האוצר</div>
+                                                </div>
+                                            </a>
+                                            <a href="https://big.hcsra.co.il/graph/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-purple-50 border border-slate-100 hover:border-purple-200 transition-all group">
+                                                <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-lg group-hover:scale-110 transition-transform">📊</div>
+                                                <div>
+                                                    <div className="font-black text-slate-700 group-hover:text-purple-700">ביטוח-נט (Big)</div>
+                                                    <div className="text-xs text-slate-400">גרפים וניתוח ביטוח</div>
+                                                </div>
+                                            </a>
+                                        </div>
+
+                                        {/* Comparison Table */}
+                                        <div className="lg:col-span-2 bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                                            <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">השוואת מסלולי S&P 500 (תשואה מצטברת)</h4>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-right">
+                                                    <thead>
+                                                        <tr className="text-xs text-slate-400 border-b border-slate-200">
+                                                            <th className="pb-3 pr-2">שם הקרן</th>
+                                                            <th className="pb-3">מתחילת שנה</th>
+                                                            <th className="pb-3">3 שנים</th>
+                                                            <th className="pb-3">5 שנים</th>
+                                                            <th className="pb-3">דמי ניהול ממוצע</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-100 flex items-start gap-3">
-                                            <span className="text-xl">💡</span>
-                                            <p className="text-xs text-yellow-800 leading-relaxed font-bold">
-                                                המלצת המערכת: אלטשולר שחם ומיטב מציגים את הביצועים העקביים ביותר לאורך זמן במסלול זה.
-                                                עם זאת, שים לב לדמי הניהול - ניתן לרוב להשיג הנחה של 0.1-0.2% במיקוח.
-                                            </p>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-200/50 text-sm font-bold text-slate-600">
+                                                        {[
+                                                            { name: "אלטשולר שחם S&P 500", ytd: "18.4%", y3: "42.1%", y5: "76.5%", fee: "0.7%" },
+                                                            { name: "הפניקס S&P 500", ytd: "17.9%", y3: "40.8%", y5: "74.2%", fee: "0.65%" },
+                                                            { name: "מיטב S&P 500", ytd: "18.1%", y3: "41.5%", y5: "75.1%", fee: "0.68%" },
+                                                            { name: "מנורה מבטחים S&P 500", ytd: "17.6%", y3: "39.9%", y5: "73.0%", fee: "0.62%" },
+                                                            { name: "הראל S&P 500", ytd: "17.8%", y3: "40.3%", y5: "73.8%", fee: "0.65%" },
+                                                        ].map((fund, i) => (
+                                                            <tr key={i} className="group hover:bg-white transition-colors">
+                                                                <td className="py-4 pr-2 font-black text-slate-700">{fund.name}</td>
+                                                                <td className="py-4 text-emerald-600 ltr">{fund.ytd}</td>
+                                                                <td className="py-4 text-emerald-600 ltr">{fund.y3}</td>
+                                                                <td className="py-4 text-emerald-600 ltr">{fund.y5}</td>
+                                                                <td className="py-4 text-slate-400 ltr">{fund.fee}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div className="mt-4 p-4 bg-yellow-50 rounded-xl border border-yellow-100 flex items-start gap-3">
+                                                <span className="text-xl">💡</span>
+                                                <p className="text-xs text-yellow-800 leading-relaxed font-bold">
+                                                    המלצת המערכת: אלטשולר שחם ומיטב מציגים את הביצועים העקביים ביותר לאורך זמן במסלול זה.
+                                                    עם זאת, שים לב לדמי הניהול - ניתן לרוב להשיג הנחה של 0.1-0.2% במיקוח.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </Card>
-                    </div>
-                )}
+                            </Card>
+                        </div>
+                    )
+                }
                 {/* --- Referral Modal --- */}
-                {showReferralModal && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                        <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl relative text-center">
-                            <button onClick={() => setShowReferralModal(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-600"><X size={20} /></button>
-                            <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-6">
-                                <Share2 size={32} />
-                            </div>
-                            <h3 className="text-xl font-black text-slate-800 mb-2">לאן תרצה להפנות את הלקוח?</h3>
-                            <p className="text-sm text-slate-500 font-medium mb-8">המערכת תשלח מייל אוטומטי עם פרטי הלקוח לגורם הרלוונטי.</p>
+                {
+                    showReferralModal && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                            <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl relative text-center">
+                                <button onClick={() => setShowReferralModal(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-600"><X size={20} /></button>
+                                <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-6">
+                                    <Share2 size={32} />
+                                </div>
+                                <h3 className="text-xl font-black text-slate-800 mb-2">לאן תרצה להפנות את הלקוח?</h3>
+                                <p className="text-sm text-slate-500 font-medium mb-8">המערכת תשלח מייל אוטומטי עם פרטי הלקוח לגורם הרלוונטי.</p>
 
-                            <div className="space-y-3">
-                                {[
-                                    { label: "ביטוח אלמנטרי", icon: "🚗" },
-                                    { label: "החזרי מס", icon: "💰" },
-                                    { label: "תכנון פרישה", icon: "📈" },
-                                    { label: "כתב שירות תלפיות", icon: "📄" }
-                                ].map((option) => (
-                                    <button
-                                        key={option.label}
-                                        onClick={() => handleReferral(option.label)}
-                                        className="w-full p-4 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex items-center justify-between group"
-                                    >
-                                        <span className="font-bold text-slate-700 group-hover:text-indigo-700">{option.label}</span>
-                                        <span className="text-2xl group-hover:scale-110 transition-transform">{option.icon}</span>
-                                    </button>
-                                ))}
+                                <div className="space-y-3">
+                                    {[
+                                        { label: "ביטוח אלמנטרי", icon: "🚗" },
+                                        { label: "החזרי מס", icon: "💰" },
+                                        { label: "תכנון פרישה", icon: "📈" },
+                                        { label: "כתב שירות תלפיות", icon: "📄" }
+                                    ].map((option) => (
+                                        <button
+                                            key={option.label}
+                                            onClick={() => handleReferral(option.label)}
+                                            className="w-full p-4 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex items-center justify-between group"
+                                        >
+                                            <span className="font-bold text-slate-700 group-hover:text-indigo-700">{option.label}</span>
+                                            <span className="text-2xl group-hover:scale-110 transition-transform">{option.icon}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )
+                }
+            </div >
         </DashboardShell >
     );
 }

@@ -4,9 +4,11 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { generateGeminiContent } from "@/lib/gemini-client";
 
 export default function AIToolsPage() {
+    const router = useRouter();
     const [apiKey, setApiKey] = useState("");
     const [hasApiKey, setHasApiKey] = useState(false);
     const [activeTab, setActiveTab] = useState("סיכום שיחה");
@@ -32,6 +34,7 @@ export default function AIToolsPage() {
         { id: "כתיבת מייל", icon: "✉️", description: "כתוב מייל מקצועי ללקוח", color: "from-emerald-600 to-teal-700" },
         { id: "ניתוח צרכים", icon: "🎯", description: "נתח צרכי ביטוח של לקוח", color: "from-purple-600 to-indigo-700" },
         { id: "המלצות מוצרים", icon: "💡", description: "קבל המלצות למוצרי ביטוח", color: "from-amber-500 to-orange-600" },
+        { id: "ניתוח הר הביטוח", icon: "📄", description: "פיענוח דוחות וייצור לידים", color: "from-rose-500 to-pink-600", href: "/agent/ai-tools/doc-analysis" },
     ];
 
     const handleGenerate = async () => {
@@ -113,7 +116,13 @@ export default function AIToolsPage() {
                     {tools.map((tool) => (
                         <button
                             key={tool.id}
-                            onClick={() => setActiveTab(tool.id)}
+                            onClick={() => {
+                                if ((tool as any).href) {
+                                    router.push((tool as any).href);
+                                } else {
+                                    setActiveTab(tool.id);
+                                }
+                            }}
                             className={`text-right transition-all ${activeTab === tool.id ? 'scale-105' : 'hover:scale-105'
                                 }`}
                         >

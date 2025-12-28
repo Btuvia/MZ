@@ -3,91 +3,109 @@
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function SavingsPage() {
     const [selectedPension, setSelectedPension] = useState<number | null>(null);
+    const { user } = useAuth(); // Assuming AuthContext provides 'user'
+    const [pensionAccounts, setPensionAccounts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const pensionAccounts = [
-        {
-            id: 1,
-            name: "קרן פנסיה - מבטחים",
-            type: "קרן פנסיה",
-            accountNumber: "PEN-2023-445566",
-            balance: "₪285,400",
-            monthlyDeposit: "₪1,200",
-            employerContribution: "₪800",
-            returns: "+5.2%",
-            riskLevel: "בינוני-גבוה",
-            icon: "👨‍👩‍👧‍👦",
-            color: "from-blue-600 to-indigo-700",
-            details: {
-                startDate: "01/03/2018",
-                managementFees: "0.52%",
-                savingsFees: "0.05%",
-                allocation: [
-                    { name: "מניות", percentage: 60, color: "bg-blue-500" },
-                    { name: "אג״ח", percentage: 30, color: "bg-emerald-500" },
-                    { name: "מזומן", percentage: 10, color: "bg-amber-500" }
-                ]
+    useEffect(() => {
+        const fetchProducts = async () => {
+            if (!user?.uid) return;
+            setLoading(true);
+            try {
+                const data = await firestoreService.getFinancialProducts(user.uid);
+                if (data.length > 0) {
+                    setPensionAccounts(data);
+                } else {
+                    // Start with empty, or optionally offer to create demo data
+                    setPensionAccounts([]);
+                }
+            } catch (error) {
+                console.error("Error fetching financial products:", error);
+            } finally {
+                setLoading(false);
             }
-        },
-        {
-            id: 2,
-            name: "ביטוח מנהלים - הפניקס",
-            type: "ביטוח מנהלים",
-            accountNumber: "MGR-2020-778899",
-            balance: "₪142,830",
-            monthlyDeposit: "₪650",
-            employerContribution: "₪450",
-            returns: "+4.8%",
-            riskLevel: "בינוני",
-            icon: "💼",
-            color: "from-emerald-600 to-teal-700",
-            details: {
-                startDate: "15/06/2020",
-                managementFees: "0.48%",
-                savingsFees: "0.04%",
-                allocation: [
-                    { name: "מניות", percentage: 50, color: "bg-blue-500" },
-                    { name: "אג״ח", percentage: 40, color: "bg-emerald-500" },
-                    { name: "מזומן", percentage: 10, color: "bg-amber-500" }
-                ]
+        };
+
+        fetchProducts();
+    }, [user?.uid]);
+
+    const handleCreateDemoData = async () => {
+        if (!user?.uid) return;
+        setLoading(true);
+        const demoProducts = [
+            {
+                clientId: user.uid,
+                name: "קרן פנסיה - מבטחים (הדגמה)",
+                type: "קרן פנסיה",
+                accountNumber: "DEMO-2024-001",
+                balance: "₪285,400",
+                monthlyDeposit: "₪1,200",
+                employerContribution: "₪800",
+                returns: "+5.2%",
+                riskLevel: "בינוני-גבוה",
+                icon: "👨‍👩‍👧‍👦",
+                color: "from-blue-600 to-indigo-700",
+                details: {
+                    startDate: "01/03/2018",
+                    managementFees: "0.52%",
+                    savingsFees: "0.05%",
+                    allocation: [
+                        { name: "מניות", percentage: 60, color: "bg-blue-500" },
+                        { name: "אג״ח", percentage: 30, color: "bg-emerald-500" },
+                        { name: "מזומן", percentage: 10, color: "bg-amber-500" }
+                    ]
+                }
+            },
+            {
+                clientId: user.uid, // Important: link to current user
+                name: "ביטוח מנהלים - הפניקס (הדגמה)",
+                type: "ביטוח מנהלים",
+                accountNumber: "DEMO-2024-002",
+                balance: "₪142,830",
+                monthlyDeposit: "₪650",
+                employerContribution: "₪450",
+                returns: "+4.8%",
+                riskLevel: "בינוני",
+                icon: "💼",
+                color: "from-emerald-600 to-teal-700",
+                details: {
+                    startDate: "15/06/2020",
+                    managementFees: "0.48%",
+                    savingsFees: "0.04%",
+                    allocation: [
+                        { name: "מניות", percentage: 50, color: "bg-blue-500" },
+                        { name: "אג״ח", percentage: 40, color: "bg-emerald-500" },
+                        { name: "מזומן", percentage: 10, color: "bg-amber-500" }
+                    ]
+                }
             }
-        },
-        {
-            id: 3,
-            name: "קופת גמל להשקעה - כלל",
-            type: "קופת גמל",
-            accountNumber: "INV-2021-334455",
-            balance: "₪30,000",
-            monthlyDeposit: "₪500",
-            employerContribution: "₪0",
-            returns: "+6.1%",
-            riskLevel: "גבוה",
-            icon: "💰",
-            color: "from-purple-600 to-indigo-700",
-            details: {
-                startDate: "10/01/2021",
-                managementFees: "0.65%",
-                savingsFees: "0.06%",
-                allocation: [
-                    { name: "מניות", percentage: 75, color: "bg-blue-500" },
-                    { name: "אג״ח", percentage: 20, color: "bg-emerald-500" },
-                    { name: "מזומן", percentage: 5, color: "bg-amber-500" }
-                ]
-            }
+        ];
+
+        for (const p of demoProducts) {
+            await firestoreService.addFinancialProduct(p);
         }
-    ];
+
+        // Refresh
+        const data = await firestoreService.getFinancialProducts(user.uid);
+        setPensionAccounts(data);
+        setLoading(false);
+    };
 
     const totalBalance = pensionAccounts.reduce((sum, acc) => {
-        const balance = parseFloat(acc.balance.replace(/[₪,]/g, ''));
-        return sum + balance;
+        // Handle both number and string with '₪'
+        const val = typeof acc.balance === 'number' ? acc.balance : parseFloat(acc.balance?.replace(/[₪,]/g, '') || '0');
+        return sum + val;
     }, 0);
 
     const totalMonthlyDeposit = pensionAccounts.reduce((sum, acc) => {
-        const deposit = parseFloat(acc.monthlyDeposit.replace(/[₪,]/g, ''));
-        return sum + deposit;
+        const val = typeof acc.monthlyDeposit === 'number' ? acc.monthlyDeposit : parseFloat(acc.monthlyDeposit?.replace(/[₪,]/g, '') || '0');
+        return sum + val;
     }, 0);
 
     return (
@@ -136,101 +154,119 @@ export default function SavingsPage() {
 
                 {/* Pension Accounts */}
                 <div className="space-y-6">
-                    {pensionAccounts.map((account) => (
-                        <Card key={account.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all">
-                            <div className={`h-2 w-full bg-gradient-to-r ${account.color}`}></div>
-                            <div className="p-8">
-                                <div className="flex items-start justify-between mb-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${account.color} flex items-center justify-center text-3xl shadow-lg`}>
-                                            {account.icon}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-black text-primary">{account.name}</h3>
-                                            <p className="text-sm font-bold text-slate-400 mt-1">{account.type} • {account.accountNumber}</p>
-                                        </div>
-                                    </div>
-                                    <Badge className="bg-slate-100 text-slate-600 border-slate-200 px-4 py-2">
-                                        סיכון: {account.riskLevel}
-                                    </Badge>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">יתרה נוכחית</p>
-                                        <p className="text-2xl font-black text-primary tracking-tighter">{account.balance}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">הפקדה חודשית</p>
-                                        <p className="text-lg font-bold text-primary">{account.monthlyDeposit}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תרומת מעביד</p>
-                                        <p className="text-lg font-bold text-primary">{account.employerContribution}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תשואה שנתית</p>
-                                        <p className="text-lg font-bold text-success">{account.returns}</p>
-                                    </div>
-                                </div>
-
-                                {selectedPension === account.id && (
-                                    <div className="mt-6 p-6 bg-slate-50 rounded-2xl border border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300 space-y-6">
-                                        <div className="grid grid-cols-3 gap-6">
-                                            <div className="space-y-1">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תאריך פתיחה</p>
-                                                <p className="text-sm font-bold text-primary">{account.details.startDate}</p>
+                    {loading ? (
+                        <div className="text-center py-20 opacity-50">
+                            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <p>טוען נתונים...</p>
+                        </div>
+                    ) : pensionAccounts.length === 0 ? (
+                        <div className="text-center py-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                            <div className="text-4xl mb-4">📭</div>
+                            <h3 className="text-lg font-black text-slate-700 mb-2">טרם הוזנו מוצרים פנסיוניים</h3>
+                            <p className="text-slate-500 mb-6">הסוכן עדיין לא הזין את תיק הביטוח שלך.</p>
+                            <Button onClick={handleCreateDemoData} disabled={loading}>
+                                צור נתוני דמה לבדיקה
+                            </Button>
+                        </div>
+                    ) : (
+                        pensionAccounts.map((account) => (
+                            <Card key={account.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all">
+                                <div className={`h-2 w-full bg-gradient-to-r ${account.color}`}></div>
+                                <div className="p-8">
+                                    <div className="flex items-start justify-between mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${account.color} flex items-center justify-center text-3xl shadow-lg`}>
+                                                {account.icon}
                                             </div>
-                                            <div className="space-y-1">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">דמי ניהול</p>
-                                                <p className="text-sm font-bold text-primary">{account.details.managementFees}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">דמי חיסכון</p>
-                                                <p className="text-sm font-bold text-primary">{account.details.savingsFees}</p>
+                                            <div>
+                                                <h3 className="text-xl font-black text-primary">{account.name}</h3>
+                                                <p className="text-sm font-bold text-slate-400 mt-1">{account.type} • {account.accountNumber}</p>
                                             </div>
                                         </div>
+                                        <Badge className="bg-slate-100 text-slate-600 border-slate-200 px-4 py-2">
+                                            סיכון: {account.riskLevel}
+                                        </Badge>
+                                    </div>
 
-                                        <div>
-                                            <h4 className="text-sm font-black text-primary mb-4 flex items-center gap-2">
-                                                <span className="text-accent">📊</span> חלוקת נכסים
-                                            </h4>
-                                            <div className="space-y-3">
-                                                {account.details.allocation.map((asset, i) => (
-                                                    <div key={i}>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-sm font-bold text-slate-600">{asset.name}</span>
-                                                            <span className="text-sm font-black text-primary">{asset.percentage}%</span>
-                                                        </div>
-                                                        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                                                            <div className={`h-full ${asset.color} rounded-full transition-all duration-500`} style={{ width: `${asset.percentage}%` }}></div>
-                                                        </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">יתרה נוכחית</p>
+                                            <p className="text-2xl font-black text-primary tracking-tighter">{account.balance}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">הפקדה חודשית</p>
+                                            <p className="text-lg font-bold text-primary">{account.monthlyDeposit}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תרומת מעביד</p>
+                                            <p className="text-lg font-bold text-primary">{account.employerContribution}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תשואה שנתית</p>
+                                            <p className="text-lg font-bold text-success">{account.returns}</p>
+                                        </div>
+                                    </div>
+
+                                    {selectedPension === account.id && (
+                                        <div className="mt-6 p-6 bg-slate-50 rounded-2xl border border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300 space-y-6">
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">תאריך פתיחה</p>
+                                                    <p className="text-sm font-bold text-primary">{account.details.startDate}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">דמי ניהול</p>
+                                                    <p className="text-sm font-bold text-primary">{account.details.managementFees}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">דמי חיסכון</p>
+                                                    <p className="text-sm font-bold text-primary">{account.details.savingsFees}</p>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-sm font-black text-primary mb-4 flex items-center gap-2">
+                                                    <span className="text-accent">📊</span> חלוקת נכסים
+                                                </h4>
+                                                <div className="space-y-3">
+                                                    <div className="space-y-3">
+                                                        {account.details?.allocation?.map((asset: any, i: number) => (
+                                                            <div key={i}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-sm font-bold text-slate-600">{asset.name}</span>
+                                                                    <span className="text-sm font-black text-primary">{asset.percentage}%</span>
+                                                                </div>
+                                                                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                                                                    <div className={`h-full ${asset.color} rounded-full transition-all duration-500`} style={{ width: `${asset.percentage}%` }}></div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                <div className="flex gap-3 mt-6">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        className="flex-1"
-                                        onClick={() => setSelectedPension(selectedPension === account.id ? null : account.id)}
-                                    >
-                                        {selectedPension === account.id ? "הסתר פרטים" : "הצג פרטים מלאים"}
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="px-6">
-                                        הורד דוח
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="px-6">
-                                        שנה מסלול
-                                    </Button>
+                                    <div className="flex gap-3 mt-6">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => setSelectedPension(selectedPension === account.id ? null : account.id)}
+                                        >
+                                            {selectedPension === account.id ? "הסתר פרטים" : "הצג פרטים מלאים"}
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="px-6">
+                                            הורד דוח
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="px-6">
+                                            שנה מסלול
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                        </Card>
-                    ))}
+                            </Card>
+                        ))
+                    )}
                 </div>
 
                 {/* Recommendations */}

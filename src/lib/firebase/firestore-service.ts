@@ -177,4 +177,23 @@ export const firestoreService = {
         });
         return docRef.id;
     },
+
+    // --- Financial Products (Savings/Pension) ---
+    async getFinancialProducts(clientId: string) {
+        if (!clientId) return [];
+        const q = query(collection(db, "financial_products"), where("clientId", "==", clientId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async addFinancialProduct(data: any) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...productData } = data;
+        const docRef = await addDoc(collection(db, "financial_products"), {
+            ...productData,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
 };

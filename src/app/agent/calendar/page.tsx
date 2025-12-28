@@ -57,16 +57,28 @@ export default function CalendarPage() {
         }
     };
 
+    // Helper to safely parse dates (handling Firestore Timestamps)
+    const parseDate = (dateVal: any): Date => {
+        if (!dateVal) return new Date();
+        if (dateVal.toDate && typeof dateVal.toDate === 'function') {
+            return dateVal.toDate();
+        }
+        if (dateVal.seconds && typeof dateVal.seconds === 'number') {
+            return new Date(dateVal.seconds * 1000);
+        }
+        return new Date(dateVal);
+    };
+
     // Derived State
     const todaysTasks = tasks.filter(t => {
-        const tDate = new Date(t.date || t.dueDate);
+        const tDate = parseDate(t.date || t.dueDate);
         const today = new Date();
         return tDate.toDateString() === today.toDateString();
     });
 
     const upcomingTasks = tasks
-        .filter(t => new Date(t.date || t.dueDate) > new Date())
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .filter(t => parseDate(t.date || t.dueDate) > new Date())
+        .sort((a, b) => parseDate(a.date || a.dueDate).getTime() - parseDate(b.date || b.dueDate).getTime())
         .slice(0, 3);
 
     return (
@@ -147,7 +159,7 @@ export default function CalendarPage() {
                                             </div>
                                             <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
                                                 <span className="flex items-center gap-1">
-                                                    📅 {task.date || task.dueDate}
+                                                    📅 {parseDate(task.date || task.dueDate).toLocaleDateString("he-IL")}
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     📌 {task.type || 'משימה'}
@@ -202,7 +214,7 @@ export default function CalendarPage() {
                                 {upcomingTasks.map((task, i) => (
                                     <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-xs font-black text-accent">{task.date || task.dueDate}</span>
+                                            <span className="text-xs font-black text-accent">{parseDate(task.date || task.dueDate).toLocaleDateString("he-IL")}</span>
                                             <span className="text-xs font-bold text-slate-400">{task.time || '00:00'}</span>
                                         </div>
                                         <p className="text-sm font-bold">{task.title}</p>
