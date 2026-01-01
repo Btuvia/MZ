@@ -64,24 +64,38 @@ export const firestoreService = {
 
     // --- Tasks ---
 
+    async getTask(id: string) {
+        if (!id) return null;
+        const docRef = doc(db, "tasks", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as any;
+        }
+        return null;
+    },
+
     async getTasks() {
         const querySnapshot = await getDocs(collection(db, "tasks"));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     },
 
     async getTasksForClient(clientId: string) {
         if (!clientId) return [];
         const q = query(collection(db, "tasks"), where("clientId", "==", clientId));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     },
 
     async getTasksByAssignee(assigneeName: string) {
         if (!assigneeName) return [];
         const q = query(collection(db, "tasks"), where("assignee", "==", assigneeName));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     },
+
+    // ... (other methods should be updated similarly if possible, but I'll focus on the ones causing errors first)
+
+
 
     async addTask(data: any) {
         // Remove id if present, let firestore generate it
@@ -196,4 +210,530 @@ export const firestoreService = {
         });
         return docRef.id;
     },
+
+    // --- Lead Statuses ---
+    async getLeadStatuses() {
+        const querySnapshot = await getDocs(collection(db, "lead_statuses"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async addLeadStatus(data: any) {
+        const { id, ...statusData } = data;
+        const docRef = await addDoc(collection(db, "lead_statuses"), {
+            ...statusData,
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateLeadStatus(id: string, data: any) {
+        const docRef = doc(db, "lead_statuses", id);
+        await updateDoc(docRef, data);
+    },
+
+    async deleteLeadStatus(id: string) {
+        await deleteDoc(doc(db, "lead_statuses", id));
+    },
+
+    // --- Task Statuses ---
+    async getTaskStatuses() {
+        const querySnapshot = await getDocs(collection(db, "task_statuses"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async addTaskStatus(data: any) {
+        const { id, ...statusData } = data;
+        const docRef = await addDoc(collection(db, "task_statuses"), {
+            ...statusData,
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateTaskStatus(id: string, data: any) {
+        const docRef = doc(db, "task_statuses", id);
+        await updateDoc(docRef, data);
+    },
+
+    async deleteTaskStatus(id: string) {
+        await deleteDoc(doc(db, "task_statuses", id));
+    },
+
+    // --- Lead Sources ---
+    async getLeadSources() {
+        const querySnapshot = await getDocs(collection(db, "lead_sources"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async addLeadSource(data: any) {
+        const { id, ...sourceData } = data;
+        const docRef = await addDoc(collection(db, "lead_sources"), {
+            ...sourceData,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateLeadSource(id: string, data: any) {
+        const docRef = doc(db, "lead_sources", id);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: Timestamp.now()
+        });
+    },
+
+    async deleteLeadSource(id: string) {
+        await deleteDoc(doc(db, "lead_sources", id));
+    },
+
+    // --- User Permissions ---
+    async getUserPermissions(userId: string) {
+        if (!userId) return [];
+        const q = query(collection(db, "user_permissions"), where("userId", "==", userId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async updateUserPermission(userId: string, permissionKey: string, isGranted: boolean) {
+        // Check if permission exists
+        const q = query(
+            collection(db, "user_permissions"),
+            where("userId", "==", userId),
+            where("permissionKey", "==", permissionKey)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            // Create new permission
+            await addDoc(collection(db, "user_permissions"), {
+                userId,
+                permissionKey,
+                isGranted,
+                createdAt: Timestamp.now()
+            });
+        } else {
+            // Update existing permission
+            const docRef = doc(db, "user_permissions", querySnapshot.docs[0].id);
+            await updateDoc(docRef, { isGranted });
+        }
+    },
+
+    // --- Lead Transfers ---
+    async getLeadTransfers(leadId?: string) {
+        if (leadId) {
+            const q = query(collection(db, "lead_transfers"), where("leadId", "==", leadId));
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        const querySnapshot = await getDocs(collection(db, "lead_transfers"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async transferLead(data: any) {
+        const { id, ...transferData } = data;
+        const docRef = await addDoc(collection(db, "lead_transfers"), {
+            ...transferData,
+            status: 'pending',
+            transferredAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateLeadTransfer(id: string, data: any) {
+        const docRef = doc(db, "lead_transfers", id);
+        await updateDoc(docRef, {
+            ...data,
+            respondedAt: Timestamp.now()
+        });
+    },
+
+    // --- Task Transfers ---
+    async getTaskTransfers(taskId?: string) {
+        if (taskId) {
+            const q = query(collection(db, "task_transfers"), where("taskId", "==", taskId));
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        const querySnapshot = await getDocs(collection(db, "task_transfers"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async transferTask(data: any) {
+        const { id, ...transferData } = data;
+        const docRef = await addDoc(collection(db, "task_transfers"), {
+            ...transferData,
+            status: 'pending',
+            transferredAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateTaskTransfer(id: string, data: any) {
+        const docRef = doc(db, "task_transfers", id);
+        await updateDoc(docRef, {
+            ...data,
+            respondedAt: Timestamp.now()
+        });
+    },
+
+    // --- Activity Log ---
+    async logActivity(data: any) {
+        const { id, ...activityData } = data;
+        const docRef = await addDoc(collection(db, "activity_log"), {
+            ...activityData,
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async getActivityLog(entityType?: string, entityId?: string) {
+        if (entityType && entityId) {
+            const q = query(
+                collection(db, "activity_log"),
+                where("entityType", "==", entityType),
+                where("entityId", "==", entityId)
+            );
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        const querySnapshot = await getDocs(collection(db, "activity_log"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async getActivityLogByUser(userId: string) {
+        const q = query(collection(db, "activity_log"), where("userId", "==", userId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    // --- Distribution Settings ---
+    async getDistributionSettings(userId: string) {
+        if (!userId) return [];
+        const q = query(collection(db, "distribution_settings"), where("userId", "==", userId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async updateDistributionSetting(userId: string, settingKey: string, settingValue: string, category?: string) {
+        // Check if setting exists
+        const q = query(
+            collection(db, "distribution_settings"),
+            where("userId", "==", userId),
+            where("settingKey", "==", settingKey)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            // Create new setting
+            await addDoc(collection(db, "distribution_settings"), {
+                userId,
+                settingKey,
+                settingValue,
+                category,
+                createdAt: Timestamp.now()
+            });
+        } else {
+            // Update existing setting
+            const docRef = doc(db, "distribution_settings", querySnapshot.docs[0].id);
+            await updateDoc(docRef, { settingValue, category });
+        }
+    },
+
+    // ============================================
+    // WORKFLOWS
+    // ============================================
+
+    async getWorkflows() {
+        const querySnapshot = await getDocs(collection(db, "workflows"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    },
+
+    async getWorkflow(id: string) {
+        if (!id) return null;
+        const docRef = doc(db, "workflows", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as any;
+        }
+        return null;
+    },
+
+    async createWorkflow(data: any) {
+        const { id, ...workflowData } = data;
+        const docRef = await addDoc(collection(db, "workflows"), {
+            ...workflowData,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateWorkflow(id: string, data: any) {
+        const docRef = doc(db, "workflows", id);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: Timestamp.now()
+        });
+    },
+
+    async deleteWorkflow(id: string) {
+        await deleteDoc(doc(db, "workflows", id));
+    },
+
+    // ============================================
+    // WORKFLOW INSTANCES
+    // ============================================
+
+    async getWorkflowInstances(clientId?: string) {
+        if (clientId) {
+            const q = query(collection(db, "workflow_instances"), where("clientId", "==", clientId));
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        }
+        const querySnapshot = await getDocs(collection(db, "workflow_instances"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    },
+
+    async getWorkflowInstance(id: string) {
+        if (!id) return null;
+        const docRef = doc(db, "workflow_instances", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as any;
+        }
+        return null;
+    },
+
+    async startWorkflow(workflowId: string, clientId: string, startedBy: string, additionalData?: any) {
+        const docRef = await addDoc(collection(db, "workflow_instances"), {
+            workflowId,
+            clientId,
+            startedBy,
+            status: 'active',
+            currentStep: 1,
+            completedSteps: 0,
+            tasks: [],
+            startedAt: Timestamp.now(),
+            ...additionalData
+        });
+        return docRef.id;
+    },
+
+    async updateWorkflowInstance(id: string, data: any) {
+        const docRef = doc(db, "workflow_instances", id);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: Timestamp.now()
+        });
+    },
+
+    async completeWorkflowStep(instanceId: string, stepNumber: number) {
+        const instance = await this.getWorkflowInstance(instanceId);
+        if (!instance) return;
+
+        await this.updateWorkflowInstance(instanceId, {
+            completedSteps: stepNumber,
+            currentStep: stepNumber + 1
+        });
+    },
+
+    // ============================================
+    // TASK SUBJECTS
+    // ============================================
+
+    async getSubjects() {
+        const querySnapshot = await getDocs(collection(db, "task_subjects"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async getSubject(id: string) {
+        if (!id) return null;
+        const docRef = doc(db, "task_subjects", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() };
+        }
+        return null;
+    },
+
+    async createSubject(data: any) {
+        const { id, ...subjectData } = data;
+        const docRef = await addDoc(collection(db, "task_subjects"), {
+            ...subjectData,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateSubject(id: string, data: any) {
+        const docRef = doc(db, "task_subjects", id);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: Timestamp.now()
+        });
+    },
+
+    async deleteSubject(id: string) {
+        await deleteDoc(doc(db, "task_subjects", id));
+    },
+
+    // ============================================
+    // USER PREFERENCES
+    // ============================================
+
+    async getUserPreferences(userId: string) {
+        if (!userId) return null;
+        const docRef = doc(db, "user_preferences", userId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() };
+        }
+        return null;
+    },
+
+    async updateUserPreferences(userId: string, prefs: any) {
+        const docRef = doc(db, "user_preferences", userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            await updateDoc(docRef, {
+                ...prefs,
+                updatedAt: Timestamp.now()
+            });
+        } else {
+            // Create new preferences
+            await updateDoc(docRef, {
+                userId,
+                ...prefs,
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now()
+            });
+        }
+    },
+
+    // ============================================
+    // ENHANCED TASK QUERIES
+    // ============================================
+
+    async getTasksByWorkflow(workflowId: string) {
+        if (!workflowId) return [];
+        const q = query(collection(db, "tasks"), where("workflowId", "==", workflowId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    },
+
+    async getTasksBySubject(subjectId: string) {
+        if (!subjectId) return [];
+        const q = query(collection(db, "tasks"), where("subjectId", "==", subjectId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async getOverdueTasks() {
+        const q = query(collection(db, "tasks"), where("status", "==", "overdue"));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async getTasksByStatus(status: string) {
+        const q = query(collection(db, "tasks"), where("status", "==", status));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async getTasksByType(type: string) {
+        const q = query(collection(db, "tasks"), where("type", "==", type));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
+
+    async transferTaskToUser(taskId: string, fromUserId: string, toUserId: string, reason?: string) {
+        // Update the task
+        await this.updateTask(taskId, {
+            assignedTo: toUserId,
+            transferredFrom: fromUserId,
+            transferReason: reason,
+            transferredAt: Timestamp.now(),
+            status: 'transferred'
+        });
+
+        // Log the transfer
+        await this.logActivity({
+            entityType: 'task',
+            entityId: taskId,
+            userId: fromUserId,
+            action: 'transfer',
+            details: {
+                toUserId,
+                reason
+            }
+        });
+    },
+
+    // --- Generic Helper Functions ---
+
+    /**
+     * Add a document to any collection
+     */
+    async addDocument(collectionName: string, data: any): Promise<string> {
+        const docRef = await addDoc(collection(db, collectionName), {
+            ...data,
+            createdAt: data.createdAt || Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    /**
+     * Get documents from any collection with optional filters
+     */
+    async getDocuments(
+        collectionName: string,
+        filters?: Array<{ field: string; operator: any; value: any }>
+    ): Promise<any[]> {
+        let q = collection(db, collectionName);
+
+        if (filters && filters.length > 0) {
+            const constraints = filters.map(f => where(f.field, f.operator, f.value));
+            q = query(q as any, ...constraints) as any;
+        }
+
+        const querySnapshot = await getDocs(q as any);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
+    },
+
+    /**
+     * Update a document in any collection
+     */
+    async updateDocument(collectionName: string, docId: string, data: any): Promise<void> {
+        const docRef = doc(db, collectionName, docId);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: Timestamp.now()
+        });
+    },
+
+    /**
+     * Delete a document from any collection
+     */
+    async deleteDocument(collectionName: string, docId: string): Promise<void> {
+        const docRef = doc(db, collectionName, docId);
+        await deleteDoc(docRef);
+    },
+
+    /**
+     * Get a single document from any collection
+     */
+    async getDocument(collectionName: string, docId: string): Promise<any | null> {
+        const docRef = doc(db, collectionName, docId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() };
+        }
+        return null;
+    },
 };
+

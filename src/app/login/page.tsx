@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/base";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/firebase";
 import { FirebaseError } from "firebase/app";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { demoLogin } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -109,6 +111,30 @@ export default function LoginPage() {
                         >
                             {loading ? "מתחבר..." : "התחברות לחשבון"}
                         </Button>
+
+                        <div className="grid grid-cols-3 gap-2 mt-4">
+                            <button
+                                type="button"
+                                onClick={() => demoLogin("admin")}
+                                className="py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-[10px] font-bold transition-all"
+                            >
+                                מנהל (דמו)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => demoLogin("agent")}
+                                className="py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-[10px] font-bold transition-all"
+                            >
+                                סוכן (דמו)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => demoLogin("client")}
+                                className="py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-[10px] font-bold transition-all"
+                            >
+                                לקוח (דמו)
+                            </button>
+                        </div>
                     </form>
 
                     <div className="mt-10 pt-8 border-t border-slate-100 text-center">

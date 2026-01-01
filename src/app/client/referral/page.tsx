@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { Gift, Heart, Send, Coins, Lock, Unlock, UserPlus, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function ReferralPage() {
     const { user } = useAuth();

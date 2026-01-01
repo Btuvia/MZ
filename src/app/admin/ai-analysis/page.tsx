@@ -9,15 +9,7 @@ import { firestoreService } from "@/lib/firebase/firestore-service";
 import { toast } from "sonner";
 import { Timestamp } from "firebase/firestore";
 
-interface ExtractedPolicy {
-    id: string;
-    company: string;
-    type: string;
-    premium: number;
-    expirationDate: string; // YYYY-MM-DD
-}
-
-import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
+import { analyzeInsuranceDocument, ExtractedPolicy } from "@/lib/ai/ai-service";
 
 export default function DocumentIntelligencePage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);

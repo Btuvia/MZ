@@ -1,4 +1,4 @@
-export type ProductType = 'life' | 'health' | 'pension' | 'manager_insurance' | 'investment';
+export type ProductType = 'life' | 'health' | 'pension' | 'manager_insurance' | 'investment' | 'finance';
 
 export interface DealData {
     id: string;
@@ -46,6 +46,7 @@ export class CommissionCalculator {
             case 'pension':
             case 'manager_insurance':
             case 'investment':
+            case 'finance':
                 this.calculateFinance(deal, result);
                 break;
         }

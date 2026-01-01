@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card } from "@/components/ui/base";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { LeadStatus } from "@/types/statuses";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface Lead {
     id: number;
@@ -10,41 +13,46 @@ interface Lead {
     phone: string;
     email: string;
     source: string;
-    status: string;
+    status: string; // Will store name for now
     date: string;
     interest: string;
 }
 
-const STATUS_COLUMNS = [
-    { id: "חדש", title: "ליד חדש", color: "bg-blue-500" },
-    { id: "נוצר קשר", title: "נוצר קשר", color: "bg-indigo-500" },
-    { id: "פגישה נקבעה", title: "פגישה נקבעה", color: "bg-purple-500" },
-    { id: "הצעה נשלחה", title: "הצעה נשלחה", color: "bg-amber-500" },
-    { id: "משא ומתן", title: "משא ומתן", color: "bg-orange-500" },
-];
-
 export default function SalesKanbanPage() {
-    const navItems = [
-        { label: "ראשי (לוח בקרה)", href: "/admin/dashboard", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg> },
-        { label: "ניהול מכירות (Kanban)", href: "/admin/sales", icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M7 7v10" /><path d="M12 7v10" /><path d="M17 7v10" /></svg> },
-        { label: "ניהול לידים", href: "/admin/leads", icon: <span className="text-sm">📋</span> },
-    ];
+    const navItems = ADMIN_NAV_ITEMS;
 
     const [leads, setLeads] = useState<Lead[]>([]);
+    const [statuses, setStatuses] = useState<LeadStatus[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Load Data
     useEffect(() => {
-        const stored = localStorage.getItem("leads_data");
-        if (stored) {
-            setLeads(JSON.parse(stored));
-        }
-        setIsLoading(false);
+        loadData();
     }, []);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            // 1. Load Statuses
+            const fetchedStatuses = await firestoreService.getLeadStatuses();
+            const sortedStatuses = (fetchedStatuses as LeadStatus[]).sort((a, b) => a.orderIndex - b.orderIndex);
+            setStatuses(sortedStatuses);
+
+            // 2. Load Leads
+            const stored = localStorage.getItem("leads_data");
+            if (stored) {
+                setLeads(JSON.parse(stored));
+            }
+        } catch (error) {
+            console.error("Failed to load kanban data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Save Data
     useEffect(() => {
-        if (!isLoading) {
+        if (!isLoading && leads.length > 0) {
             localStorage.setItem("leads_data", JSON.stringify(leads));
         }
     }, [leads, isLoading]);
@@ -53,16 +61,16 @@ export default function SalesKanbanPage() {
         setLeads(prev => prev.map(lead => {
             if (lead.id !== leadId) return lead;
 
-            const currentIndex = STATUS_COLUMNS.findIndex(c => c.id === lead.status);
+            const currentIndex = statuses.findIndex(c => c.name === lead.status);
             if (currentIndex === -1) return lead;
 
             let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
 
             // Bounds check
             if (newIndex < 0) newIndex = 0;
-            if (newIndex >= STATUS_COLUMNS.length) newIndex = STATUS_COLUMNS.length - 1;
+            if (newIndex >= statuses.length) newIndex = statuses.length - 1;
 
-            return { ...lead, status: STATUS_COLUMNS[newIndex].id };
+            return { ...lead, status: statuses[newIndex].name };
         }));
     };
 
@@ -79,19 +87,26 @@ export default function SalesKanbanPage() {
 
                 <div className="flex-1 overflow-x-auto pb-6 scrollbar-thin">
                     <div className="flex gap-6 h-full min-w-max">
-                        {STATUS_COLUMNS.map((col, i) => {
-                            const columnLeads = leads.filter(l => l.status === col.id);
+                        {statuses.map((status, i) => {
+                            const columnLeads = leads.filter(l => l.status === status.name);
 
                             return (
-                                <div key={i} className="w-80 flex flex-col gap-4">
+                                <div key={status.id} className="w-80 flex flex-col gap-4">
                                     <div className="flex items-center justify-between px-2">
-                                        <h3 className="font-black text-primary text-sm tracking-tight">{col.title} ({columnLeads.length})</h3>
-                                        <div className={`h-2 w-2 rounded-full ${col.color}`}></div>
+                                        <h3 className="font-black text-primary text-sm tracking-tight">{status.nameHe || status.name} ({columnLeads.length})</h3>
+                                        <div
+                                            className="h-2 w-2 rounded-full"
+                                            style={{ backgroundColor: status.color }}
+                                        ></div>
                                     </div>
 
                                     <div className="flex-1 bg-slate-100/50 rounded-2xl p-4 space-y-4 border border-slate-200/50 border-dashed min-h-[500px]">
                                         {columnLeads.map((lead) => (
-                                            <Card key={lead.id} className="p-5 shadow-sm hover:shadow-md transition-shadow cursor-grab group bg-white border-l-4" style={{ borderLeftColor: col.color.replace('bg-', '') }}>
+                                            <Card
+                                                key={lead.id}
+                                                className="p-5 shadow-sm hover:shadow-md transition-shadow cursor-grab group bg-white border-l-4"
+                                                style={{ borderLeftColor: status.color }}
+                                            >
                                                 <div className="flex justify-between items-start mb-3">
                                                     <span className="text-[10px] font-black text-accent uppercase bg-accent/5 px-2 py-0.5 rounded-full tracking-widest">{lead.interest}</span>
                                                     <div className="text-[10px] text-slate-400">{lead.date}</div>
@@ -108,7 +123,7 @@ export default function SalesKanbanPage() {
                                                     </button>
                                                     <button
                                                         onClick={() => moveStage(lead.id, 'next')}
-                                                        disabled={i === STATUS_COLUMNS.length - 1}
+                                                        disabled={i === statuses.length - 1}
                                                         className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center disabled:opacity-30">
                                                         ⬅️
                                                     </button>

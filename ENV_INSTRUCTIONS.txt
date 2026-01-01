@@ -1,0 +1,43 @@
+# מדריך הגדרות למערכת
+# ====================
+# הוראות:
+# 1. פתח את הקובץ שנקרא .env.local בתיקייה (אם הוא לא קיים, צור אותו).
+# 2. העתק את התוכן למטה לתוך הקובץ הזה.
+# 3. במקום הטקסט בעברית (כמו "הדבק כאן..."), הדבק את הקודים האמיתיים שתשיג לפי ההוראות.
+
+# --- חלק 1: מסד נתונים (Firebase) ---
+# זה הלב של המערכת. בלי זה שום דבר לא נשמר.
+# 1. כנס לאתר: https://console.firebase.google.com/
+# 2. צור פרויקט חדש (לחץ על "Add project").
+# 3. במסך הראשי של הפרויקט, לחץ על האייקון של "Web" (נראה כמו </>).
+# 4. תן שם לאפליקציה ולחץ "Register app".
+# 5. יופיע לך ריבוע עם קוד. חפש שורות שמתחילות ב-apiKey, authDomain וכו'.
+# 6. העתק את הערכים שבין הגרשיים למקומות המתאימים למטה:
+
+NEXT_PUBLIC_FIREBASE_API_KEY="כאן_את_ה_apiKey"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="כאן_את_ה_authDomain"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="כאן_את_ה_projectId"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="כאן_את_ה_storageBucket"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="כאן_את_ה_messagingSenderId"
+NEXT_PUBLIC_FIREBASE_APP_ID="כאן_את_ה_appId"
+
+# --- חלק 2: בינה מלאכותית (Gemini) ---
+# כדי שהמערכת תיתן המלצות חכמות.
+# 1. כנס לאתר: https://aistudio.google.com/app/apikey
+# 2. התחבר עם חשבון גוגל שלך.
+# 3. לחץ על "Create API key".
+# 4. העתק את הקוד הארוך שמתחיל ב-AIza... והדבק למטה:
+
+GEMINI_API_KEY="כאן_את_המפתח_מגוגל"
+
+# --- חלק 3: מיילים (Resend) - לא חובה ---
+# אם אתה רוצה שהמערכת תשלח מיילים באמת.
+# 1. כנס לאתר: https://resend.com/
+# 2. הירשם (חינם להתחלה).
+# 3. לך ל-API Keys וצור מפתח חדש.
+# 4. הדבק אותו כאן:
+
+RESEND_API_KEY="כאן_את_המפתח_מ_resend"
+
+# --- הגדרות כלליות ---
+NEXT_PUBLIC_APP_URL="http://localhost:3000"

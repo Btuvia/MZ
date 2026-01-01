@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { NotificationsPanel } from "./notifications-panel";
 
 interface NavItem {
     label: string;
@@ -12,13 +14,14 @@ interface NavItem {
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
-    role: "מנהל" | "סוכן" | "לקוח";
+    role: "מנהל" | "סוכן" | "לקוח" | "אדמין";
     navItems?: NavItem[];
 }
 
 export default function DashboardShell({ children, role, navItems = [] }: DashboardLayoutProps) {
     const pathname = usePathname();
     const [scrolled, setScrolled] = useState(false);
+    const { user } = useAuth();
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -93,9 +96,7 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <button className="h-11 w-11 flex items-center justify-center rounded-2xl glass hover:bg-accent/10 hover:text-accent transition-all text-slate-400 border-none shadow-sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
-                            </button>
+                            {user && <NotificationsPanel userId={user.uid} />}
 
                             <div className="flex items-center gap-3 p-1.5 glass-dark rounded-2xl shadow-xl border-none">
                                 <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-accent to-blue-400 flex items-center justify-center text-white font-black shadow-inner">M</div>

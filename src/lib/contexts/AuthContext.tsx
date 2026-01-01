@@ -9,12 +9,14 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     signOut: () => Promise<void>;
+    demoLogin: (role: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
     signOut: async () => { },
+    demoLogin: () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -39,11 +41,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const signOut = async () => {
         await firebaseSignOut(auth);
+        setUser(null);
         router.push("/login");
     };
 
+    const demoLogin = (role: string) => {
+        const fakeUser = {
+            uid: `demo-${role}`,
+            email: `${role}@demo.com`,
+            displayName: `Demo ${role}`,
+            emailVerified: true,
+            isAnonymous: false,
+        } as unknown as User;
+
+        setUser(fakeUser);
+
+        if (role === 'admin') router.push('/admin/dashboard');
+        else if (role === 'agent') router.push('/agent/dashboard');
+        else router.push('/client/dashboard');
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, signOut }}>
+        <AuthContext.Provider value={{ user, loading, signOut, demoLogin }}>
             {!loading && children}
         </AuthContext.Provider>
     );

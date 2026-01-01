@@ -49,7 +49,7 @@ export default function ClientsListPage() {
                             <p className="text-sm font-medium text-white/80">כל התיקים והמבוטחים במקום אחד</p>
                         </div>
                         <Link href="/admin/clients/new">
-                            <Button className="bg-white text-indigo-600 hover:bg-indigo-50 font-black shadow-lg border-none gap-2">
+                            <Button className="bg-white !text-indigo-600 hover:bg-indigo-50 font-black shadow-lg border-none gap-2">
                                 <UserPlus size={18} /> לקוח חדש
                             </Button>
                         </Link>

@@ -2,7 +2,7 @@
 import { generateGeminiContent } from "@/lib/gemini-client";
 
 export interface ExtractedPolicy {
-    id?: string;
+    id: string;
     company: string;
     type: string;
     premium: number;

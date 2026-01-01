@@ -11,6 +11,7 @@ import { Edit2, Copy, Save, Trash2, Plus, X, Upload, Share2, Send, FileText, Dow
 import { FileUpload } from "@/components/ui/file-upload";
 import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
 import { toast } from "sonner";
+import LifecycleTracker from "@/components/client/LifecycleTracker";
 
 // --- Types & Interfaces ---
 
@@ -105,6 +106,8 @@ type ClientData = {
     phone: string;
     email: string;
     status: "פעיל" | "לא פעיל" | "נמכר";
+    salesStatus?: string;
+    opsStatus?: string;
     address: { city: string; street: string; num: string };
     employment: { status: string; occupation: string };
     family: FamilyMember[];
@@ -127,6 +130,8 @@ const INITIAL_CLIENT: ClientData = {
     phone: "0534261094",
     email: "sarabismot@gmail.com",
     status: "פעיל",
+    salesStatus: "new_lead",
+    opsStatus: "sent_to_company",
     address: { city: "תל אביב", street: "הרצל", num: "1" },
     employment: { status: "שכיר", occupation: "מנהלת שיווק" },
     family: [
@@ -154,7 +159,7 @@ const INITIAL_CLIENT: ClientData = {
 export default function ClientDetailsPage() {
     const params = useParams();
     const clientId = params.id as string || "active";
-    const [activeTab, setActiveTab] = useState("פרטים אישיים");
+    const [activeTab, setActiveTab] = useState("סטטוס");
 
     // Main Persisted State
     const [client, setClient] = useState<ClientData>(INITIAL_CLIENT);
@@ -227,6 +232,11 @@ export default function ClientDetailsPage() {
         }
     };
 
+    const handleStatusUpdate = (type: 'sales' | 'ops', status: string) => {
+        saveData(type === 'sales' ? 'salesStatus' : 'opsStatus', status);
+        toast.success(`סטטוס ${type === 'sales' ? 'מכירות' : 'תפעול'} עודכן: ${status}`);
+    };
+
     const handleEdit = (type: string, item?: any) => {
         setFormData(item ? { ...item } : {});
         setEditMode({ type, item });
@@ -236,68 +246,91 @@ export default function ClientDetailsPage() {
         if (!editMode) return;
 
         const { type } = editMode;
+        console.log(`Saving modal data for ${type}...`, formData);
 
-        if (type === "family") {
-            const list = [...client.family];
-            if (formData.id) {
-                const idx = list.findIndex(i => i.id === formData.id);
-                if (idx > -1) list[idx] = formData;
-            } else {
-                list.push({ ...formData, id: Date.now().toString() });
+        try {
+            if (type === "family") {
+                const list = [...client.family];
+                if (formData.id) {
+                    const idx = list.findIndex(i => i.id === formData.id);
+                    if (idx > -1) list[idx] = formData;
+                } else {
+                    list.push({ ...formData, id: Date.now().toString() });
+                }
+                await saveData("family", list);
+                toast.success("פרטי משפחה עודכנו");
             }
-            saveData("family", list);
+            else if (type === "policy") {
+                const list = [...client.policies];
+                if (formData.id) {
+                    const idx = list.findIndex(i => i.id === formData.id);
+                    if (idx > -1) list[idx] = formData;
+                } else {
+                    list.push({ ...formData, id: Date.now().toString(), color: "from-slate-500 to-slate-700", icon: "📄" });
+                }
+                await saveData("policies", list);
+                toast.success("פוליסה עודכנה בהצלחה");
+            }
+            else if (type === "task") {
+                const priorityMap: any = { "נמוכה": "low", "בינונית": "medium", "גבוהה": "high" };
+                const statusMap: any = { "ממתינה": "pending", "בתהליך": "pending", "הושלמה": "completed" };
+
+                const taskData = {
+                    title: formData.title,
+                    priority: priorityMap[formData.priority] || "medium",
+                    date: formData.dueDate,
+                    time: "10:00",
+                    type: "task",
+                    status: statusMap[formData.status] || "pending",
+                    client: client.name,
+                    clientId: client.id,
+                    assignee: formData.assignee || "admin"
+                };
+
+                // Only call Firestore if NOT in demo/active mode
+                if (client.id && client.id !== "active" && client.id !== "new") {
+                    if (formData.id) {
+                        await firestoreService.updateTask(formData.id, taskData);
+                        setClientTasks(prev => prev.map(t => t.id === formData.id ? { ...t, ...taskData } : t));
+                    } else {
+                        const newId = await firestoreService.addTask(taskData);
+                        setClientTasks(prev => [...prev, { ...taskData, id: newId }]);
+                    }
+                } else {
+                    // Demo mode: Update locally only
+                    const mockId = formData.id || `mock-${Date.now()}`;
+                    if (formData.id) {
+                        setClientTasks(prev => prev.map(t => t.id === formData.id ? { ...t, ...taskData } : t));
+                    } else {
+                        setClientTasks(prev => [...prev, { ...taskData, id: mockId }]);
+                    }
+                }
+                toast.success("משימה עודכנה במערכת");
+            }
+            else if (type === "personal") {
+                // Personal details update
+                const updatedClient = { ...client, ...formData };
+                setClient(updatedClient);
+
+                // Check if status changed to "נמכר"
+                if (formData.status === "נמכר" && client.status !== "נמכר") {
+                    handleSoldClientAutomation(formData);
+                }
+
+                // Sync with Firestore
+                if (client.id && client.id !== "new" && client.id !== "active") {
+                    await firestoreService.updateClient(client.id, formData);
+                }
+                toast.success("פרטי לקוח עודכנו");
+            }
+
+            setEditMode(null);
+        } catch (error: any) {
+            console.error("Error saving modal data:", error);
+            toast.error(`שגיאה בשמירת הנתונים: ${error.message || "בדוק חיבור ל-Firebase"}`);
+            // Still close modal to allow user to continue in UI, or keep open if critical
+            setEditMode(null);
         }
-        else if (type === "policy") {
-            const list = [...client.policies];
-            if (formData.id) {
-                const idx = list.findIndex(i => i.id === formData.id);
-                if (idx > -1) list[idx] = formData;
-            } else {
-                list.push({ ...formData, id: Date.now().toString(), color: "from-slate-500 to-slate-700", icon: "📄" });
-            }
-            saveData("policies", list);
-        }
-        else if (type === "task") {
-            const priorityMap: any = { "נמוכה": "low", "בינונית": "medium", "גבוהה": "high" };
-            const statusMap: any = { "ממתינה": "pending", "בתהליך": "pending", "הושלמה": "completed" };
-
-            const taskData = {
-                title: formData.title,
-                priority: priorityMap[formData.priority] || "medium",
-                date: formData.dueDate,
-                time: "10:00",
-                type: "task",
-                status: statusMap[formData.status] || "pending",
-                client: client.name,
-                clientId: client.id,
-                assignee: formData.assignee || "admin"
-            };
-
-            if (formData.id) {
-                await firestoreService.updateTask(formData.id, taskData);
-                setClientTasks(prev => prev.map(t => t.id === formData.id ? { ...t, ...taskData } : t));
-            } else {
-                const newId = await firestoreService.addTask(taskData);
-                setClientTasks(prev => [...prev, { ...taskData, id: newId }]);
-            }
-        }
-        else if (type === "personal") {
-            // Personal details update
-            const updatedClient = { ...client, ...formData };
-            setClient(updatedClient);
-
-            // Check if status changed to "נמכר"
-            if (formData.status === "נמכר" && client.status !== "נמכר") {
-                handleSoldClientAutomation(formData);
-            }
-
-            // Sync with Firestore entire object or specific fields
-            if (client.id && client.id !== "new" && client.id !== "active") {
-                await firestoreService.updateClient(client.id, formData);
-            }
-        }
-
-        setEditMode(null);
     };
 
     const handleSoldClientAutomation = async (data: any) => {
@@ -622,6 +655,9 @@ export default function ClientDetailsPage() {
                         </button>
                     ))}
                 </div>
+
+                {/* --- Tab Content: Status Tracker --- */}
+                {activeTab === "סטטוס" && <LifecycleTracker client={client} onUpdate={handleStatusUpdate} />}
 
                 {/* --- Tab Content: Sales Execution --- */}
                 {activeTab === "לביצוע מכירה" && (
@@ -1282,57 +1318,142 @@ export default function ClientDetailsPage() {
                 {/* --- Modal Overlay --- */}
                 {
                     editMode && (
-                        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl relative">
-                                <button onClick={() => setEditMode(null)} className="absolute top-6 left-6 text-slate-300 hover:text-slate-600"><X /></button>
-                                <h3 className="text-xl font-black italic mb-6 text-primary">
-                                    {editMode.type === 'family' ? 'עריכת בן משפחה' : editMode.type === 'policy' ? 'עריכת פוליסה' : editMode.type === 'task' ? 'עריכת משימה' : 'עריכת פרטים'}
-                                </h3>
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                            <div className="bg-white rounded-[2.5rem] p-0 w-full max-w-lg shadow-3xl relative overflow-hidden animate-in zoom-in-95 duration-300">
+                                {/* Modal Header Decoration */}
+                                <div className="h-2 w-full bg-gradient-to-r from-accent via-indigo-500 to-purple-600"></div>
 
-                                <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-                                    {editMode.type === 'family' && (
-                                        <>
-                                            <input placeholder="שם מלא" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <input placeholder="קירבה (ילד/בן זוג)" value={formData.relation || ''} onChange={e => setFormData({ ...formData, relation: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <div className="flex gap-4">
-                                                <input type="number" placeholder="גיל" value={formData.age || ''} onChange={e => setFormData({ ...formData, age: +e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                                <label className="flex items-center gap-2 font-bold text-sm text-slate-500"><input type="checkbox" checked={formData.insured || false} onChange={e => setFormData({ ...formData, insured: e.target.checked })} /> מבוטח?</label>
+                                <div className="p-10">
+                                    <button onClick={() => setEditMode(null)} className="absolute top-8 left-8 p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-primary transition-all">
+                                        <X size={20} />
+                                    </button>
+
+                                    <div className="flex items-center gap-4 mb-10">
+                                        <div className="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent">
+                                            {editMode.type === 'task' ? <Plus size={24} /> : editMode.type === 'policy' ? <FileText size={24} /> : <Edit2 size={24} />}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-primary leading-tight">
+                                                {editMode.type === 'family' ? 'עריכת בן משפחה' : editMode.type === 'policy' ? 'עריכת פוליסה' : editMode.type === 'task' ? 'עריכת משימה' : 'עריכת פרטים'}
+                                            </h3>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">ניהול פרטי לקוח במערכת מגן זהב</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6 max-h-[60vh] overflow-y-auto px-1 scrollbar-none">
+                                        {editMode.type === 'family' && (
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">שם מלא</label>
+                                                    <input placeholder="שם בן המשפחה" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">קרבה משפחתית</label>
+                                                    <input placeholder="ילד, בן זוג, הורה..." value={formData.relation || ''} onChange={e => setFormData({ ...formData, relation: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">גיל</label>
+                                                        <input type="number" placeholder="גיל" value={formData.age || ''} onChange={e => setFormData({ ...formData, age: +e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                    </div>
+                                                    <div className="flex items-center h-full pt-6 pr-4">
+                                                        <label className="flex items-center gap-3 font-bold text-sm text-slate-500 cursor-pointer group">
+                                                            <input type="checkbox" className="h-5 w-5 rounded-lg border-2 border-slate-200 text-accent focus:ring-accent" checked={formData.insured || false} onChange={e => setFormData({ ...formData, insured: e.target.checked })} />
+                                                            <span className="group-hover:text-primary transition-colors">מבוטח במערכת?</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </>
-                                    )}
-                                    {editMode.type === 'policy' && (
-                                        <>
-                                            <select value={formData.type || ''} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none">
-                                                <option value="">סוג פוליסה</option><option>ביטוח חיים</option><option>ביטוח בריאות</option><option>פנסיה</option><option>ביטוח רכב</option><option>ביטוח דירה</option>
-                                            </select>
-                                            <input placeholder="חברה מבטחת" value={formData.company || ''} onChange={e => setFormData({ ...formData, company: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <input placeholder="מספר פוליסה" value={formData.policyNumber || ''} onChange={e => setFormData({ ...formData, policyNumber: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <div className="flex gap-2">
-                                                <input placeholder="פרמיה (₪)" value={formData.premium || ''} onChange={e => setFormData({ ...formData, premium: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                                <input placeholder="כיסוי (₪)" value={formData.coverage || ''} onChange={e => setFormData({ ...formData, coverage: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                        )}
+                                        {editMode.type === 'policy' && (
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סוג פוליסה</label>
+                                                    <select value={formData.type || ''} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
+                                                        <option value="">בחר סוג...</option><option>ביטוח חיים</option><option>ביטוח בריאות</option><option>פנסיה</option><option>ביטוח רכב</option><option>ביטוח דירה</option>
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">חברה מבטחת</label>
+                                                    <input placeholder="שם החברה" value={formData.company || ''} onChange={e => setFormData({ ...formData, company: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">מספר פוליסה</label>
+                                                    <input placeholder="מספר פוליסה רשמי" value={formData.policyNumber || ''} onChange={e => setFormData({ ...formData, policyNumber: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">פרמיה (₪)</label>
+                                                        <input placeholder="0" value={formData.premium || ''} onChange={e => setFormData({ ...formData, premium: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סכום כיסוי (₪)</label>
+                                                        <input placeholder="0" value={formData.coverage || ''} onChange={e => setFormData({ ...formData, coverage: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </>
-                                    )}
-                                    {editMode.type === 'task' && (
-                                        <>
-                                            <input placeholder="כותרת המשימה" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <div className="flex gap-2">
-                                                <select value={formData.priority || 'נמוכה'} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none"><option>נמוכה</option><option>בינונית</option><option>גבוהה</option></select>
-                                                <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
+                                        )}
+                                        {editMode.type === 'task' && (
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">כותרת המשימה</label>
+                                                    <input placeholder="מה צריך לעשות?" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">עדיפות</label>
+                                                        <select value={formData.priority || 'נמוכה'} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
+                                                            <option>נמוכה</option><option>בינונית</option><option>גבוהה</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תאריך יעד</label>
+                                                        <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סטטוס משימה</label>
+                                                    <select value={formData.status || 'ממתינה'} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
+                                                        <option>ממתינה</option><option>בתהליך</option><option>הושלמה</option>
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <select value={formData.status || 'ממתינה'} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none"><option>ממתינה</option><option>בתהליך</option><option>הושלמה</option></select>
-                                        </>
-                                    )}
-                                    {editMode.type === 'personal' && (
-                                        <>
-                                            <input placeholder="שם מלא" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <input placeholder="טלפון" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                            <input placeholder="אימייל" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        </>
-                                    )}
+                                        )}
+                                        {editMode.type === 'personal' && (
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">שם מלא</label>
+                                                    <input placeholder="שם הלקוח" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">טלפון</label>
+                                                        <input placeholder="050-0000000" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תעודת זהות</label>
+                                                        <input placeholder="ת.ז" value={formData.idNumber || ''} onChange={e => setFormData({ ...formData, idNumber: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">דואר אלקטרוני</label>
+                                                    <input placeholder="email@example.com" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סטטוס לקוח</label>
+                                                    <select value={formData.status || 'פעיל'} onChange={e => setFormData({ ...formData, status: e.target.value as any })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
+                                                        <option>פעיל</option><option>לא פעיל</option><option>נמכר</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-12 flex flex-col gap-4">
+                                        <Button onClick={handleSaveModal} className="w-full py-5 text-lg font-black italic shadow-2xl shadow-accent/20" variant="secondary">שמור שינויים במערכת</Button>
+                                        <button onClick={() => setEditMode(null)} className="text-xs font-black text-slate-400 hover:text-primary uppercase tracking-[0.2em] transition-colors">סגור ללא שמירה</button>
+                                    </div>
                                 </div>
-
-                                <Button onClick={handleSaveModal} className="w-full mt-6 bg-indigo-600 text-white rounded-xl py-4 font-black shadow-lg">שמור שינויים</Button>
                             </div>
                         </div>
                     )

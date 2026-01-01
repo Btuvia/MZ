@@ -5,6 +5,10 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { useRouter } from "next/navigation";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { LeadStatus } from "@/types/statuses";
+import { toast } from "sonner";
+import ImportLeadsModal from "@/components/leads/ImportLeadsModal";
 
 interface Lead {
     id: number;
@@ -12,7 +16,8 @@ interface Lead {
     phone: string;
     email: string;
     source: string;
-    status: string;
+    status: string; // This corresponds to status.name or status.id
+    statusId?: string; // Ideally we track ID, but for now we might match by name
     date: string;
     interest: string;
 }
@@ -28,30 +33,54 @@ export default function LeadsPage() {
     const router = useRouter();
     const [search, setSearch] = useState("");
     const [leads, setLeads] = useState<Lead[]>([]);
+    const [statuses, setStatuses] = useState<LeadStatus[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const [showWelcomeEmail, setShowWelcomeEmail] = useState<string | null>(null);
 
 
     // New Lead Form State
     const [newLead, setNewLead] = useState<Partial<Lead>>({
-        name: "", phone: "", email: "", source: "פייסבוק", status: "חדש", interest: "כללי"
+        name: "", phone: "", email: "", source: "פייסבוק", status: "", interest: "כללי"
     });
 
     // Load Data
     useEffect(() => {
-        const stored = localStorage.getItem("leads_data");
-        if (stored) {
-            setLeads(JSON.parse(stored));
-        } else {
-            setLeads(INITIAL_LEADS);
-        }
-        setIsLoading(false);
+        loadData();
     }, []);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            // 1. Load Statuses from Firestore
+            const fetchedStatuses = await firestoreService.getLeadStatuses();
+            // Sort by order
+            const sortedStatuses = (fetchedStatuses as LeadStatus[]).sort((a, b) => a.orderIndex - b.orderIndex);
+            setStatuses(sortedStatuses);
+
+            // Set default status for new lead form
+            if (sortedStatuses.length > 0) {
+                setNewLead(prev => ({ ...prev, status: sortedStatuses[0].name }));
+            }
+
+            // 2. Load Leads (Local storage for demo + real implementation would be Firestore)
+            const stored = localStorage.getItem("leads_data");
+            if (stored) {
+                setLeads(JSON.parse(stored));
+            } else {
+                setLeads(INITIAL_LEADS);
+            }
+        } catch (error) {
+            console.error("Failed to load data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Save Data
     useEffect(() => {
-        if (!isLoading) {
+        if (!isLoading && leads.length > 0) {
             localStorage.setItem("leads_data", JSON.stringify(leads));
         }
     }, [leads, isLoading]);
@@ -61,18 +90,25 @@ export default function LeadsPage() {
 
         const leadToAdd: Lead = {
             id: Date.now(),
-            name: newLead.name,
-            phone: newLead.phone,
+            name: newLead.name!,
+            phone: newLead.phone!,
             email: newLead.email || "",
             source: newLead.source || "ישיר",
-            status: newLead.status || "חדש",
+            status: newLead.status || (statuses[0]?.name || "חדש"),
             interest: newLead.interest || "כללי",
             date: new Date().toLocaleDateString("he-IL")
         };
 
         setLeads(prev => [leadToAdd, ...prev]);
         setShowModal(false);
-        setNewLead({ name: "", phone: "", email: "", source: "פייסבוק", status: "חדש", interest: "כללי" });
+        setNewLead({
+            name: "",
+            phone: "",
+            email: "",
+            source: "פייסבוק",
+            status: statuses[0]?.name || "חדש",
+            interest: "כללי"
+        });
     };
 
     const convertToClient = (lead: Lead) => {
@@ -124,6 +160,21 @@ export default function LeadsPage() {
         l.name.includes(search) || l.phone.includes(search) || l.source.includes(search)
     );
 
+    const getStatusStyle = (statusName: string) => {
+        const found = statuses.find(s => s.name === statusName);
+        if (found) {
+            return {
+                backgroundColor: `${found.color}20`, // 20% opacity
+                color: found.color,
+                borderColor: `${found.color}40`,
+            };
+        }
+        return {
+            backgroundColor: '#f1f5f9', // slate-100
+            color: '#475569', // slate-600
+        };
+    };
+
     return (
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
             <div className="space-y-6 animate-in fade-in duration-700" dir="rtl">
@@ -133,7 +184,10 @@ export default function LeadsPage() {
                         <p className="text-slate-500 font-medium">נהל את הלידים הנכנסים ויבא נתונים ממקורות חיצוניים</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" className="bg-white hover:bg-slate-50 border-slate-200 text-slate-700 text-[11px] font-black px-4 rounded-xl shadow-sm">
+                        <Button
+                            variant="outline"
+                            className="bg-white hover:bg-slate-50 border-slate-200 text-slate-700 text-[11px] font-black px-4 rounded-xl shadow-sm"
+                            onClick={() => setShowImportModal(true)}>
                             📤 יבוא מקובץ Excel
                         </Button>
                         <Button
@@ -141,7 +195,9 @@ export default function LeadsPage() {
                             className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black px-4 rounded-xl shadow-lg shadow-slate-900/10">
                             ➕ הוסף ליד ידני
                         </Button>
-                        <Button className="bg-purple-500 hover:bg-purple-600 text-white text-[11px] font-black px-4 rounded-xl shadow-lg shadow-purple-500/20">
+                        <Button
+                            onClick={() => toast.info("מערכת ניהול הקמפיינים בבנייה")}
+                            className="bg-purple-500 hover:bg-purple-600 text-white text-[11px] font-black px-4 rounded-xl shadow-lg shadow-purple-500/20">
                             🏗️ ניהול קמפיינים
                         </Button>
                     </div>
@@ -209,11 +265,10 @@ export default function LeadsPage() {
                                                 {lead.interest}
                                             </td>
                                             <td className="px-6 py-5">
-                                                <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black shadow-sm ${lead.status === "חדש" ? "bg-amber-100 text-amber-700" :
-                                                    lead.status === "מעוניין" ? "bg-indigo-100 text-indigo-700" :
-                                                        lead.status === "סגור" ? "bg-emerald-100 text-emerald-700" :
-                                                            "bg-slate-100 text-slate-600"
-                                                    }`}>
+                                                <span
+                                                    className="px-3 py-1.5 rounded-xl text-[10px] font-black shadow-sm"
+                                                    style={getStatusStyle(lead.status)}
+                                                >
                                                     {lead.status}
                                                 </span>
                                             </td>
@@ -241,78 +296,102 @@ export default function LeadsPage() {
                 </Card>
 
                 {/* Add Lead Monitor */}
-                {showModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 text-right" dir="rtl">
-                        <Card className="w-full max-w-md bg-white p-6 shadow-2xl rounded-3xl animate-in zoom-in-95">
-                            <h3 className="text-xl font-black text-primary mb-6">➕ הוספת ליד חדש</h3>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500">שם מלא</label>
-                                    <input
-                                        type="text"
-                                        className="w-full rounded-xl border-slate-200 text-sm font-bold"
-                                        value={newLead.name}
-                                        onChange={e => setNewLead({ ...newLead, name: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500">טלפון</label>
-                                    <input
-                                        type="text"
-                                        className="w-full rounded-xl border-slate-200 text-sm font-bold"
-                                        value={newLead.phone}
-                                        onChange={e => setNewLead({ ...newLead, phone: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500">אימייל</label>
-                                    <input
-                                        type="email"
-                                        className="w-full rounded-xl border-slate-200 text-sm font-bold"
-                                        value={newLead.email}
-                                        onChange={e => setNewLead({ ...newLead, email: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                {
+                    showModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 text-right" dir="rtl">
+                            <Card className="w-full max-w-md bg-white p-6 shadow-2xl rounded-3xl animate-in zoom-in-95">
+                                <h3 className="text-xl font-black text-primary mb-6">➕ הוספת ליד חדש</h3>
+                                <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500">מקור</label>
-                                        <select
+                                        <label className="text-xs font-bold text-slate-500">שם מלא</label>
+                                        <input
+                                            type="text"
                                             className="w-full rounded-xl border-slate-200 text-sm font-bold"
-                                            value={newLead.source}
-                                            onChange={e => setNewLead({ ...newLead, source: e.target.value })}
-                                        >
-                                            <option>פייסבוק</option>
-                                            <option>גוגל</option>
-                                            <option>המלצה</option>
-                                            <option>אתר</option>
-                                            <option>אחר</option>
-                                        </select>
+                                            value={newLead.name}
+                                            onChange={e => setNewLead({ ...newLead, name: e.target.value })}
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500">מוצר מתעניין</label>
+                                        <label className="text-xs font-bold text-slate-500">טלפון</label>
+                                        <input
+                                            type="text"
+                                            className="w-full rounded-xl border-slate-200 text-sm font-bold"
+                                            value={newLead.phone}
+                                            onChange={e => setNewLead({ ...newLead, phone: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500">אימייל</label>
+                                        <input
+                                            type="email"
+                                            className="w-full rounded-xl border-slate-200 text-sm font-bold"
+                                            value={newLead.email}
+                                            onChange={e => setNewLead({ ...newLead, email: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500">סטטוס</label>
                                         <select
                                             className="w-full rounded-xl border-slate-200 text-sm font-bold"
-                                            value={newLead.interest}
-                                            onChange={e => setNewLead({ ...newLead, interest: e.target.value })}
+                                            value={newLead.status}
+                                            onChange={e => setNewLead({ ...newLead, status: e.target.value })}
                                         >
-                                            <option>פנסיה</option>
-                                            <option>ביטוח חיים</option>
-                                            <option>ביטוח בריאות</option>
-                                            <option>חסכון / השתלמות</option>
-                                            <option>משכנתא</option>
-                                            <option>כללי</option>
+                                            {statuses.map(s => (
+                                                <option key={s.id} value={s.name}>{s.name}</option>
+                                            ))}
                                         </select>
                                     </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-500">מקור</label>
+                                            <select
+                                                className="w-full rounded-xl border-slate-200 text-sm font-bold"
+                                                value={newLead.source}
+                                                onChange={e => setNewLead({ ...newLead, source: e.target.value })}
+                                            >
+                                                <option>פייסבוק</option>
+                                                <option>גוגל</option>
+                                                <option>המלצה</option>
+                                                <option>אתר</option>
+                                                <option>אחר</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-500">מוצר מתעניין</label>
+                                            <select
+                                                className="w-full rounded-xl border-slate-200 text-sm font-bold"
+                                                value={newLead.interest}
+                                                onChange={e => setNewLead({ ...newLead, interest: e.target.value })}
+                                            >
+                                                <option>פנסיה</option>
+                                                <option>ביטוח חיים</option>
+                                                <option>ביטוח בריאות</option>
+                                                <option>חסכון / השתלמות</option>
+                                                <option>משכנתא</option>
+                                                <option>כללי</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="pt-4 flex gap-3">
+                                        <Button onClick={handleAddLead} className="flex-1 bg-primary text-white font-black rounded-xl">שמור ליד</Button>
+                                        <Button onClick={() => setShowModal(false)} variant="outline" className="flex-1 rounded-xl">ביטול</Button>
+                                    </div>
                                 </div>
-                                <div className="pt-4 flex gap-3">
-                                    <Button onClick={handleAddLead} className="flex-1 bg-primary text-white font-black rounded-xl">שמור ליד</Button>
-                                    <Button onClick={() => setShowModal(false)} variant="outline" className="flex-1 rounded-xl">ביטול</Button>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
+                            </Card>
+                        </div>
+                    )
+                }
+                {showImportModal && (
+                    <ImportLeadsModal
+                        isOpen={showImportModal}
+                        onClose={() => setShowImportModal(false)}
+                        onSuccess={() => {
+                            loadData(); // Reload leads after import
+                            setShowImportModal(false);
+                        }}
+                    />
                 )}
-            </div>
-        </DashboardShell>
+            </div >
+        </DashboardShell >
     );
 }
