@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
-import { Plus, Edit2, Trash2, Tag, Save, X, AlertCircle, CheckCircle2, Palette } from "lucide-react";
+import { Plus, Edit2, Trash2, Tag, Save, X, CheckCircle2 } from "lucide-react";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { TaskSubject } from "@/types/subject";
 import { DEFAULT_SUBJECTS } from "@/types/subject";
@@ -264,17 +264,17 @@ export default function SubjectsPage() {
                                             )}
                                             <div className="flex items-center gap-3 mt-2">
                                                 {subject.relatedToPolicy && (
-                                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                                    <span className="inline-flex items-center whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                                                         📋 קשור לפוליסה
                                                     </span>
                                                 )}
                                                 {subject.isFutureLead && (
-                                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                                    <span className="inline-flex items-center whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                                                         🎯 לקוח עתידי
                                                     </span>
                                                 )}
                                                 {subject.defaultWorkflowId && (
-                                                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                                    <span className="inline-flex items-center whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
                                                         🔄 תהליך ברירת מחדל
                                                     </span>
                                                 )}

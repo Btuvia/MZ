@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini, getGeminiStatus } from "@/app/actions/gemini";
 import { Copy, Plus, Trash2, Edit2, Save, X, Check, RefreshCw, Power } from "lucide-react";
 
 // Types
@@ -47,7 +47,7 @@ const INITIAL_INTEGRATIONS: Integration[] = [
 ];
 
 export default function AgencyManagementPage() {
-    const [apiKey, setApiKey] = useState("");
+    const [isGeminiConfigured, setIsGeminiConfigured] = useState(false);
     const [activeTab, setActiveTab] = useState("צוות וסוכנים");
 
     // Persistent State
@@ -102,8 +102,7 @@ export default function AgencyManagementPage() {
             { title: "ברכת יום הולדת", desc: "יום הולדת ללקוח -> שלח הודעת ברכה אישית בוואטסאפ", active: true, icon: "🎂" }
         ]));
 
-        const storedKey = localStorage.getItem("gemini_api_key");
-        if (storedKey) setApiKey(storedKey);
+        getGeminiStatus().then((s) => setIsGeminiConfigured(Boolean(s.configured))).catch(() => setIsGeminiConfigured(false));
 
         setIsLoading(false);
     }, []);
@@ -187,25 +186,25 @@ export default function AgencyManagementPage() {
 
     // AI Handlers (Same as before, simplified for brevity)
     const handleGenerateField = async () => {
-        if (!apiKey || !fieldInput) return;
+        if (!fieldInput) return;
         setIsGeneratingField(true);
         setGeneratedField(null);
         try {
             const prompt = `Create a CRM field schema JSON for: ${fieldInput}. Return ONLY JSON: { "label": string, "type": "text"|"number"|"select"|"date", "options"?: string[], "description": string }`;
-            const result = await generateGeminiContent(prompt, apiKey);
+            const result = await generateWithGemini(prompt);
             if (!result.error) setGeneratedField(JSON.parse(result.text.replace(/```json/g, '').replace(/```/g, '').trim()));
         } catch (e) { console.error(e); } finally { setIsGeneratingField(false); }
     };
 
     const handleGenerateAutomation = async () => {
-        if (!apiKey || !automationInput) return;
+        if (!automationInput) return;
         const msg = automationInput;
         setAutomationChat(p => [...p, { role: 'user', content: msg }]);
         setAutomationInput("");
         setIsGeneratingAutomation(true);
         try {
             const prompt = `Act as automation architect. User Request: "${msg}". Return JSON: { "title": string, "desc": string, "icon": emoji, "active": true }`;
-            const result = await generateGeminiContent(prompt, apiKey);
+            const result = await generateWithGemini(prompt);
             if (!result.error) {
                 const newAuto = JSON.parse(result.text.replace(/```json/g, '').replace(/```/g, '').trim());
                 setAutomations(p => [...p, newAuto]);
@@ -231,9 +230,9 @@ export default function AgencyManagementPage() {
                         <p className="text-slate-500 font-medium">ניהול {settings.name}, צוות, ואוטומציות</p>
                     </div>
                     <div className="flex items-center gap-4 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
-                        <div className={`flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl shadow-sm border border-slate-200 transition-colors ${apiKey ? 'border-emerald-200' : ''}`}>
-                            <span className={`h-2 w-2 rounded-full animate-pulse ${apiKey ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
-                            <span className="text-[10px] font-black text-slate-500 uppercase">{apiKey ? 'API פעיל' : 'API חסר'}</span>
+                        <div className={`flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl shadow-sm border border-slate-200 transition-colors ${isGeminiConfigured ? 'border-emerald-200' : ''}`}>
+                            <span className={`h-2 w-2 rounded-full animate-pulse ${isGeminiConfigured ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{isGeminiConfigured ? 'GEMINI פעיל' : 'GEMINI חסר'}</span>
                         </div>
                     </div>
                 </header>
@@ -477,16 +476,19 @@ export default function AgencyManagementPage() {
 
                                 <Card className="p-8 border-none shadow-xl bg-gradient-to-br from-slate-900 to-indigo-900 text-white rounded-[2.5rem]">
                                     <h4 className="text-lg font-black italic mb-6">Gemini API Key</h4>
-                                    <p className="text-indigo-200 text-sm mb-6">מפתח זה משמש את כל רכיבי ה-AI במערכת. שמור עליו מכל משמר.</p>
-                                    <div className="bg-white/10 border border-white/20 p-2 rounded-2xl flex items-center backdrop-blur-md">
-                                        <input
-                                            type="password"
-                                            value={apiKey}
-                                            onChange={e => { setApiKey(e.target.value); localStorage.setItem("gemini_api_key", e.target.value); }}
-                                            placeholder="sk-..."
-                                            className="bg-transparent border-none text-white w-full outline-none px-4 font-mono text-sm"
-                                        />
-                                        <div className="h-8 w-8 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">✓</div>
+                                    <p className="text-indigo-200 text-sm mb-6">
+                                        ה-AI מוגדר בצד השרת באמצעות <span className="font-mono">GEMINI_API_KEY</span> בקובץ <span className="font-mono">.env.local</span>.
+                                    </p>
+                                    <div className="bg-white/10 border border-white/20 p-4 rounded-2xl flex items-center justify-between backdrop-blur-md">
+                                        <div>
+                                            <p className="text-xs font-black uppercase tracking-widest text-indigo-200">סטטוס</p>
+                                            <p className="text-sm font-bold">
+                                                {isGeminiConfigured ? "מחובר" : "לא מוגדר"}
+                                            </p>
+                                        </div>
+                                        <div className={`h-8 w-8 rounded-xl flex items-center justify-center shadow-lg ${isGeminiConfigured ? "bg-emerald-500" : "bg-red-400"}`}>
+                                            {isGeminiConfigured ? "✓" : "!"}
+                                        </div>
                                     </div>
                                 </Card>
                             </div>

@@ -4,14 +4,22 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
     title?: string;
     className?: string;
+    variant?: 'default' | 'gold' | 'blue' | 'premium';
 }
 
-export const Card = ({ children, title, className = "", ...props }: CardProps) => {
+export const Card = ({ children, title, className = "", variant = 'default', ...props }: CardProps) => {
+    const variantStyles = {
+        default: 'glass-card',
+        gold: 'glass-card border-amber-500/30 shadow-gold',
+        blue: 'glass-card border-blue-500/30 shadow-blue',
+        premium: 'glass-card border-amber-500/20 hover:border-amber-500/40 hover:shadow-gold'
+    };
+
     return (
-        <div className={`glass rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-accent/5 hover:-translate-y-1 ${className}`} {...props}>
+        <div className={`${variantStyles[variant]} rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${className}`} {...props}>
             {title && (
-                <h3 className="mb-4 text-lg font-black text-primary flex items-center gap-2">
-                    <div className="h-1.5 w-4 bg-accent rounded-full"></div>
+                <h3 className="mb-4 text-lg font-black text-amber-100 flex items-center gap-2">
+                    <div className="h-1.5 w-4 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></div>
                     {title}
                 </h3>
             )}
@@ -21,7 +29,7 @@ export const Card = ({ children, title, className = "", ...props }: CardProps) =
 };
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'glass';
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'gold' | 'blue' | 'premium';
     size?: 'sm' | 'md' | 'lg';
 }
 
@@ -35,11 +43,14 @@ export const Button = ({
     const baseStyles = "inline-flex items-center justify-center font-bold transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
 
     const variants = {
-        primary: "bg-primary text-white shadow-lg shadow-primary/20 hover:bg-slate-800 rounded-2xl",
-        secondary: "bg-accent text-white shadow-lg shadow-accent/25 hover:bg-blue-600 rounded-2xl",
-        outline: "border-2 border-slate-200 text-slate-600 hover:border-accent hover:text-accent rounded-2xl bg-white/50 backdrop-blur-sm",
-        ghost: "text-slate-500 hover:bg-slate-100/50 hover:text-primary rounded-xl",
-        glass: "glass-dark text-white rounded-2xl hover:bg-slate-800/90"
+        primary: "bg-gradient-to-r from-slate-800 to-slate-900 text-amber-100 shadow-lg shadow-black/30 hover:shadow-xl hover:shadow-amber-500/20 rounded-2xl border border-amber-500/20 hover:border-amber-500/40",
+        secondary: "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 rounded-2xl",
+        outline: "border-2 border-amber-500/30 text-amber-200 hover:border-amber-500/60 hover:bg-amber-500/10 rounded-2xl backdrop-blur-sm",
+        ghost: "text-slate-400 hover:bg-slate-800/50 hover:text-amber-200 rounded-xl",
+        glass: "glass-dark text-amber-100 rounded-2xl hover:bg-slate-800/90 border border-amber-500/20",
+        gold: "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-900 shadow-lg shadow-amber-500/40 hover:shadow-xl hover:shadow-amber-500/50 rounded-2xl font-black",
+        blue: "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/50 rounded-2xl font-black",
+        premium: "bg-gradient-to-r from-amber-500 via-amber-400 to-blue-500 text-slate-900 shadow-lg shadow-amber-500/30 hover:shadow-xl rounded-2xl font-black"
     };
 
     const sizes = {
@@ -58,13 +69,15 @@ export const Button = ({
     );
 };
 
-export const Badge = ({ children, variant = 'primary', className = "" }: { children: React.ReactNode, variant?: 'primary' | 'success' | 'warning' | 'error' | 'outline', className?: string }) => {
+export const Badge = ({ children, variant = 'primary', className = "" }: { children: React.ReactNode, variant?: 'primary' | 'success' | 'warning' | 'error' | 'outline' | 'gold' | 'blue', className?: string }) => {
     const styles = {
-        primary: "bg-accent/10 text-accent",
-        success: "bg-success/10 text-success",
-        warning: "bg-warning/10 text-warning",
-        error: "bg-error/10 text-error",
-        outline: "bg-transparent border border-slate-200 text-slate-500"
+        primary: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+        success: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+        warning: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+        error: "bg-red-500/20 text-red-300 border border-red-500/30",
+        outline: "bg-transparent border border-slate-600 text-slate-400",
+        gold: "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/20",
+        blue: "bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm shadow-blue-500/20"
     };
 
     return (

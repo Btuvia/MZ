@@ -156,8 +156,8 @@ export default function StatusesPage() {
                 <div className="mb-6">
                     <TabNavigation
                         tabs={[
-                            { id: 'lead', label: 'סטטוסי לידים', labelHe: 'סטטוסי לידים', icon: '👥', badge: leadStatuses.length },
-                            { id: 'task', label: 'סטטוסי משימות', labelHe: 'סטטוסי משימות', icon: '✅', badge: taskStatuses.length },
+                            { id: 'lead', label: 'Lead Statuses', labelHe: 'סטטוסי לידים', icon: '👥', badge: leadStatuses.length },
+                            { id: 'task', label: 'Task Statuses', labelHe: 'סטטוסי משימות', icon: '✅', badge: taskStatuses.length },
                         ]}
                         activeTab={activeTab}
                         onTabChange={(tab) => setActiveTab(tab as 'lead' | 'task')}

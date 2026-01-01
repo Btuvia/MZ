@@ -9,11 +9,11 @@ import { firestoreService } from "@/lib/firebase/firestore-service";
 import { toast } from "sonner";
 import { Timestamp } from "firebase/firestore";
 
-import { analyzeInsuranceDocument, ExtractedPolicy } from "@/lib/ai/ai-service";
+import { analyzeInsuranceDocument, AnalysisResult } from "@/lib/ai/ai-service";
 
 export default function DocumentIntelligencePage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState<{ clientName: string, policies: ExtractedPolicy[] } | null>(null);
+    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const handleUpload = async (file: File) => {
@@ -21,14 +21,7 @@ export default function DocumentIntelligencePage() {
         setAnalysisResult(null);
 
         try {
-            const apiKey = localStorage.getItem("gemini_api_key");
-            if (!apiKey) {
-                toast.error("חסר מפתח API. נא להגדיר בהגדרות סוכנות.");
-                setIsAnalyzing(false);
-                return;
-            }
-
-            const result = await analyzeInsuranceDocument(file, apiKey);
+            const result = await analyzeInsuranceDocument(file);
 
             if (result) {
                 setAnalysisResult(result);

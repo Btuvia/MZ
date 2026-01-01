@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, Button } from "./base";
 import { ClientProfile } from "@/lib/services/analysis-service";
 
@@ -11,18 +11,14 @@ interface LeadReviewModalProps {
     initialData: ClientProfile;
 }
 
-export default function LeadReviewModal({ isOpen, onClose, onSubmit, initialData }: LeadReviewModalProps) {
+export default function LeadReviewModal({ isOpen, ...rest }: LeadReviewModalProps) {
+    if (!isOpen) return null;
+    return <LeadReviewModalInner {...rest} />;
+}
+
+function LeadReviewModalInner({ onClose, onSubmit, initialData }: Omit<LeadReviewModalProps, "isOpen">) {
     const [formData, setFormData] = useState<ClientProfile>(initialData);
     const [errors, setErrors] = useState<Record<string, string>>({});
-
-    useEffect(() => {
-        if (isOpen) {
-            setFormData(initialData);
-            setErrors({});
-        }
-    }, [isOpen, initialData]);
-
-    if (!isOpen) return null;
 
     const validate = () => {
         const newErrors: Record<string, string> = {};

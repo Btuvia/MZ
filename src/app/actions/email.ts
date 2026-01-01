@@ -6,7 +6,29 @@ const resend = process.env.RESEND_API_KEY
     ? new Resend(process.env.RESEND_API_KEY)
     : null;
 
-export async function sendEmail(to: string, subject: string, html: string) {
+type EmailParams = {
+    to: string;
+    subject: string;
+    body?: string;
+    html?: string;
+};
+
+export async function sendEmail(params: EmailParams | string, subject?: string, html?: string) {
+    // Support both old format (3 params) and new format (object)
+    let to: string;
+    let emailSubject: string;
+    let emailHtml: string;
+
+    if (typeof params === 'object') {
+        to = params.to;
+        emailSubject = params.subject;
+        emailHtml = params.html || params.body || '';
+    } else {
+        to = params;
+        emailSubject = subject || '';
+        emailHtml = html || '';
+    }
+
     console.log("Attempting to send email to:", to);
 
     if (!resend) {
@@ -20,8 +42,8 @@ export async function sendEmail(to: string, subject: string, html: string) {
         const data = await resend.emails.send({
             from: 'InsurCRM <onboarding@resend.dev>', // Default Resend testing domain
             to: [to],
-            subject: subject,
-            html: html,
+            subject: emailSubject,
+            html: emailHtml,
         });
 
         console.log("Email sent successfully:", data);

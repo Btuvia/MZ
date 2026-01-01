@@ -4,7 +4,11 @@ import { adminDb } from "@/lib/firebase/admin";
 
 export async function createClientAction(data: any) {
     if (!adminDb) {
-        throw new Error("Firebase Admin not initialized. Check server logs.");
+        console.error("Firebase Admin not initialized");
+        return { 
+            success: false, 
+            error: "Firebase Admin לא מוגדר. נסה להשתמש במצב דמו."
+        };
     }
 
     try {
@@ -17,6 +21,9 @@ export async function createClientAction(data: any) {
         return { success: true, id: docRef.id };
     } catch (error: any) {
         console.error("Server Action Error:", error);
-        throw new Error(error.message || "Failed to create client on server.");
+        return { 
+            success: false, 
+            error: error.message || "שגיאה ביצירת הלקוח"
+        };
     }
 }

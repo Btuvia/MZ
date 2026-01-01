@@ -1,30 +1,38 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from "next/image";
 
+type RainElement = {
+    id: number;
+    left: number;
+    duration: number;
+    delay: number;
+    type: 'coin' | 'shield';
+};
+
 export function CommissionsRain({ isActive, onComplete }: { isActive: boolean; onComplete: () => void }) {
-    const [elements, setElements] = useState<{ id: number; left: number; duration: number; delay: number; type: 'coin' | 'shield' }[]>([]);
+    const [elements, setElements] = useState<RainElement[]>([]);
 
     useEffect(() => {
-        if (isActive) {
-            // Generate rain elements
-            const newElements = Array.from({ length: 50 }).map((_, i) => ({
-                id: i,
-                left: Math.random() * 100, // Random horizontal position
-                duration: 2 + Math.random() * 3, // Random falling speed
-                delay: Math.random() * 2, // Random start delay
-                type: Math.random() > 0.3 ? 'coin' : 'shield' // 70% coins, 30% shields
-            }));
-            setElements(newElements as any);
+        if (!isActive) return;
 
-            // Cleanup after animation
-            const timer = setTimeout(() => {
-                setElements([]);
-                onComplete();
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
+        const newElements: RainElement[] = Array.from({ length: 50 }).map((_, i) => ({
+            id: i,
+            left: Math.random() * 100,
+            duration: 2 + Math.random() * 3,
+            delay: Math.random() * 2,
+            type: Math.random() > 0.3 ? 'coin' : 'shield'
+        }));
+
+        setElements(newElements);
+
+        const timer = setTimeout(() => {
+            setElements([]);
+            onComplete();
+        }, 5000);
+
+        return () => clearTimeout(timer);
     }, [isActive, onComplete]);
 
     if (!isActive) return null;

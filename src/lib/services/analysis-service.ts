@@ -1,4 +1,5 @@
 import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini } from "@/app/actions/gemini";
 
 export interface Policy {
     id: string;
@@ -37,11 +38,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-export const analyzeDocument = async (file: File, apiKey: string): Promise<AnalysisResult> => {
-    if (!apiKey) {
-        throw new Error("Missing API Key");
-    }
-
+export const analyzeDocument = async (file: File): Promise<AnalysisResult> => {
     const base64 = await fileToBase64(file);
     const mimeType = file.type;
 
@@ -70,7 +67,7 @@ export const analyzeDocument = async (file: File, apiKey: string): Promise<Analy
     Do not add markdown formatting like \`\`\`json. Just the raw JSON string.
     `;
 
-    const response = await generateGeminiContent(basePrompt, apiKey, { base64, mimeType });
+    const response = await generateWithGemini(basePrompt, { base64, mimeType });
 
     if (response.error) {
         throw new Error(response.error);
@@ -78,7 +75,7 @@ export const analyzeDocument = async (file: File, apiKey: string): Promise<Analy
 
     try {
         // Clean up any markdown code blocks if the model adds them despite instructions
-        let cleanText = response.text.replace(/```json/g, "").replace(/```/g, "").trim();
+        const cleanText = response.text.replace(/```json/g, "").replace(/```/g, "").trim();
         const data = JSON.parse(cleanText);
         return data as AnalysisResult;
     } catch (e) {

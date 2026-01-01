@@ -64,19 +64,19 @@ export const firestoreService = {
 
     // --- Tasks ---
 
-    async getTask(id: string) {
+    async getTask(id: string): Promise<import('@/types').Task | null> {
         if (!id) return null;
         const docRef = doc(db, "tasks", id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as any;
+            return { id: docSnap.id, ...docSnap.data() } as import('@/types').Task;
         }
         return null;
     },
 
-    async getTasks() {
+    async getTasks(): Promise<import('@/types').Task[]> {
         const querySnapshot = await getDocs(collection(db, "tasks"));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as import('@/types').Task));
     },
 
     async getTasksForClient(clientId: string) {
@@ -449,12 +449,12 @@ export const firestoreService = {
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     },
 
-    async getWorkflow(id: string) {
+    async getWorkflow(id: string): Promise<import('@/types/workflow').Workflow | null> {
         if (!id) return null;
         const docRef = doc(db, "workflows", id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as any;
+            return { id: docSnap.id, ...docSnap.data() } as import('@/types/workflow').Workflow;
         }
         return null;
     },
@@ -485,22 +485,22 @@ export const firestoreService = {
     // WORKFLOW INSTANCES
     // ============================================
 
-    async getWorkflowInstances(clientId?: string) {
+    async getWorkflowInstances(clientId?: string): Promise<import('@/types/workflow').WorkflowInstance[]> {
         if (clientId) {
             const q = query(collection(db, "workflow_instances"), where("clientId", "==", clientId));
             const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as import('@/types/workflow').WorkflowInstance));
         }
         const querySnapshot = await getDocs(collection(db, "workflow_instances"));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as import('@/types/workflow').WorkflowInstance));
     },
 
-    async getWorkflowInstance(id: string) {
+    async getWorkflowInstance(id: string): Promise<import('@/types/workflow').WorkflowInstance | null> {
         if (!id) return null;
         const docRef = doc(db, "workflow_instances", id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as any;
+            return { id: docSnap.id, ...docSnap.data() } as import('@/types/workflow').WorkflowInstance;
         }
         return null;
     },
@@ -617,11 +617,11 @@ export const firestoreService = {
     // ENHANCED TASK QUERIES
     // ============================================
 
-    async getTasksByWorkflow(workflowId: string) {
+    async getTasksByWorkflow(workflowId: string): Promise<import('@/types').Task[]> {
         if (!workflowId) return [];
         const q = query(collection(db, "tasks"), where("workflowId", "==", workflowId));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as import('@/types').Task));
     },
 
     async getTasksBySubject(subjectId: string) {
@@ -677,7 +677,7 @@ export const firestoreService = {
     /**
      * Add a document to any collection
      */
-    async addDocument(collectionName: string, data: any): Promise<string> {
+    async addDocument(collectionName: string, data: Record<string, unknown>): Promise<string> {
         const docRef = await addDoc(collection(db, collectionName), {
             ...data,
             createdAt: data.createdAt || Timestamp.now(),
@@ -734,6 +734,47 @@ export const firestoreService = {
             return { id: docSnap.id, ...docSnap.data() };
         }
         return null;
+    },
+
+    // --- Collaborations ---
+    
+    async getCollaborations(): Promise<any[]> {
+        const querySnapshot = await getDocs(collection(db, "collaborations"));
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+                contractSentAt: data.contractSentAt?.toDate ? data.contractSentAt.toDate() : data.contractSentAt ? new Date(data.contractSentAt) : undefined,
+            };
+        });
+    },
+
+    async createCollaboration(data: any): Promise<string> {
+        const docRef = await addDoc(collection(db, "collaborations"), {
+            ...data,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async updateCollaboration(id: string, data: any): Promise<void> {
+        const docRef = doc(db, "collaborations", id);
+        const updateData: any = {
+            ...data,
+            updatedAt: Timestamp.now()
+        };
+        // Convert Date to Timestamp if needed
+        if (data.contractSentAt instanceof Date) {
+            updateData.contractSentAt = Timestamp.fromDate(data.contractSentAt);
+        }
+        await updateDoc(docRef, updateData);
+    },
+
+    async deleteCollaboration(id: string): Promise<void> {
+        await deleteDoc(doc(db, "collaborations", id));
     },
 };
 

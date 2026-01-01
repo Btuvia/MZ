@@ -1,9 +1,38 @@
 "use client";
 
 import { Card } from "@/components/ui/base";
-import { Sun, Mic, PlayCircle } from "lucide-react";
+import { Sun, Mic } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
 
 export default function DailyBriefing() {
+    const { isSupported, isListening, transcript, start, stop, reset } = useSpeechRecognition({ lang: "he-IL" });
+    const [sendOnStop, setSendOnStop] = useState(false);
+
+    useEffect(() => {
+        if (isListening) return;
+        if (!sendOnStop) return;
+
+        setSendOnStop(false);
+        const text = transcript.trim();
+        if (text && typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("magen:voiceCommand", { detail: { text } }));
+        }
+        reset();
+    }, [isListening, reset, sendOnStop, transcript]);
+
+    const handleVoiceClick = () => {
+        if (!isSupported) return;
+        if (isListening) {
+            setSendOnStop(true);
+            stop();
+            return;
+        }
+
+        reset();
+        start();
+    };
+
     return (
         <Card className="bg-gradient-to-r from-indigo-900/90 to-slate-900/90 backdrop-blur-xl text-white border-none shadow-2xl p-6 relative overflow-hidden group">
             {/* Background decoration */}
@@ -24,13 +53,14 @@ export default function DailyBriefing() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/10 text-xs font-bold">
-                        <PlayCircle size={16} />
-                        השמע תדריך
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105 text-xs font-bold">
+                    <button
+                        type="button"
+                        onClick={handleVoiceClick}
+                        disabled={!isSupported}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:pointer-events-none text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105 text-xs font-bold"
+                    >
                         <Mic size={16} />
-                        פקודה קולית
+                        {isListening ? "מקליט..." : "פקודה קולית"}
                     </button>
                 </div>
             </div>

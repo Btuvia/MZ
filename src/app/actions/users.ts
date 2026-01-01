@@ -5,7 +5,14 @@ import { sendEmail } from "./email";
 
 export async function createUser(data: any) {
     if (!adminAuth || !adminDb) {
-        return { success: false, error: "Firebase Admin not initialized" };
+        // Firebase Admin requires Service Account credentials
+        // For now, return a helpful message
+        console.warn("Firebase Admin not configured - user creation requires Service Account setup");
+        return { 
+            success: false, 
+            error: "Firebase Admin לא מוגדר. נדרש Service Account.",
+            hint: "ראה ENV_INSTRUCTIONS.txt להוראות הגדרה מלאות"
+        };
     }
 
     const { email, firstName, lastName, role, agency } = data;

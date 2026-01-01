@@ -1,8 +1,8 @@
 
-import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini } from "@/app/actions/gemini";
 
 export interface ExtractedPolicy {
-    id: string;
+    id?: string;
     company: string;
     type: string;
     premium: number;
@@ -28,7 +28,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-export const analyzeInsuranceDocument = async (file: File, apiKey: string): Promise<AnalysisResult | null> => {
+export const analyzeInsuranceDocument = async (file: File): Promise<AnalysisResult | null> => {
     try {
         const base64 = await fileToBase64(file);
 
@@ -52,7 +52,7 @@ export const analyzeInsuranceDocument = async (file: File, apiKey: string): Prom
         }
         `;
 
-        const response = await generateGeminiContent(prompt, apiKey, {
+        const response = await generateWithGemini(prompt, {
             base64,
             mimeType: file.type
         });

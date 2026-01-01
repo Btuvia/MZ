@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini } from "@/app/actions/gemini";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
@@ -11,7 +11,6 @@ export default function AIToolsPage() {
     const [activeTool, setActiveTool] = useState("quote");
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiOutput, setAiOutput] = useState("");
-    const [apiKey, setApiKey] = useState("");
     const [showHistory, setShowHistory] = useState(false);
     const [outputHistory, setOutputHistory] = useState<{ id: number, date: string, type: string, content: string }[]>([]);
     const [copied, setCopied] = useState(false);
@@ -43,8 +42,6 @@ export default function AIToolsPage() {
     };
 
     useEffect(() => {
-        const key = localStorage.getItem("gemini_api_key");
-        if (key) setApiKey(key);
         const savedHistory = localStorage.getItem("ai_history");
         if (savedHistory) setOutputHistory(JSON.parse(savedHistory));
     }, []);
@@ -85,11 +82,6 @@ export default function AIToolsPage() {
     };
 
     const handleGenerate = async () => {
-        if (!apiKey) {
-            setAiOutput("Error: Missing Gemini API Key. Please configure it in 'ניהול סוכנות' > 'הגדרות מערכת'.");
-            return;
-        }
-
         setIsGenerating(true);
         setAiOutput("Thinking...");
 
@@ -150,7 +142,7 @@ export default function AIToolsPage() {
                 prompt = "Explain why AI is useful for insurance agents in 1 sentence (Hebrew).";
         }
 
-        const result = await generateGeminiContent(prompt, apiKey, fileData);
+        const result = await generateWithGemini(prompt, fileData);
 
         if (result.error) {
             setAiOutput(`Error: ${result.error}`);

@@ -1,57 +1,136 @@
-export type ProductType = 'life' | 'health' | 'pension' | 'manager_insurance' | 'investment' | 'finance';
+// Types for commission calculation
+export type ProductType = 'life' | 'health' | 'pension' | 'keren_hishtalmut' | 'pension_transfer' | 'manager_insurance' | 'investment' | 'finance' | 'elementary';
 
 export interface DealData {
     id: string;
     productType: ProductType;
-    company: string; // e.g., 'Harel', 'Menora'
-    monthlyPremium?: number; // For Insurance
-    salary?: number; // For Pension/Managers (Niud)
-    accumulatedAmount?: number; // For Pension (Tzvira)
+    company: string;
+    monthlyPremium?: number;       // For Insurance
+    salary?: number;               // For Pension Transfer (ניוד)
+    accumulatedAmount?: number;    // For Pension/Keren Hishtalmut (צבירה)
     startDate: Date;
-    status: 'active' | 'cancelled';
+    status: 'active' | 'cancelled' | 'pending';
+    opsStatus?: string;            // סטטוס תפעול - חובה "פוליסה הופקה" לחישוב
     cancellationDate?: Date;
+    agentName?: string;
+    clientName?: string;
+    clientId?: string;
 }
 
 export interface CommissionResult {
-    oneTimeCommission: number; // Heikef / Niud
-    monthlyCommission: number; // Nifraims
-    clawbackAmount: number; // If cancelled, how much to return
+    heikefCommission: number;      // עמלת היקף
+    nifraaimCommission: number;    // עמלת נפרעים (חודשי)
+    tzviraCommission: number;      // עמלת צבירה
+    niudCommission: number;        // עמלת ניוד
+    totalOneTime: number;          // סה"כ חד פעמי
+    totalMonthly: number;          // סה"כ חודשי
+    clawbackAmount: number;        // החזר עמלה (ביטול)
     currency: 'ILS';
     notes: string[];
+    breakdown: CommissionBreakdown;
+    // Backwards compatibility
+    oneTimeCommission: number;
+    monthlyCommission: number;
+}
+
+export interface CommissionBreakdown {
+    type: string;
+    formula: string;
+    values: Record<string, number>;
+}
+
+export interface AgentSalaryMix {
+    userId: string;
+    agentName: string;
+    basePercentage: number;        // אחוז בסיס מהעמלות (למשל 40%)
+    heikefPercentage: number;      // אחוז מעמלת היקף
+    nifraaimPercentage: number;    // אחוז מעמלת נפרעים
+    tzviraPercentage: number;      // אחוז מעמלת צבירה
+    niudPercentage: number;        // אחוז מעמלת ניוד
 }
 
 export class CommissionCalculator {
+    // --- קבועים לפי הדרישות ---
+    
+    // ביטוח: עמלת היקף = פרמיה × 9.7
+    private static INSURANCE_HEIKEF_MULTIPLIER = 9.7;
+    
+    // ביטוח: עמלת נפרעים = 23% מהפרמיה החודשית
+    private static INSURANCE_NIFRAIM_PERCENTAGE = 0.23;
+    
+    // פנסיה: על כל 1,000,000 ₪ צבירה = 3,000 ₪ עמלה
+    private static PENSION_TZVIRA_RATE = 3000;
+    private static PENSION_TZVIRA_THRESHOLD = 1000000;
+    
+    // קרן השתלמות: על כל 1,000,000 ₪ = 7,000 ₪ עמלה
+    private static KEREN_TZVIRA_RATE = 7000;
+    private static KEREN_TZVIRA_THRESHOLD = 1000000;
+    
+    // ניוד פנסיה: משכורת × 12 × 0.008
+    private static PENSION_NIUD_MULTIPLIER = 0.008;
 
-    // --- Constants ---
-    private static INSURANCE_HEIKEF_MULTIPLIER = 9.6;
-    private static INSURANCE_NIFRAIMS_PERCENTAGE = 0.20;
-    private static PENSION_NIUD_PERCENTAGE = 0.08;
-    private static PENSION_TZVIRA_RATE = 3000; // Per 1M
-    private static PENSION_TZVIRA_THRESHOLD = 1000000; // 1M
-
+    /**
+     * חישוב עמלות - מופעל רק כאשר סטטוס תפעול = "פוליסה הופקה"
+     */
     static calculate(deal: DealData): CommissionResult {
         const result: CommissionResult = {
-            oneTimeCommission: 0,
-            monthlyCommission: 0,
+            heikefCommission: 0,
+            nifraaimCommission: 0,
+            tzviraCommission: 0,
+            niudCommission: 0,
+            totalOneTime: 0,
+            totalMonthly: 0,
             clawbackAmount: 0,
             currency: 'ILS',
-            notes: []
+            notes: [],
+            breakdown: {
+                type: '',
+                formula: '',
+                values: {}
+            },
+            // Backwards compatibility
+            oneTimeCommission: 0,
+            monthlyCommission: 0
         };
+
+        // בדיקה: עמלות מחושבות רק כאשר סטטוס תפעול = "פוליסה הופקה"
+        const validOpsStatuses = ['policy_issued', 'פוליסה הופקה', 'issued'];
+        if (deal.opsStatus && !validOpsStatuses.includes(deal.opsStatus)) {
+            result.notes.push('⏳ העמלה תחושב לאחר הפקת הפוליסה');
+            return result;
+        }
 
         switch (deal.productType) {
             case 'life':
             case 'health':
-                this.calculateInsurance(deal, result);
+            case 'elementary':
+                this.calculateInsuranceCommission(deal, result);
                 break;
             case 'pension':
+                this.calculatePensionCommission(deal, result);
+                break;
+            case 'keren_hishtalmut':
+                this.calculateKerenCommission(deal, result);
+                break;
+            case 'pension_transfer':
+                this.calculatePensionTransferCommission(deal, result);
+                break;
             case 'manager_insurance':
             case 'investment':
             case 'finance':
-                this.calculateFinance(deal, result);
+                this.calculateFinanceCommission(deal, result);
                 break;
         }
 
-        // Calculate Clawback if cancelled
+        // חישוב סיכומים
+        result.totalOneTime = result.heikefCommission + result.tzviraCommission + result.niudCommission;
+        result.totalMonthly = result.nifraaimCommission;
+        
+        // Backwards compatibility
+        result.oneTimeCommission = result.totalOneTime;
+        result.monthlyCommission = result.totalMonthly;
+
+        // חישוב החזר עמלה (clawback) במקרה של ביטול
         if (deal.status === 'cancelled' && deal.cancellationDate) {
             this.calculateClawback(deal, result);
         }
@@ -59,59 +138,162 @@ export class CommissionCalculator {
         return result;
     }
 
-    private static calculateInsurance(deal: DealData, result: CommissionResult) {
-        if (!deal.monthlyPremium) return;
-
-        // 1. Heikef (One-time)
-        result.oneTimeCommission = deal.monthlyPremium * this.INSURANCE_HEIKEF_MULTIPLIER;
-        result.notes.push(`עמלת היקף: ${deal.monthlyPremium} * ${this.INSURANCE_HEIKEF_MULTIPLIER}`);
-
-        // 2. Nifraims (Monthly)
-        result.monthlyCommission = deal.monthlyPremium * this.INSURANCE_NIFRAIMS_PERCENTAGE;
-        result.notes.push(`עמלת נפרעים (חודשי): 20% מתוך ${deal.monthlyPremium}`);
-    }
-
-    private static calculateFinance(deal: DealData, result: CommissionResult) {
-        // 1. Niud (Portability) - Based on Salary
-        if (deal.salary) {
-            // Salary * 12 * 8%
-            const niudCommission = deal.salary * 12 * this.PENSION_NIUD_PERCENTAGE;
-            result.oneTimeCommission += niudCommission;
-            result.notes.push(`עמלת ניוד: משכורת ${deal.salary} * 12 * 8% = ${niudCommission.toFixed(2)}`);
+    /**
+     * חישוב עמלות ביטוח (חיים, בריאות, אלמנטרי)
+     * עמלת היקף = פרמיה × 9.7
+     * עמלת נפרעים = 23% מהפרמיה החודשית
+     */
+    private static calculateInsuranceCommission(deal: DealData, result: CommissionResult) {
+        if (!deal.monthlyPremium || deal.monthlyPremium <= 0) {
+            result.notes.push('❌ חסרה פרמיה חודשית לחישוב');
+            return;
         }
 
-        // 2. Tzvira (Accumulation) - Per Company Threshold
-        if (deal.accumulatedAmount) {
-            // Check if passed threshold (logic here assumes 'deal' is a single policy, 
-            // verifying aggregate company totals would happen at a higher service level, 
-            // but for this calculator we calculate the POTENTIAL commission if eligible)
+        const premium = deal.monthlyPremium;
 
-            if (deal.accumulatedAmount >= this.PENSION_TZVIRA_THRESHOLD) {
-                const millions = Math.floor(deal.accumulatedAmount / 1000000);
-                const tzviraCommission = millions * this.PENSION_TZVIRA_RATE;
+        // עמלת היקף
+        result.heikefCommission = premium * this.INSURANCE_HEIKEF_MULTIPLIER;
+        
+        // עמלת נפרעים
+        result.nifraaimCommission = premium * this.INSURANCE_NIFRAIM_PERCENTAGE;
 
-                // If there's a remainder or exact calculation needed, logic can be adjusted. 
-                // Request said: "3,000 per 1,000,000". implies steps.
-
-                result.oneTimeCommission += tzviraCommission;
-                result.notes.push(`עמלת צבירה: ${millions} מיליון צבורים בחברת ${deal.company} = ${tzviraCommission}`);
-            } else {
-                result.notes.push(`צבירה (${deal.accumulatedAmount}) נמוכה מסף מיליון בחברת ${deal.company} - אין עמלה.`);
+        result.breakdown = {
+            type: 'ביטוח',
+            formula: `עמלת היקף: ${premium} × ${this.INSURANCE_HEIKEF_MULTIPLIER} = ₪${result.heikefCommission.toFixed(2)}\nעמלת נפרעים: ${premium} × ${this.INSURANCE_NIFRAIM_PERCENTAGE * 100}% = ₪${result.nifraaimCommission.toFixed(2)}`,
+            values: {
+                premium,
+                heikefMultiplier: this.INSURANCE_HEIKEF_MULTIPLIER,
+                nifraaimPercentage: this.INSURANCE_NIFRAIM_PERCENTAGE
             }
+        };
+
+        result.notes.push(`✅ עמלת היקף: ₪${premium.toLocaleString()} × 9.7 = ₪${result.heikefCommission.toLocaleString()}`);
+        result.notes.push(`✅ עמלת נפרעים (חודשי): 23% × ₪${premium.toLocaleString()} = ₪${result.nifraaimCommission.toLocaleString()}`);
+    }
+
+    /**
+     * חישוב עמלות פנסיה (צבירה)
+     * על כל 1,000,000 ₪ צבירה = 3,000 ₪ עמלה
+     */
+    private static calculatePensionCommission(deal: DealData, result: CommissionResult) {
+        if (!deal.accumulatedAmount || deal.accumulatedAmount <= 0) {
+            // אם אין צבירה, ננסה לחשב לפי ניוד
+            if (deal.salary && deal.salary > 0) {
+                this.calculatePensionTransferCommission(deal, result);
+            } else {
+                result.notes.push('❌ חסר סכום צבירה או משכורת לחישוב עמלת פנסיה');
+            }
+            return;
+        }
+
+        const accumulated = deal.accumulatedAmount;
+        const millions = accumulated / this.PENSION_TZVIRA_THRESHOLD;
+        
+        result.tzviraCommission = millions * this.PENSION_TZVIRA_RATE;
+
+        result.breakdown = {
+            type: 'פנסיה - צבירה',
+            formula: `(${accumulated.toLocaleString()} ÷ 1,000,000) × ₪3,000 = ₪${result.tzviraCommission.toFixed(2)}`,
+            values: {
+                accumulatedAmount: accumulated,
+                millions,
+                ratePerMillion: this.PENSION_TZVIRA_RATE
+            }
+        };
+
+        result.notes.push(`✅ עמלת צבירה פנסיה: ₪${accumulated.toLocaleString()} = ${millions.toFixed(2)} מיליון × ₪3,000 = ₪${result.tzviraCommission.toLocaleString()}`);
+    }
+
+    /**
+     * חישוב עמלות קרן השתלמות (צבירה)
+     * על כל 1,000,000 ₪ = 7,000 ₪ עמלה
+     */
+    private static calculateKerenCommission(deal: DealData, result: CommissionResult) {
+        if (!deal.accumulatedAmount || deal.accumulatedAmount <= 0) {
+            result.notes.push('❌ חסר סכום צבירה לחישוב עמלת קרן השתלמות');
+            return;
+        }
+
+        const accumulated = deal.accumulatedAmount;
+        const millions = accumulated / this.KEREN_TZVIRA_THRESHOLD;
+        
+        result.tzviraCommission = millions * this.KEREN_TZVIRA_RATE;
+
+        result.breakdown = {
+            type: 'קרן השתלמות - צבירה',
+            formula: `(${accumulated.toLocaleString()} ÷ 1,000,000) × ₪7,000 = ₪${result.tzviraCommission.toFixed(2)}`,
+            values: {
+                accumulatedAmount: accumulated,
+                millions,
+                ratePerMillion: this.KEREN_TZVIRA_RATE
+            }
+        };
+
+        result.notes.push(`✅ עמלת צבירה קרן השתלמות: ₪${accumulated.toLocaleString()} = ${millions.toFixed(2)} מיליון × ₪7,000 = ₪${result.tzviraCommission.toLocaleString()}`);
+    }
+
+    /**
+     * חישוב עמלות ניוד פנסיה
+     * משכורת × 12 × 0.008 = עמלה
+     */
+    private static calculatePensionTransferCommission(deal: DealData, result: CommissionResult) {
+        if (!deal.salary || deal.salary <= 0) {
+            result.notes.push('❌ חסרה משכורת לחישוב עמלת ניוד');
+            return;
+        }
+
+        const salary = deal.salary;
+        const annualSalary = salary * 12;
+        
+        result.niudCommission = annualSalary * this.PENSION_NIUD_MULTIPLIER;
+
+        result.breakdown = {
+            type: 'ניוד פנסיה',
+            formula: `₪${salary.toLocaleString()} × 12 × 0.008 = ₪${result.niudCommission.toFixed(2)}`,
+            values: {
+                monthlySalary: salary,
+                annualSalary,
+                multiplier: this.PENSION_NIUD_MULTIPLIER
+            }
+        };
+
+        result.notes.push(`✅ עמלת ניוד: ₪${salary.toLocaleString()} × 12 × 0.008 = ₪${result.niudCommission.toLocaleString()}`);
+    }
+
+    /**
+     * חישוב עמלות פיננסים (ביטוח מנהלים, השקעות)
+     */
+    private static calculateFinanceCommission(deal: DealData, result: CommissionResult) {
+        // אם יש משכורת - חשב כניוד
+        if (deal.salary && deal.salary > 0) {
+            this.calculatePensionTransferCommission(deal, result);
+        }
+        // אם יש צבירה - חשב כפנסיה
+        else if (deal.accumulatedAmount && deal.accumulatedAmount > 0) {
+            this.calculatePensionCommission(deal, result);
+        }
+        // אם יש פרמיה - חשב כביטוח
+        else if (deal.monthlyPremium && deal.monthlyPremium > 0) {
+            this.calculateInsuranceCommission(deal, result);
+        }
+        else {
+            result.notes.push('❌ חסרים נתונים לחישוב עמלה');
         }
     }
 
+    /**
+     * חישוב החזר עמלה (Clawback) במקרה של ביטול פוליסה
+     */
     private static calculateClawback(deal: DealData, result: CommissionResult) {
         if (!deal.cancellationDate) return;
 
-        // Calculate months active
         const diffTime = Math.abs(deal.cancellationDate.getTime() - deal.startDate.getTime());
         const monthsActive = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
 
         let clawbackPercent = 0;
 
-        if (deal.productType === 'life') {
-            // Life Insurance Rules
+        if (deal.productType === 'life' || deal.productType === 'health') {
+            // כללי ביטול ביטוח חיים/בריאות
             if (monthsActive <= 12) {
                 clawbackPercent = 1.0; // 100%
             } else if (monthsActive <= 24) {
@@ -119,27 +301,56 @@ export class CommissionCalculator {
             } else if (monthsActive <= 36) {
                 clawbackPercent = 0.4; // 40%
             }
-        } else if (deal.productType === 'health') {
-            // Health Insurance Rules (1 year)
-            if (monthsActive <= 12) {
-                clawbackPercent = 1.0;
-            }
         } else {
-            // Pension/Finance Rules (1 year)
+            // כללי ביטול פנסיה/פיננסים - שנה אחת
             if (monthsActive <= 12) {
                 clawbackPercent = 1.0;
             }
         }
 
         if (clawbackPercent > 0) {
-            // Clawback applies to the ONE-TIME commission paid (Heikef/Niud/Tzvira)
-            // It does NOT usually apply to Nifraims (as they just stop being paid), 
-            // but sometimes unearned bonuses are clawed back. 
-            // Assuming standard model: Return the Heikef/Acquisition fee.
-
-            // Note: We use the calculated oneTimeCommission from above as the basis.
-            result.clawbackAmount = result.oneTimeCommission * clawbackPercent;
-            result.notes.push(`ביטול פוליסה אחרי ${monthsActive} חודשים: החזר עמלה של ${clawbackPercent * 100}%`);
+            result.clawbackAmount = result.totalOneTime * clawbackPercent;
+            result.notes.push(`⚠️ ביטול פוליסה אחרי ${monthsActive} חודשים: החזר ${clawbackPercent * 100}% = ₪${result.clawbackAmount.toLocaleString()}`);
         }
+    }
+
+    /**
+     * חישוב עמלה לסוכן לפי תמהיל שכר
+     */
+    static calculateAgentCommission(totalResult: CommissionResult, agentMix: AgentSalaryMix): CommissionResult {
+        const agentResult: CommissionResult = {
+            heikefCommission: totalResult.heikefCommission * (agentMix.heikefPercentage / 100),
+            nifraaimCommission: totalResult.nifraaimCommission * (agentMix.nifraaimPercentage / 100),
+            tzviraCommission: totalResult.tzviraCommission * (agentMix.tzviraPercentage / 100),
+            niudCommission: totalResult.niudCommission * (agentMix.niudPercentage / 100),
+            totalOneTime: 0,
+            totalMonthly: 0,
+            clawbackAmount: totalResult.clawbackAmount * (agentMix.basePercentage / 100),
+            currency: 'ILS',
+            notes: [`👤 עמלות ${agentMix.agentName} (תמהיל: ${agentMix.basePercentage}%)`],
+            breakdown: totalResult.breakdown,
+            oneTimeCommission: 0,
+            monthlyCommission: 0
+        };
+
+        agentResult.totalOneTime = agentResult.heikefCommission + agentResult.tzviraCommission + agentResult.niudCommission;
+        agentResult.totalMonthly = agentResult.nifraaimCommission;
+        agentResult.oneTimeCommission = agentResult.totalOneTime;
+        agentResult.monthlyCommission = agentResult.totalMonthly;
+
+        return agentResult;
+    }
+
+    /**
+     * קבועים לייצוא
+     */
+    static get RATES() {
+        return {
+            INSURANCE_HEIKEF_MULTIPLIER: this.INSURANCE_HEIKEF_MULTIPLIER,
+            INSURANCE_NIFRAIM_PERCENTAGE: this.INSURANCE_NIFRAIM_PERCENTAGE,
+            PENSION_TZVIRA_RATE: this.PENSION_TZVIRA_RATE,
+            KEREN_TZVIRA_RATE: this.KEREN_TZVIRA_RATE,
+            PENSION_NIUD_MULTIPLIER: this.PENSION_NIUD_MULTIPLIER
+        };
     }
 }

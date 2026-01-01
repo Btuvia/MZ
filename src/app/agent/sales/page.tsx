@@ -71,7 +71,7 @@ export default function SalesPage() {
         const currentIdx = stages.findIndex(s => s.id === deal.stage);
         if (currentIdx === -1) return;
 
-        let newIdx = direction === 'next' ? currentIdx + 1 : currentIdx - 1;
+        const newIdx = direction === 'next' ? currentIdx + 1 : currentIdx - 1;
         if (newIdx < 0 || newIdx >= stages.length) return;
 
         const newStage = stages[newIdx].id;

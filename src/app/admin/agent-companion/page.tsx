@@ -2,10 +2,8 @@
 
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import DailyBriefing from "@/components/admin/agent-companion/DailyBriefing";
 import FocusFeed from "@/components/admin/agent-companion/FocusFeed";
 import SmartAlerts from "@/components/admin/agent-companion/SmartAlerts";
-import DataChat from "@/components/admin/agent-companion/DataChat";
 import { Sparkles } from "lucide-react";
 
 export default function AgentCompanionPage() {
@@ -26,9 +24,6 @@ export default function AgentCompanionPage() {
                     </div>
                 </div>
 
-                {/* Top Section: Briefing */}
-                <DailyBriefing />
-
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -40,7 +35,6 @@ export default function AgentCompanionPage() {
                     {/* Right Column: Widgets (1/3) */}
                     <div className="space-y-6">
                         <SmartAlerts />
-                        <DataChat />
                     </div>
                 </div>
 

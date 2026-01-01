@@ -178,7 +178,7 @@ export default function LeadSourcesPage() {
                                         <td className="px-6 py-4">
                                             <button
                                                 onClick={() => handleToggleActive(source)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium ${source.isActive
+                                                className={`inline-flex items-center whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium ${source.isActive
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-gray-100 text-gray-800'
                                                     }`}

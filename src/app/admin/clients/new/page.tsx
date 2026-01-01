@@ -8,7 +8,6 @@ import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { UserPlus, ArrowRight, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { createClientAction } from "@/app/actions/clients";
 
 export default function NewClientPage() {
     const router = useRouter();
@@ -54,15 +53,13 @@ export default function NewClientPage() {
                 createdAt: new Date().toISOString()
             };
 
-            // Use Server Action instead of client-side SDK
-            // const newId = await firestoreService.addClient(clientData);
-
-            const result = await createClientAction(clientData);
+            // Use client-side Firestore SDK (Firebase Admin not configured)
+            const newId = await firestoreService.addClient(clientData);
 
             clearTimeout(timer);
-            console.log("Success! New ID:", result.id);
-            toast.success("לקוח נוצר בהצלחה! (דרך השרת)");
-            router.push(`/admin/clients/${result.id}`);
+            console.log("Success! New ID:", newId);
+            toast.success("לקוח נוצר בהצלחה!");
+            router.push(`/admin/clients/${newId}`);
         } catch (error: any) {
             clearTimeout(timer);
             console.error("Firebase Error:", error);

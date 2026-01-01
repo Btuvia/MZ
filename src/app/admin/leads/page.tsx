@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { useRouter } from "next/navigation";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { LeadStatus } from "@/types/statuses";
 import { toast } from "sonner";
 import ImportLeadsModal from "@/components/leads/ImportLeadsModal";
+import type { LeadStatus } from "@/types/statuses";
 
 interface Lead {
     id: number;
@@ -30,14 +29,12 @@ const INITIAL_LEADS: Lead[] = [
 ];
 
 export default function LeadsPage() {
-    const router = useRouter();
     const [search, setSearch] = useState("");
     const [leads, setLeads] = useState<Lead[]>([]);
     const [statuses, setStatuses] = useState<LeadStatus[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
-    const [showWelcomeEmail, setShowWelcomeEmail] = useState<string | null>(null);
 
 
     // New Lead Form State
@@ -147,7 +144,7 @@ export default function LeadsPage() {
         localStorage.setItem('leads_data', JSON.stringify(updatedLeads));
 
         // Trigger Email
-        setShowWelcomeEmail(newClient.firstName + " " + newClient.lastName);
+        // Email trigger can be wired here if/when needed.
     };
 
     const deleteLead = (id: number) => {
@@ -180,31 +177,33 @@ export default function LeadsPage() {
             <div className="space-y-6 animate-in fade-in duration-700" dir="rtl">
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-3xl font-black text-primary font-display tracking-tight italic">ניהול לידים וקמפיינים</h2>
+                        <h2 className="text-3xl font-black text-gradient-gold font-display tracking-tight italic neon-text-gold">ניהול לידים וקמפיינים</h2>
                         <p className="text-slate-500 font-medium">נהל את הלידים הנכנסים ויבא נתונים ממקורות חיצוניים</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Button
                             variant="outline"
-                            className="bg-white hover:bg-slate-50 border-slate-200 text-slate-700 text-[11px] font-black px-4 rounded-xl shadow-sm"
+                            className="text-[11px] font-black px-4 rounded-xl"
                             onClick={() => setShowImportModal(true)}>
                             📤 יבוא מקובץ Excel
                         </Button>
                         <Button
                             onClick={() => setShowModal(true)}
-                            className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-black px-4 rounded-xl shadow-lg shadow-slate-900/10">
+                            variant="primary"
+                            className="text-[11px] font-black px-4 rounded-xl">
                             ➕ הוסף ליד ידני
                         </Button>
                         <Button
                             onClick={() => toast.info("מערכת ניהול הקמפיינים בבנייה")}
-                            className="bg-purple-500 hover:bg-purple-600 text-white text-[11px] font-black px-4 rounded-xl shadow-lg shadow-purple-500/20">
+                            variant="blue"
+                            className="text-[11px] font-black px-4 rounded-xl">
                             🏗️ ניהול קמפיינים
                         </Button>
                     </div>
                 </header>
 
-                <div className="flex items-center gap-4 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
-                    <select className="bg-white border-none text-xs font-black text-slate-500 px-4 py-2 rounded-xl shadow-sm outline-none ring-1 ring-slate-200/50 cursor-pointer">
+                <div className="flex items-center gap-4 glass-card p-3 rounded-2xl border border-amber-500/20">
+                    <select className="glass-card border border-amber-500/20 text-xs font-black text-amber-200 px-4 py-2 rounded-xl outline-none cursor-pointer bg-slate-800/50">
                         <option>כל הקמפיינים</option>
                         <option>פייסבוק - נובמבר</option>
                         <option>גוגל - דצמבר</option>
@@ -213,19 +212,19 @@ export default function LeadsPage() {
                         <input
                             type="text"
                             placeholder="חפש ליד לפי שם, טלפון או מקור..."
-                            className="w-full bg-white border-none text-xs font-bold px-10 py-2 rounded-xl shadow-sm outline-none ring-1 ring-slate-200/50"
+                            className="w-full glass-card border border-amber-500/20 text-xs font-bold px-10 py-2 rounded-xl outline-none text-slate-200 placeholder-slate-500 focus:border-amber-500/50"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 text-xs">🔍</span>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 text-xs">🔍</span>
                     </div>
                 </div>
 
-                <Card className="p-0 border-none shadow-2xl bg-white overflow-hidden rounded-[2rem] min-h-[400px]">
+                <Card className="p-0 border-amber-500/20 overflow-hidden rounded-[2rem] min-h-[400px]">
                     <div className="overflow-x-auto">
                         <table className="w-full text-right text-sm">
                             <thead>
-                                <tr className="border-b border-slate-50 bg-slate-50/30 text-slate-400 text-[10px] font-black uppercase tracking-[0.15em]">
+                                <tr className="border-b border-slate-700/50 bg-slate-800/50 text-amber-400/70 text-[10px] font-black uppercase tracking-[0.15em]">
                                     <th className="px-8 py-6">שם הליד</th>
                                     <th className="px-6 py-6">קמפיין / מקור</th>
                                     <th className="px-6 py-6">פרטי קשר</th>
@@ -234,39 +233,39 @@ export default function LeadsPage() {
                                     <th className="px-6 py-6 text-center">פעולות</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-700/50">
                                 {filteredLeads.length === 0 ? (
-                                    <tr><td colSpan={6} className="text-center p-10 text-slate-400">לא נמצאו לידים</td></tr>
+                                    <tr><td colSpan={6} className="text-center p-10 text-slate-500">לא נמצאו לידים</td></tr>
                                 ) : (
                                     filteredLeads.map((lead) => (
-                                        <tr key={lead.id} className="hover:bg-slate-50/50 group transition-all">
+                                        <tr key={lead.id} className="hover:bg-amber-500/5 group transition-all">
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-white shadow-sm flex items-center justify-center font-black text-slate-500 text-xs">
+                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500/20 to-blue-500/20 border border-amber-500/30 shadow-lg flex items-center justify-center font-black text-amber-300 text-xs">
                                                         {lead.name.split(' ').map(n => n[0]).join('')}
                                                     </div>
-                                                    <div className="font-bold text-primary group-hover:text-accent transition-colors">
+                                                    <div className="font-bold text-slate-200 group-hover:text-amber-200 transition-colors">
                                                         {lead.name}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <Badge variant="outline" className="bg-indigo-50 text-indigo-600 border-none text-[10px] font-black px-3 py-1 rounded-lg">
+                                                <Badge variant="blue" className="text-[10px] font-black px-3 py-1 rounded-lg">
                                                     {lead.source}
                                                 </Badge>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <div className="flex flex-col gap-0.5">
-                                                    <span className="text-xs font-display font-bold text-slate-600 tracking-tight text-right" dir="ltr">{lead.phone}</span>
-                                                    <span className="text-[10px] text-slate-400 font-medium">{lead.email}</span>
+                                                    <span className="text-xs font-display font-bold text-slate-300 tracking-tight text-right" dir="ltr">{lead.phone}</span>
+                                                    <span className="text-[10px] text-slate-500 font-medium">{lead.email}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 font-bold text-slate-600 text-xs italic">
+                                            <td className="px-6 py-5 font-bold text-slate-400 text-xs italic">
                                                 {lead.interest}
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span
-                                                    className="px-3 py-1.5 rounded-xl text-[10px] font-black shadow-sm"
+                                                    className="inline-flex items-center whitespace-nowrap px-3 py-1.5 rounded-xl text-[10px] font-black shadow-lg"
                                                     style={getStatusStyle(lead.status)}
                                                 >
                                                     {lead.status}
@@ -276,13 +275,13 @@ export default function LeadsPage() {
                                                 <div className="flex items-center justify-center gap-3">
                                                     <button
                                                         onClick={() => convertToClient(lead)}
-                                                        className="h-8 px-4 rounded-lg bg-emerald-500 text-white text-[10px] font-black hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
+                                                        className="h-8 px-4 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] font-black hover:from-emerald-500 hover:to-emerald-400 transition-colors shadow-lg shadow-emerald-500/30"
                                                         title="הפוך ללקוח">
                                                         המר ללקוח 🔄
                                                     </button>
                                                     <button
                                                         onClick={() => deleteLead(lead.id)}
-                                                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:text-red-500 hover:bg-red-100 border border-transparent transition-all">
+                                                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:text-red-300 hover:bg-red-500/20 border border-red-500/30 transition-all">
                                                         🗑️
                                                     </button>
                                                 </div>

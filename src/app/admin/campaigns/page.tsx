@@ -5,7 +5,7 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { Zap, Plus, Calendar, Target, Trophy, Info, X, Sparkles, TrendingUp, Gift, Building2, Brain, AlertCircle, CheckCircle2 } from "lucide-react";
-import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini } from "@/app/actions/gemini";
 
 // --- Types ---
 
@@ -99,17 +99,14 @@ export default function CampaignsPage() {
         };
 
         try {
-            const apiKey = localStorage.getItem("gemini_api_key");
-            if (apiKey) {
-                const prompt = `
+            const prompt = `
                 Analyze this insurance agency campaign description in Hebrew: "${formData.description}".
                 Focus on uncovering the "real value" vs "perceived value". Simplify the terms.
                 Return strictly JSON: { "summary": "Short simplified 1-line explanation", "realValue": "Estimated true monetary value explanation", "highlight": "Positive aspect", "caveats": ["Scanning hidden condition 1", "Condition 2"] }
                 `;
-                const res = await generateGeminiContent(prompt, apiKey);
-                if (!res.error) {
-                    analysis = JSON.parse(res.text.replace(/```json/g, '').replace(/```/g, '').trim());
-                }
+            const res = await generateWithGemini(prompt);
+            if (!res.error) {
+                analysis = JSON.parse(res.text.replace(/```json/g, '').replace(/```/g, '').trim());
             }
         } catch (e) {
             console.error("AI Analysis failed", e);

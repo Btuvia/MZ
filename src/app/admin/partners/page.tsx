@@ -4,7 +4,7 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, Phone, Mail, Edit2, Download, Trash2, X } from "lucide-react";
+import { Plus, Search, Phone, Mail, Edit2, Trash2, X } from "lucide-react";
 
 interface Partner {
     id: number;
@@ -33,6 +33,7 @@ export default function PartnersPage() {
     useEffect(() => {
         const savedPartners = localStorage.getItem("crm_partners");
         if (savedPartners) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setPartners(JSON.parse(savedPartners));
         } else {
             const initialPartners = [

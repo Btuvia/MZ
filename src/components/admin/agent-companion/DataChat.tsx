@@ -3,7 +3,7 @@
 import { Card, Button } from "@/components/ui/base";
 import { Send, Bot, User, Sparkles } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini } from "@/app/actions/gemini";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -24,38 +24,47 @@ export default function DataChat() {
         }
     }, [messages]);
 
-    const handleSend = async () => {
-        if (!input.trim()) return;
+    const sendMessage = async (userMsg: string) => {
+        const trimmed = userMsg.trim();
+        if (!trimmed) return;
 
-        const userMsg = input;
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-        setInput("");
+        setMessages(prev => [...prev, { role: 'user', content: trimmed }]);
         setIsLoading(true);
 
         try {
-            const apiKey = localStorage.getItem("gemini_api_key");
+            const prompt = `Act as an expert CRM assistant for an insurance agency. Answer the following question based on general knowledge or simulated data (since you don't have real DB access yet). Keep it short and helpful in Hebrew. Question: ${trimmed}`;
+            const result = await generateWithGemini(prompt);
 
-            let responseText = "";
-
-            if (apiKey) {
-                // Real Gemini call
-                const prompt = `Act as an expert CRM assistant for an insurance agency. Answer the following question based on general knowledge or simulated data (since you don't have real DB access yet). Keep it short and helpful in Hebrew. Question: ${userMsg}`;
-                const result = await generateGeminiContent(prompt, apiKey);
-                responseText = result.text || "סליחה, לא הצלחתי לעבד את הבקשה.";
-            } else {
-                // Mock response
-                await new Promise(r => setTimeout(r, 1500));
-                responseText = "מצב הדגמה (ללא מפתח API): אני רואה שאתה שואל על נתונים. כרגע איני מחובר למסד הנתונים האמיתי, אך בעתיד אוכל לשלוף מידע על " + userMsg;
-            }
+            const responseText = result.error
+                ? `שגיאה: ${result.error}`
+                : (result.text || "סליחה, לא הצלחתי לעבד את הבקשה.");
 
             setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
 
-        } catch (error) {
+        } catch {
             setMessages(prev => [...prev, { role: 'assistant', content: "התרחשה שגיאה בתקשורת עם השרת." }]);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleSend = async () => {
+        const userMsg = input;
+        setInput("");
+        await sendMessage(userMsg);
+    };
+
+    useEffect(() => {
+        const onVoiceCommand = (event: Event) => {
+            const custom = event as CustomEvent<{ text?: string }>;
+            const text = custom?.detail?.text;
+            if (typeof text !== "string") return;
+            void sendMessage(text);
+        };
+
+        window.addEventListener("magen:voiceCommand", onVoiceCommand as EventListener);
+        return () => window.removeEventListener("magen:voiceCommand", onVoiceCommand as EventListener);
+    }, []);
 
     return (
         <Card className="bg-white border-none shadow-xl flex flex-col h-[500px] overflow-hidden rounded-[2rem] relative">

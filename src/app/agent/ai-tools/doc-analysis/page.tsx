@@ -43,17 +43,11 @@ export default function DocumentAnalysisPage() {
     };
 
     const handleFile = async (selectedFile: File) => {
-        const apiKey = localStorage.getItem("gemini_api_key");
-        if (!apiKey) {
-            alert("נא להגדיר מפתח API בהגדרות או בדף כלי ה-AI הראשי");
-            return;
-        }
-
         setFile(selectedFile);
         setAnalyzing(true);
         setResults(null);
         try {
-            const data = await analyzeDocument(selectedFile, apiKey);
+            const data = await analyzeDocument(selectedFile);
             setResults(data);
         } catch (error: any) {
             console.error(error);

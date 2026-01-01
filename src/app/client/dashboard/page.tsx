@@ -80,7 +80,7 @@ export default function ClientDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="min-h-screen flex items-center justify-center mesh-gradient">
                 <div className="animate-spin text-4xl">🛡️</div>
             </div>
         );
@@ -91,23 +91,24 @@ export default function ClientDashboard() {
             <div className="space-y-8 pb-20" dir="rtl">
 
                 {/* Hero */}
-                <div className="bg-gradient-to-r from-indigo-900 to-slate-800 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="glass-card bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-amber-900/30 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
                     <div className="relative z-10 flex justify-between items-center">
                         <div>
-                            <h1 className="text-3xl font-black mb-2">שלום, {client.name.split(" ")[0]} 👋</h1>
-                            <p className="text-indigo-200 font-medium text-sm">כיף לראות אותך שוב!</p>
+                            <h1 className="text-3xl font-black mb-2 text-gradient-gold neon-text-gold">שלום, {client.name.split(" ")[0]} 👋</h1>
+                            <p className="text-blue-300 font-medium text-sm neon-text-blue">כיף לראות אותך שוב!</p>
                         </div>
-                        <div className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
-                            <Shield className="text-white" size={32} />
+                        <div className="h-16 w-16 bg-gradient-to-br from-amber-500/30 to-amber-600/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-amber-500/40 shadow-lg shadow-amber-500/30">
+                            <Shield className="text-amber-400" size={32} />
                         </div>
                     </div>
                 </div>
 
                 {/* Status Tracker */}
                 <div>
-                    <h3 className="text-lg font-black text-slate-700 mb-4 px-2 flex items-center gap-2">
-                        <span className="bg-indigo-100 p-1.5 rounded-lg text-indigo-600"><CheckCircle size={16} /></span>
+                    <h3 className="text-lg font-black text-amber-100 mb-4 px-2 flex items-center gap-2">
+                        <span className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 border border-blue-500/30"><CheckCircle size={16} /></span>
                         סטטוס תהליך
                     </h3>
                     <LifecycleTracker client={client} readOnly={true} />
@@ -115,8 +116,8 @@ export default function ClientDashboard() {
 
                 {/* Shield Grid */}
                 <div>
-                    <h3 className="text-lg font-black text-slate-700 mb-4 px-2 flex items-center gap-2">
-                        <span className="bg-amber-100 p-1.5 rounded-lg text-amber-600"><Shield size={16} /></span>
+                    <h3 className="text-lg font-black text-amber-100 mb-4 px-2 flex items-center gap-2">
+                        <span className="bg-amber-500/20 p-1.5 rounded-lg text-amber-400 border border-amber-500/30"><Shield size={16} /></span>
                         התיק הביטוחי שלי
                     </h3>
 
@@ -125,12 +126,12 @@ export default function ClientDashboard() {
                             const status = getPolicyStatus(info.key);
                             return (
                                 <Card key={id} className={`
-                                    border-none shadow-lg p-4 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden transition-all
-                                    ${status.exists ? 'bg-white' : 'bg-slate-50 opacity-80 grayscale hover:grayscale-0 hover:opacity-100 hover:scale-[1.02] cursor-pointer'}
+                                    border-amber-500/20 p-4 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden transition-all
+                                    ${status.exists ? 'neon-gold' : 'opacity-70 grayscale hover:grayscale-0 hover:opacity-100 hover:scale-[1.02] cursor-pointer'}
                                 `}>
                                     <div className={`
                                         text-3xl p-3 rounded-full mb-1
-                                        ${status.exists ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-200 text-slate-400'}
+                                        ${status.exists ? 'bg-amber-500/20 shadow-lg shadow-amber-500/30' : 'bg-slate-700/50'}
                                     `}>
                                         {id === 'life' && '❤️'}
                                         {id === 'health' && '🏥'}
@@ -141,16 +142,16 @@ export default function ClientDashboard() {
                                     </div>
 
                                     <div>
-                                        <h4 className="font-black text-sm text-slate-700">{info.label}</h4>
-                                        <span className={`text-[10px] font-bold ${status.exists ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                        <h4 className="font-black text-sm text-slate-200">{info.label}</h4>
+                                        <span className={`text-[10px] font-bold ${status.exists ? 'text-emerald-400' : 'text-slate-500'}`}>
                                             {status.exists ? 'פעיל ✔' : 'לא קיים'}
                                         </span>
                                     </div>
 
                                     {!status.exists && (
-                                        <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 opacity-0 hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm">
-                                            <p className="text-white text-[10px] mb-2 leading-tight">{info.reason}</p>
-                                            <Button size="sm" className="h-7 text-[10px] bg-amber-500 hover:bg-amber-600 text-white w-full font-bold">אני מעוניין</Button>
+                                        <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-4 opacity-0 hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm border border-amber-500/30 rounded-3xl">
+                                            <p className="text-slate-300 text-[10px] mb-2 leading-tight">{info.reason}</p>
+                                            <Button size="sm" variant="gold" className="h-7 text-[10px] w-full font-bold">אני מעוניין</Button>
                                         </div>
                                     )}
                                 </Card>
@@ -160,26 +161,26 @@ export default function ClientDashboard() {
                 </div>
 
                 {/* Recent Documents Mock */}
-                <Card className="border-none shadow-xl bg-white p-6">
-                    <h3 className="text-lg font-black text-slate-700 mb-4 flex items-center gap-2">
-                        <span className="bg-blue-100 p-1.5 rounded-lg text-blue-600"><FileText size={16} /></span>
+                <Card className="border-amber-500/20 p-6">
+                    <h3 className="text-lg font-black text-amber-100 mb-4 flex items-center gap-2">
+                        <span className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 border border-blue-500/30"><FileText size={16} /></span>
                         מסמכים אחרונים
                     </h3>
                     <div className="space-y-3">
                         {[1, 2].map((_, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div key={i} className="flex items-center justify-between p-3 glass-card rounded-xl border border-slate-700/50">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center text-red-500 font-bold text-xs">PDF</div>
+                                    <div className="h-10 w-10 bg-red-500/20 rounded-lg flex items-center justify-center text-red-400 font-bold text-xs border border-red-500/30">PDF</div>
                                     <div>
-                                        <p className="text-sm font-bold text-slate-700">פוליסת ביטוח חיים</p>
-                                        <p className="text-[10px] text-slate-400">01/10/2025</p>
+                                        <p className="text-sm font-bold text-slate-200">פוליסת ביטוח חיים</p>
+                                        <p className="text-[10px] text-slate-500">01/10/2025</p>
                                     </div>
                                 </div>
-                                <Button size="sm" variant="ghost" className="text-indigo-600"><AlertTriangle size={16} /></Button>
+                                <Button size="sm" variant="ghost" className="text-blue-400"><AlertTriangle size={16} /></Button>
                             </div>
                         ))}
                     </div>
-                    <Button variant="outline" className="w-full mt-4 text-xs font-bold border-dashed border-2">
+                    <Button variant="outline" className="w-full mt-4 text-xs font-bold border-dashed border-2 border-amber-500/30 text-amber-300">
                         צפה בכל המסמכים
                     </Button>
                 </Card>

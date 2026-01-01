@@ -5,29 +5,14 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { generateGeminiContent } from "@/lib/gemini-client";
+import { generateWithGemini } from "@/app/actions/gemini";
 
 export default function AIToolsPage() {
     const router = useRouter();
-    const [apiKey, setApiKey] = useState("");
-    const [hasApiKey, setHasApiKey] = useState(false);
     const [activeTab, setActiveTab] = useState("סיכום שיחה");
     const [inputText, setInputText] = useState("");
     const [outputText, setOutputText] = useState("");
     const [loading, setLoading] = useState(false);
-
-    useState(() => {
-        const savedKey = localStorage.getItem("gemini_api_key");
-        if (savedKey) {
-            setApiKey(savedKey);
-            setHasApiKey(true);
-        }
-    });
-
-    const saveApiKey = () => {
-        localStorage.setItem("gemini_api_key", apiKey);
-        setHasApiKey(true);
-    };
 
     const tools = [
         { id: "סיכום שיחה", icon: "📞", description: "סכם שיחה עם לקוח אוטומטית", color: "from-blue-600 to-indigo-700" },
@@ -51,7 +36,7 @@ export default function AIToolsPage() {
         };
 
         try {
-            const result = await generateGeminiContent(prompts[activeTab], apiKey);
+            const result = await generateWithGemini(prompts[activeTab]);
             if (result.error) {
                 setOutputText(`שגיאה: ${result.error}`);
             } else {
@@ -63,39 +48,6 @@ export default function AIToolsPage() {
             setLoading(false);
         }
     };
-
-    if (!hasApiKey) {
-        return (
-            <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
-                <div className="min-h-[600px] flex items-center justify-center" dir="rtl">
-                    <Card className="border-none shadow-2xl bg-white p-12 max-w-2xl w-full text-center">
-                        <div className="h-20 w-20 rounded-full bg-accent/10 flex items-center justify-center text-accent text-4xl mx-auto mb-6 animate-pulse">
-                            🤖
-                        </div>
-                        <h2 className="text-3xl font-black text-primary mb-4">כלי AI מתקדמים</h2>
-                        <p className="text-slate-500 font-medium mb-8 max-w-md mx-auto">
-                            כדי להשתמש בכלי AI, אנא הזן את מפתח ה-API של Gemini שלך
-                        </p>
-                        <div className="space-y-4">
-                            <input
-                                type="password"
-                                placeholder="הזן Gemini API Key..."
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                                className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
-                            />
-                            <Button variant="secondary" className="w-full py-4 shadow-xl shadow-accent/20" onClick={saveApiKey}>
-                                שמור והמשך
-                            </Button>
-                        </div>
-                        <p className="text-xs text-slate-400 font-medium mt-6">
-                            המפתח נשמר באופן מקומי בדפדפן שלך בלבד
-                        </p>
-                    </Card>
-                </div>
-            </DashboardShell>
-        );
-    }
 
     return (
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>

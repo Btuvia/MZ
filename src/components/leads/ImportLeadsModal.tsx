@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/base";
 import { Upload, FileSpreadsheet, Check, AlertCircle, Loader2, X } from "lucide-react";
 import useDrivePicker from "react-google-drive-picker";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import Papa from "papaparse";
 import { toast } from "sonner";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 
@@ -16,6 +17,81 @@ interface ImportLeadsModalProps {
 }
 
 type ParsedData = Record<string, any>[];
+
+function normalizeHeader(value: unknown, fallback: string): string {
+    const asString = typeof value === "string" ? value.trim() : "";
+    return asString || fallback;
+}
+
+function isCsvLike(params: { fileName?: string; mimeType?: string }): boolean {
+    const name = (params.fileName || "").toLowerCase();
+    const mime = (params.mimeType || "").toLowerCase();
+    return name.endsWith(".csv") || mime.includes("text/csv") || mime.includes("application/csv");
+}
+
+function stringifyCell(value: unknown): string {
+    if (value == null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (value instanceof Date) return value.toISOString();
+    // exceljs may return rich objects; try a best-effort string.
+    try {
+        return String((value as any).text ?? (value as any).result ?? JSON.stringify(value));
+    } catch {
+        return String(value);
+    }
+}
+
+async function parseCsvText(text: string): Promise<{ headers: string[]; data: ParsedData }> {
+    return new Promise((resolve, reject) => {
+        const result = Papa.parse<Record<string, unknown>>(text, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: false,
+        });
+
+        if (result.errors?.length) {
+            reject(new Error(result.errors[0].message));
+            return;
+        }
+
+        const headers = result.meta.fields || [];
+        const data = (result.data || []).filter(row => Object.values(row).some(v => v != null && String(v).trim() !== ""));
+        resolve({ headers, data });
+    });
+}
+
+async function parseXlsxBuffer(buffer: ArrayBuffer): Promise<{ headers: string[]; data: ParsedData }> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) return { headers: [], data: [] };
+
+    const headerRow = worksheet.getRow(1);
+    const headerValues = (headerRow.values || []) as unknown[];
+
+    const headers: string[] = [];
+    for (let col = 1; col < headerValues.length; col++) {
+        headers.push(normalizeHeader(headerValues[col], `עמודה ${col}`));
+    }
+
+    const data: ParsedData = [];
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber === 1) return;
+
+        const obj: Record<string, unknown> = {};
+        headers.forEach((header, idx) => {
+            const cellValue = row.getCell(idx + 1).value as unknown;
+            const str = stringifyCell(cellValue).trim();
+            if (str) obj[header] = str;
+        });
+
+        if (Object.keys(obj).length > 0) data.push(obj);
+    });
+
+    return { headers, data };
+}
 
 const SYSTEM_FIELDS = [
     { key: "name", label: "שם מלא", required: true },
@@ -44,25 +120,28 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
             const accessToken = data.oauthToken; // Token from the picker
 
             if (file) {
+                const isGoogleSheet = file.mimeType === "application/vnd.google-apps.spreadsheet";
+                const downloadUrl = isGoogleSheet
+                    ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+                    : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+
                 // Fetch file content using the access token
-                fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
+                fetch(downloadUrl, {
                     headers: { Authorization: `Bearer ${accessToken}` }
                 })
                     .then(res => res.arrayBuffer())
-                    .then(buffer => {
-                        const workbook = XLSX.read(buffer, { type: "array" });
-                        const sheetName = workbook.SheetNames[0];
-                        const sheet = workbook.Sheets[sheetName];
-                        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    .then(async buffer => {
+                        const parsed = isCsvLike({ fileName: file.name, mimeType: file.mimeType })
+                            ? await parseCsvText(new TextDecoder().decode(buffer))
+                            : await parseXlsxBuffer(buffer);
 
-                        if (json.length > 0) {
-                            const extractedHeaders = json[0] as string[];
-                            const extractedData = XLSX.utils.sheet_to_json(sheet) as ParsedData;
-
-                            setHeaders(extractedHeaders);
-                            setParsedData(extractedData);
-                            autoMapColumns(extractedHeaders);
+                        if (parsed.headers.length > 0) {
+                            setHeaders(parsed.headers);
+                            setParsedData(parsed.data);
+                            autoMapColumns(parsed.headers);
                             setStep(2);
+                        } else {
+                            toast.error("לא נמצאו כותרות בקובץ");
                         }
                     })
                     .catch(err => {
@@ -77,30 +156,28 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
-        if (selectedFile) processFile(selectedFile);
+        if (selectedFile) void processFile(selectedFile);
     };
 
-    const processFile = (file: File) => {
+    const processFile = async (file: File) => {
         setFile(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = e.target?.result;
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        try {
+            const parsed = isCsvLike({ fileName: file.name, mimeType: file.type })
+                ? await parseCsvText(await file.text())
+                : await parseXlsxBuffer(await file.arrayBuffer());
 
-            if (json.length > 0) {
-                const extractedHeaders = json[0] as string[];
-                const extractedData = XLSX.utils.sheet_to_json(sheet) as ParsedData;
-
-                setHeaders(extractedHeaders);
-                setParsedData(extractedData);
-                autoMapColumns(extractedHeaders);
+            if (parsed.headers.length > 0) {
+                setHeaders(parsed.headers);
+                setParsedData(parsed.data);
+                autoMapColumns(parsed.headers);
                 setStep(2);
+            } else {
+                toast.error("לא נמצאו כותרות בקובץ");
             }
-        };
-        reader.readAsArrayBuffer(file);
+        } catch (err) {
+            console.error("Error parsing file:", err);
+            toast.error("שגיאה בקריאת הקובץ. מומלץ לייצא ל-CSV או XLSX תקין");
+        }
     };
 
     const autoMapColumns = (fileHeaders: string[]) => {
@@ -194,7 +271,7 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                                     type="file"
                                     ref={fileInputRef}
                                     className="hidden"
-                                    accept=".xlsx,.xls,.csv"
+                                    accept=".xlsx,.csv"
                                     onChange={handleFileUpload}
                                 />
                                 <div className="flex gap-2 mt-4">
@@ -229,7 +306,6 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                                         showUploadFolders: true,
                                         supportDrives: true,
                                         multiselect: false,
-                                        mimeTypes: ['application/vnd.google-apps.spreadsheet', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'],
                                         callbackFunction: handleGoogleDriveSelect,
                                     });
                                 }}

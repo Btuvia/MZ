@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Shield, ArrowLeft, Phone, Lock } from "lucide-react";
 import { Button } from "@/components/ui/base";
@@ -108,7 +109,7 @@ export default function ClientLoginPage() {
                             </Button>
 
                             <p className="text-center text-[10px] text-slate-400 mt-4">
-                                בלחיצה על אישור אני מסכים ל<a href="#" className="underline decoration-slate-300">תנאי השימוש</a>
+                                בלחיצה על אישור אני מסכים ל<Link href="/terms" className="underline decoration-slate-300">תנאי השימוש</Link>
                             </p>
                         </motion.form>
                     ) : (
