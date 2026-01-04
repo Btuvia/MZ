@@ -1,7 +1,7 @@
 "use server";
 
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { sendEmail } from "@/app/actions/email";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
 // Admin email constant - primary admin
 const ADMIN_EMAIL = "btuvia6580@gmail.com";

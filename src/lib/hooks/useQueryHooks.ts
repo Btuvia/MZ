@@ -5,12 +5,12 @@
  * optimistic updates, and error handling.
  */
 
-import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
+import { handleError, showSuccess } from '@/lib/error-handler';
 import { firestoreService } from '@/lib/firebase/firestore-service';
 import type { Client, Task, Lead, Deal, SystemUser } from '@/types';
-import type { Workflow, WorkflowInstance } from '@/types/workflow';
 import type { TaskSubject } from '@/types/subject';
-import { handleError, showSuccess } from '@/lib/error-handler';
+import type { Workflow, WorkflowInstance } from '@/types/workflow';
 
 // ============================================
 // QUERY KEYS - Centralized key management

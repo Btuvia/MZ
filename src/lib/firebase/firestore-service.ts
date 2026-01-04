@@ -9,28 +9,28 @@ import {
     query,
     where,
     Timestamp,
-    WhereFilterOp,
+    type WhereFilterOp,
     setDoc,
     orderBy,
     limit,
     startAfter,
     getCountFromServer,
-    DocumentSnapshot,
-    QueryDocumentSnapshot
+    type DocumentSnapshot,
+    type QueryDocumentSnapshot
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firebase";
 import { 
-    Client, 
-    Task, 
-    Lead, 
-    Deal, 
-    SystemUser, 
-    UserRole,
-    ContactRequest,
-    FinancialProduct,
-    Collaboration,
-    ActivityLogEntry,
-    UserPreferences
+    type Client, 
+    type Task, 
+    type Lead, 
+    type Deal, 
+    type SystemUser, 
+    type UserRole,
+    type ContactRequest,
+    type FinancialProduct,
+    type Collaboration,
+    type ActivityLogEntry,
+    type UserPreferences
 } from "@/types";
 import { Workflow, WorkflowInstance } from "@/types/workflow";
 

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     Scale, Check, X, ChevronDown, Star, Shield, Heart, 
     Car, Home, Plane, Baby, Briefcase, Info, Phone,
     ArrowRight, Sparkles, Calculator, MessageSquare
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface InsuranceProduct {
     id: string;
@@ -252,11 +252,9 @@ export default function ComparePage() {
                                     : 'hover:border-amber-500/30'
                             }`}>
                                 {/* Recommended Badge */}
-                                {product.recommended && (
-                                    <div className="absolute top-0 left-0 bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-br-xl">
+                                {product.recommended ? <div className="absolute top-0 left-0 bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-br-xl">
                                         מומלץ ⭐
-                                    </div>
-                                )}
+                                    </div> : null}
 
                                 {/* Selection Checkbox */}
                                 <button
@@ -357,8 +355,7 @@ export default function ComparePage() {
 
                 {/* Compare Modal */}
                 <AnimatePresence>
-                    {showCompareModal && selectedProductsData.length >= 2 && (
-                        <motion.div
+                    {showCompareModal && selectedProductsData.length >= 2 ? <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -436,9 +433,7 @@ export default function ComparePage() {
                                                                 {productFeature?.included ? (
                                                                     <div className="flex flex-col items-center">
                                                                         <Check size={20} className="text-emerald-400" />
-                                                                        {productFeature.details && (
-                                                                            <span className="text-xs text-slate-500 mt-1">{productFeature.details}</span>
-                                                                        )}
+                                                                        {productFeature.details ? <span className="text-xs text-slate-500 mt-1">{productFeature.details}</span> : null}
                                                                     </div>
                                                                 ) : (
                                                                     <X size={20} className="text-red-400 mx-auto" />
@@ -466,8 +461,7 @@ export default function ComparePage() {
                                     </Button>
                                 </div>
                             </motion.div>
-                        </motion.div>
-                    )}
+                        </motion.div> : null}
                 </AnimatePresence>
 
                 {/* AI Recommendation */}

@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService, PaginatedResult } from "@/lib/firebase/firestore-service";
-import { handleError, showSuccess } from "@/lib/error-handler";
+import { type QueryDocumentSnapshot } from "firebase/firestore";
 import { Search, UserPlus, Filter, MoreVertical, Edit2, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { Pagination, usePagination } from "@/components/ui/Pagination";
-import { Client } from "@/types";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import { handleError, showSuccess } from "@/lib/error-handler";
+import { firestoreService, PaginatedResult } from "@/lib/firebase/firestore-service";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { type Client } from "@/types";
 
 export default function ClientsListPage() {
     const [clients, setClients] = useState<Client[]>([]);
@@ -108,8 +108,8 @@ export default function ClientsListPage() {
 
                 {/* Header */}
                 <div className="glass-card bg-gradient-to-r from-blue-900/50 via-slate-900/50 to-amber-900/50 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
                     <div className="flex justify-between items-center relative z-10">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4 text-gradient-gold neon-text-gold">ניהול לקוחות</h1>

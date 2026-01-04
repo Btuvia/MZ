@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import { LogoLoader } from "@/components/LogoLoader";
-import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { Toaster } from "sonner";
+import { LogoLoader } from "@/components/LogoLoader";
 import { PWAProvider } from "@/components/pwa/PWAProvider";
 import { ConfirmationProvider } from "@/components/ui/ConfirmationDialog";
+import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { QueryProvider } from "@/lib/contexts/QueryProvider";
 
 const inter = Inter({

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
+import { generateSalesTips } from "@/app/actions/gemini";
 import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { generateSalesTips } from "@/app/actions/gemini";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function SalesPage() {
     const { user } = useAuth();
@@ -89,7 +89,7 @@ export default function SalesPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-orange-600 via-rose-600 to-pink-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10 flex justify-between items-center">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4">ניהול מכירות (Kanban)</h1>
@@ -129,7 +129,7 @@ export default function SalesPage() {
                             return (
                                 <div key={stage.id} className="w-80 flex-shrink-0">
                                     <Card className="border-none shadow-xl bg-white h-full">
-                                        <div className={`h-2 w-full ${stage.color}`}></div>
+                                        <div className={`h-2 w-full ${stage.color}`} />
                                         <div className="p-6">
                                             <div className="flex items-center justify-between mb-6">
                                                 <h3 className="text-base font-black text-primary">{stage.title}</h3>
@@ -168,7 +168,7 @@ export default function SalesPage() {
                                                                     <div
                                                                         className={`h-full ${stage.color} rounded-full`}
                                                                         style={{ width: `${deal.probability || 50}%` }}
-                                                                    ></div>
+                                                                     />
                                                                 </div>
                                                                 <span className="text-xs font-bold text-slate-400">
                                                                     {deal.probability || 50}%
@@ -206,7 +206,7 @@ export default function SalesPage() {
                                     <div
                                         className="h-full bg-gradient-to-r from-success to-emerald-400 rounded-full transition-all duration-500"
                                         style={{ width: `${Math.min((closedValue / 60000) * 100, 100)}%` }}
-                                    ></div>
+                                     />
                                 </div>
                             </div>
                         </div>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
 import { MessageSquare, Phone, Mail, Search, Paperclip, Send, MoreVertical, CheckCheck, Bot, Loader2 } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { sendEmail } from "@/app/actions/email";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useClients, useMessages, useSendMessage, useLastMessagesPerClient } from "@/lib/hooks/useQueryHooks";
 
 export default function CommunicationCenter() {
@@ -244,12 +244,10 @@ export default function CommunicationCenter() {
                                         <h3 className="text-lg font-black text-primary">{selectedClient.name}</h3>
                                         <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
                                             <span>{selectedClient.phone}</span>
-                                            {selectedClient.email && (
-                                                <>
+                                            {selectedClient.email ? <>
                                                     <span>•</span>
                                                     <span>{selectedClient.email}</span>
-                                                </>
-                                            )}
+                                                </> : null}
                                         </div>
                                     </div>
                                 </div>

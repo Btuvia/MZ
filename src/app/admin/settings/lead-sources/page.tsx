@@ -211,8 +211,7 @@ export default function LeadSourcesPage() {
                 )}
 
                 {/* Edit Modal */}
-                {isEditing && editingSource && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                {isEditing && editingSource ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg max-w-2xl w-full p-6">
                             <h2 className="text-2xl font-bold mb-6">
                                 {'id' in editingSource ? 'ערוך מקור ליד' : 'הוסף מקור ליד חדש'}
@@ -317,8 +316,7 @@ export default function LeadSourcesPage() {
                                 </button>
                             </div>
                         </div>
-                    </div>
-                )}
+                    </div> : null}
             </div>
         </div>
     );

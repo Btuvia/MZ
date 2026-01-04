@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { generateWithGemini } from "@/app/actions/gemini";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import { Edit2, Copy, Save, Trash2, Plus, X, Upload, Share2, Send, FileText, Download } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { createClientAndSendCredentials } from "@/app/actions/client-credentials";
+import { sendEmail } from "@/app/actions/email";
+import { generateWithGemini } from "@/app/actions/gemini";
+import LifecycleTracker from "@/components/client/LifecycleTracker";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { FileUpload } from "@/components/ui/file-upload";
 import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
-import { toast } from "sonner";
-import LifecycleTracker from "@/components/client/LifecycleTracker";
-import { sendEmail } from "@/app/actions/email";
-import { createClientAndSendCredentials } from "@/app/actions/client-credentials";
-import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 // --- Types & Interfaces ---
 
@@ -1215,12 +1215,12 @@ ${clipped}`;
 
                 {/* Header - Premium Glass Design with Gold Accents */}
                 <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 rounded-[2rem] blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 rounded-[2rem] blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
                     <div className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 rounded-[2rem] p-8 md:p-10 text-white shadow-2xl overflow-hidden border border-amber-500/20">
                         {/* Animated Background Elements */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse-slow"></div>
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 blur-2xl rounded-full translate-y-1/2 -translate-x-1/2 animate-float"></div>
-                        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-amber-400/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse-slow" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 blur-2xl rounded-full translate-y-1/2 -translate-x-1/2 animate-float" />
+                        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-amber-400/10 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
                         {/* Edit Button */}
                         <button 
@@ -1233,7 +1233,7 @@ ${clipped}`;
                         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
                             <div className="flex items-center gap-6 text-right w-full md:w-auto">
                                 <div className="relative group/avatar">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full blur-md group-hover/avatar:blur-lg transition-all duration-300"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full blur-md group-hover/avatar:blur-lg transition-all duration-300" />
                                     <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 backdrop-blur-xl flex items-center justify-center text-4xl font-black text-slate-900 border-2 border-amber-300/50 shadow-2xl group-hover/avatar:scale-105 transition-transform duration-300">
                                         {client.name.substring(0, 2)}
                                     </div>
@@ -1249,16 +1249,12 @@ ${clipped}`;
                                         <span className={`px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider backdrop-blur-sm border transition-all duration-300 hover:scale-105 ${client.salesStatus === 'closed_won' ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400/50' : 'bg-amber-500/30 text-amber-200 border-amber-400/50'}`}>
                                             {client.salesStatus === 'closed_won' ? '✓ פעיל' : '◉ ליד'}
                                         </span>
-                                        {client.opsUnlocked && (
-                                            <span className="px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider bg-blue-500/30 text-blue-200 border border-blue-400/50 backdrop-blur-sm animate-pulse-slow">
+                                        {client.opsUnlocked ? <span className="px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider bg-blue-500/30 text-blue-200 border border-blue-400/50 backdrop-blur-sm animate-pulse-slow">
                                                 ⚡ תפעול פתוח
-                                            </span>
-                                        )}
-                                        {client.referralName && (
-                                            <span className="px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/50 backdrop-blur-sm flex items-center gap-1.5 hover:scale-105 transition-transform">
+                                            </span> : null}
+                                        {client.referralName ? <span className="px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/50 backdrop-blur-sm flex items-center gap-1.5 hover:scale-105 transition-transform">
                                                 🤝 הגיע מ: {client.referralName}
-                                            </span>
-                                        )}
+                                            </span> : null}
                                     </div>
                                 </div>
                             </div>
@@ -1299,10 +1295,10 @@ ${clipped}`;
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {/* Premium Card 1 - Gold Theme */}
                             <div className="group relative">
-                                <div className="absolute inset-0 bg-gradient-to-br from-amber-600 to-amber-800 rounded-3xl blur-lg opacity-50 group-hover:opacity-70 transition-opacity duration-500"></div>
+                                <div className="absolute inset-0 bg-gradient-to-br from-amber-600 to-amber-800 rounded-3xl blur-lg opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
                                 <Card className="relative border-none shadow-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900 text-white p-8 rounded-3xl overflow-hidden hover-lift border border-amber-500/20">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/30 rounded-full blur-2xl"></div>
-                                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/20 rounded-full blur-xl"></div>
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/30 rounded-full blur-2xl" />
+                                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/20 rounded-full blur-xl" />
                                     <div className="relative">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="h-14 w-14 rounded-2xl bg-amber-500/20 backdrop-blur-sm flex items-center justify-center text-3xl border border-amber-400/30 group-hover:scale-110 transition-transform duration-300">💰</div>
@@ -1339,14 +1335,14 @@ ${clipped}`;
                                 </div>
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-2">חלוקת תיק</p>
                                 <div className="flex h-3 rounded-full overflow-hidden gap-1 mt-4 shadow-inner bg-slate-100 p-0.5">
-                                    <div className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full progress-animated" style={{ width: '40%' }}></div>
-                                    <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full progress-animated" style={{ width: '35%' }}></div>
-                                    <div className="bg-gradient-to-r from-purple-400 to-purple-500 rounded-full progress-animated" style={{ width: '25%' }}></div>
+                                    <div className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full progress-animated" style={{ width: '40%' }} />
+                                    <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full progress-animated" style={{ width: '35%' }} />
+                                    <div className="bg-gradient-to-r from-purple-400 to-purple-500 rounded-full progress-animated" style={{ width: '25%' }} />
                                 </div>
                                 <div className="flex justify-between text-[10px] font-bold text-slate-500 mt-3">
-                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>פנסיוני</span>
-                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>בריאות</span>
-                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span>סיכונים</span>
+                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />פנסיוני</span>
+                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" />בריאות</span>
+                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" />סיכונים</span>
                                 </div>
                             </Card>
                         </div>
@@ -1419,7 +1415,7 @@ ${clipped}`;
                                         <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-purple-200 hover:shadow-md transition-all duration-300">
                                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">האם מעשן</p>
                                             <p className={`font-bold flex items-center gap-2 ${client.isSmoker ? 'text-red-600' : 'text-emerald-600'}`}>
-                                                <span className={`w-3 h-3 rounded-full ${client.isSmoker ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                                                <span className={`w-3 h-3 rounded-full ${client.isSmoker ? 'bg-red-500' : 'bg-emerald-500'}`} />
                                                 {client.isSmoker === undefined ? '—' : client.isSmoker ? 'כן' : 'לא'}
                                             </p>
                                         </div>
@@ -1436,24 +1432,18 @@ ${clipped}`;
                                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">נציג מכירה</p>
                                         <p className="font-bold text-slate-800">{client.salesRepresentative || 'לא הוגדר'}</p>
                                     </div>
-                                    {client.linkedClientId && (
-                                        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-2xl border-2 border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                                    {client.linkedClientId ? <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-2xl border-2 border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300">
                                             <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2">🔗 מקושר ללקוח</p>
                                             <p className="font-bold text-indigo-700">{client.linkedClientName || client.linkedClientId}</p>
-                                        </div>
-                                    )}
+                                        </div> : null}
                                     {/* Referral Info */}
-                                    {client.referralName && (
-                                        <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-5 rounded-2xl border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                                    {client.referralName ? <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-5 rounded-2xl border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300">
                                             <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-2">🤝 הגיע משיתוף פעולה</p>
                                             <p className="font-bold text-purple-700 text-lg">{client.referralName}</p>
-                                            {client.referralNotes && (
-                                                <p className="text-sm text-purple-600 mt-3 bg-purple-100/50 p-3 rounded-xl border border-purple-200/50">
+                                            {client.referralNotes ? <p className="text-sm text-purple-600 mt-3 bg-purple-100/50 p-3 rounded-xl border border-purple-200/50">
                                                     <span className="font-bold">הערת המפנה:</span> {client.referralNotes}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
+                                                </p> : null}
+                                        </div> : null}
                                 </div>
                             </Card>
                         </div>
@@ -1466,7 +1456,7 @@ ${clipped}`;
                                     {[...client.policies, ...client.insuranceSales].map((item, i) => (
                                         <div key={i} className="flex items-center justify-between group p-3 rounded-xl hover:bg-slate-50 transition-all duration-300">
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-3 w-3 rounded-full shadow-lg ${i % 3 === 0 ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : i % 3 === 1 ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`}></div>
+                                                <div className={`h-3 w-3 rounded-full shadow-lg ${i % 3 === 0 ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : i % 3 === 1 ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`} />
                                                 <span className="font-bold text-slate-600 text-sm group-hover:text-indigo-600 transition-colors">{(item as any).type || (item as any).productType} - {(item as any).company}</span>
                                             </div>
                                             <span className="font-black text-primary font-mono text-lg group-hover:text-gradient group-hover:scale-110 transition-all">{item.premium}</span>
@@ -1482,8 +1472,8 @@ ${clipped}`;
                             </Card>
 
                             <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden hover-lift">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-100 to-yellow-50 rounded-bl-[100px] -mr-10 -mt-10 z-0"></div>
-                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-100 to-teal-50 rounded-tr-[60px] -ml-6 -mb-6 z-0"></div>
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-100 to-yellow-50 rounded-bl-[100px] -mr-10 -mt-10 z-0" />
+                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-100 to-teal-50 rounded-tr-[60px] -ml-6 -mb-6 z-0" />
                                 <h4 className="text-xl font-black text-gradient mb-6 relative z-10">🚀 הזדמנויות עסקיות</h4>
                                 <div className="space-y-4 relative z-10">
                                     {client.pensionSales.length === 0 && (
@@ -1643,8 +1633,7 @@ ${clipped}`;
                                                 </label>
                                             </div>
                                         </div>
-                                        {showPlatinumSelect && (
-                                            <div className="mt-4 animate-fade-in-up">
+                                        {showPlatinumSelect ? <div className="mt-4 animate-fade-in-up">
                                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">בחר מוצרי פלטינום</label>
                                                 <select multiple className="input-premium mt-1 h-28"
                                                     onChange={e => {
@@ -1655,8 +1644,7 @@ ${clipped}`;
                                                     <option>פלטינום בריאות</option><option>פלטינום פרימיום</option><option>רופא עד הבית</option><option>שיניים</option><option>רפואה אלטרנטיבית</option>
                                                 </select>
                                                 <p className="text-[10px] text-slate-400 mt-2">* ניתן לבחור מספר פריטים (Ctrl+Click)</p>
-                                            </div>
-                                        )}
+                                            </div> : null}
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מוצר ביטוח</label>
@@ -1778,8 +1766,7 @@ ${clipped}`;
                                     </div>
 
                                     {/* חישוב אוטומטי */}
-                                    {platinumPriceCalc && (
-                                        <div className="col-span-2 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
+                                    {platinumPriceCalc ? <div className="col-span-2 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <span className="text-xs text-amber-600 font-bold">מחיר בסיס לפי גיל:</span>
@@ -1790,8 +1777,7 @@ ${clipped}`;
                                                     <span className="text-xl font-black text-emerald-700 mr-2">₪{platinumPriceCalc.finalPrice.toFixed(0)}</span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        </div> : null}
 
                                     {/* עלות חודשית סופית */}
                                     <div className="col-span-2">
@@ -1806,8 +1792,7 @@ ${clipped}`;
                                     </div>
 
                                     {/* תצוגת עמלות צפויות */}
-                                    {platinumForm.monthlyPremium && platinumForm.productName && (
-                                        <div className="col-span-2 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
+                                    {platinumForm.monthlyPremium && platinumForm.productName ? <div className="col-span-2 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
                                             <h5 className="text-xs font-bold text-indigo-600 mb-2">💰 עמלות צפויות:</h5>
                                             <div className="grid grid-cols-2 gap-4 text-sm">
                                                 <div>
@@ -1825,8 +1810,7 @@ ${clipped}`;
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        </div> : null}
                                 </div>
 
                                 <Button 
@@ -1878,8 +1862,7 @@ ${clipped}`;
                             </div>
 
                             {/* Payment Details Section */}
-                            {client.platinumSales && client.platinumSales.length > 0 && (
-                                <div className="mt-6 pt-6 border-t-2 border-amber-200">
+                            {client.platinumSales && client.platinumSales.length > 0 ? <div className="mt-6 pt-6 border-t-2 border-amber-200">
                                     <h5 className="text-sm font-bold text-amber-700 mb-4 flex items-center gap-2">
                                         <span className="bg-amber-100 p-2 rounded-lg">💳</span>
                                         פרטי תשלום לפלטינום
@@ -2123,7 +2106,7 @@ ${clipped}`;
                                     >
                                         {isSubmittingPlatinum ? (
                                             <>
-                                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full inline-block ml-2"></div>
+                                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full inline-block ml-2" />
                                                 שולח לפלטינום...
                                             </>
                                         ) : (
@@ -2149,8 +2132,7 @@ ${clipped}`;
                                             <div className="text-emerald-600">נשלחו</div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                </div> : null}
                         </Card>
                     </div>
                 )}
@@ -2251,7 +2233,7 @@ ${clipped}`;
                         <div className="grid gap-6">
                             {client.policies.map((policy, index) => (
                                 <Card key={policy.id} className="border-none shadow-2xl bg-white/80 backdrop-blur-xl overflow-hidden group hover-lift" style={{ animationDelay: `${index * 100}ms` }}>
-                                    <div className={`h-2 bg-gradient-to-r ${policy.color || 'from-indigo-500 via-purple-500 to-fuchsia-500'} progress-animated`}></div>
+                                    <div className={`h-2 bg-gradient-to-r ${policy.color || 'from-indigo-500 via-purple-500 to-fuchsia-500'} progress-animated`} />
                                     <div className="p-8 relative">
                                         <div className="absolute top-8 left-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2">
                                             <button onClick={() => handleEdit("policy", policy)} className="p-3 bg-white hover:bg-indigo-50 rounded-xl shadow-lg border border-slate-100 transition-all hover:scale-110"><Edit2 size={16} className="text-slate-500 hover:text-indigo-600" /></button>
@@ -2344,26 +2326,22 @@ ${clipped}`;
                                             {isSpeechListening ? "עצור והפק תיעוד" : "הקלט סיכום"}
                                         </Button>
 
-                                        {isVoiceSummarizing && (
-                                            <div className="flex items-center text-xs font-bold text-indigo-600">
+                                        {isVoiceSummarizing ? <div className="flex items-center text-xs font-bold text-indigo-600">
                                                 יוצר תיעוד...
-                                            </div>
-                                        )}
+                                            </div> : null}
                                     </div>
 
                                     {!isSpeechSupported && (
                                         <p className="text-[11px] text-slate-500 mb-2">הקלטה קולית זמינה בדפדפני Chrome/Edge.</p>
                                     )}
-                                    {speechError && (
-                                        <p className="text-[11px] text-red-600 mb-2">שגיאת הקלטה: {speechError}</p>
-                                    )}
+                                    {speechError ? <p className="text-[11px] text-red-600 mb-2">שגיאת הקלטה: {speechError}</p> : null}
 
                                     <textarea
                                         className="w-full bg-slate-50 p-4 rounded-xl border border-slate-100 min-h-[150px] font-medium outline-none focus:border-indigo-500 transition-all"
                                         placeholder="כתוב סיכום שיחה, פגישה או הודעה..."
                                         value={newNote}
                                         onChange={(e) => setNewNote(e.target.value)}
-                                    ></textarea>
+                                     />
                                     <div className="flex gap-2 mt-4">
                                         <Button onClick={handleSaveNote} className="flex-1 bg-indigo-600 text-white rounded-xl py-3 font-black shadow-lg hover:bg-indigo-700 transition-all">
                                             <Save size={16} className="ml-2" /> שמור תיעוד
@@ -2380,7 +2358,7 @@ ${clipped}`;
                                     {client.interactions && client.interactions.length > 0 ? (
                                         client.interactions.map((interaction) => (
                                             <Card key={interaction.id} className="border-none shadow-md bg-white p-5 relative z-10 mr-4">
-                                                <div className="absolute right-[-29px] top-6 h-6 w-6 rounded-full bg-white border-4 border-indigo-100 z-20"></div>
+                                                <div className="absolute right-[-29px] top-6 h-6 w-6 rounded-full bg-white border-4 border-indigo-100 z-20" />
                                                 <div className="flex items-start gap-4">
                                                     <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-xl shrink-0 ${interaction.type === 'whatsapp' ? 'bg-green-100 text-green-600' :
                                                         interaction.type === 'email' ? 'bg-blue-100 text-blue-600' :
@@ -2427,7 +2405,7 @@ ${clipped}`;
                                 {isAnalyzing ? (
                                     <div className="flex items-center justify-center h-full p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                         <div className="flex flex-col items-center gap-2">
-                                            <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                                             <span className="text-xs font-bold text-indigo-600">מפענח...</span>
                                         </div>
                                     </div>
@@ -2437,8 +2415,7 @@ ${clipped}`;
                             </div>
                         </div>
 
-                        {client.externalPolicies && client.externalPolicies.length > 0 && (
-                            <Card className="border-none shadow-xl bg-white p-8">
+                        {client.externalPolicies && client.externalPolicies.length > 0 ? <Card className="border-none shadow-xl bg-white p-8">
                                 <h4 className="font-black text-primary text-xl mb-6">פוליסות חיצוניות שאותרו</h4>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-right">
@@ -2473,8 +2450,7 @@ ${clipped}`;
                                         </tbody>
                                     </table>
                                 </div>
-                            </Card>
-                        )}
+                            </Card> : null}
 
                         {(!client.externalPolicies || client.externalPolicies.length === 0) && (
                             <div className="text-center py-20 opacity-40">
@@ -2502,8 +2478,7 @@ ${clipped}`;
                             </div>
                         )}
 
-                        {client.aiInsights && (
-                            <div className="space-y-8">
+                        {client.aiInsights ? <div className="space-y-8">
                                 <div className="grid md:grid-cols-3 gap-6">
                                     <Card className="border-none shadow-xl bg-red-50 p-6 border-t-4 border-red-400">
                                         <div className="flex items-center gap-3 mb-4">
@@ -2557,8 +2532,7 @@ ${clipped}`;
                                 <div className="text-center">
                                     <Button onClick={handleGenerateAIInsights} variant="ghost" className="text-slate-400 hover:text-indigo-600 text-xs">🔄 רענן ניתוח</Button>
                                 </div>
-                            </div>
-                        )}
+                            </div> : null}
                     </div>
                 )}
                 {activeTab === "פיננסי" && (
@@ -2597,9 +2571,9 @@ ${clipped}`;
                                 </div>
                                 <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">חלוקת תיק</p>
                                 <div className="flex h-2 rounded-full overflow-hidden gap-1 mt-3">
-                                    <div className="bg-emerald-500" style={{ width: '40%' }}></div>
-                                    <div className="bg-blue-500" style={{ width: '35%' }}></div>
-                                    <div className="bg-purple-500" style={{ width: '25%' }}></div>
+                                    <div className="bg-emerald-500" style={{ width: '40%' }} />
+                                    <div className="bg-blue-500" style={{ width: '35%' }} />
+                                    <div className="bg-purple-500" style={{ width: '25%' }} />
                                 </div>
                                 <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2">
                                     <span>פנסיוני</span>
@@ -2616,7 +2590,7 @@ ${clipped}`;
                                     {[...client.policies, ...client.insuranceSales].map((item, i) => (
                                         <div key={i} className="flex items-center justify-between group">
                                             <div className="flex items-center gap-3">
-                                                <div className={`h-2 w-2 rounded-full ${i % 2 === 0 ? 'bg-indigo-500' : 'bg-fuchsia-500'}`}></div>
+                                                <div className={`h-2 w-2 rounded-full ${i % 2 === 0 ? 'bg-indigo-500' : 'bg-fuchsia-500'}`} />
                                                 <span className="font-bold text-slate-600 text-sm">{(item as any).type || (item as any).productType} - {(item as any).company}</span>
                                             </div>
                                             <span className="font-black text-primary font-mono group-hover:text-accent transition-colors">{item.premium}</span>
@@ -2629,7 +2603,7 @@ ${clipped}`;
                             </Card>
 
                             <Card className="border-none shadow-xl bg-white p-8 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-bl-full -mr-8 -mt-8 z-0" />
                                 <h4 className="text-xl font-black text-primary mb-6 relative z-10">הזדמנויות עסקיות</h4>
                                 <div className="space-y-3 relative z-10">
                                     {client.pensionSales.length === 0 && (
@@ -2686,7 +2660,7 @@ ${clipped}`;
                                                 <button onClick={() => deleteItem("tasks", task.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
                                             </div>
                                             <div className="flex items-start gap-4">
-                                                <div className={`mt-1 h-3 w-3 rounded-full ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                                                <div className={`mt-1 h-3 w-3 rounded-full ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-400' : 'bg-green-400'}`} />
                                                 <div>
                                                     <h5 className="font-black text-primary">{task.title}</h5>
                                                     <div className="flex gap-3 mt-2 text-xs text-slate-400 font-bold">
@@ -2707,11 +2681,10 @@ ${clipped}`;
 
                 {/* --- Modal Overlay --- */}
                 {
-                    editMode && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    editMode ? <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
                             <div className="bg-white rounded-[2.5rem] p-0 w-full max-w-lg shadow-3xl relative overflow-hidden animate-in zoom-in-95 duration-300">
                                 {/* Modal Header Decoration */}
-                                <div className="h-2 w-full bg-gradient-to-r from-accent via-indigo-500 to-purple-600"></div>
+                                <div className="h-2 w-full bg-gradient-to-r from-accent via-indigo-500 to-purple-600" />
 
                                 <div className="p-10">
                                     <button onClick={() => setEditMode(null)} className="absolute top-8 left-8 p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-primary transition-all">
@@ -2794,11 +2767,9 @@ ${clipped}`;
                                                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                                         label="העלה את קובץ הפוליסה"
                                                     />
-                                                    {formData.documentName && (
-                                                        <p className="text-xs text-green-600 font-bold flex items-center gap-1 mt-2">
+                                                    {formData.documentName ? <p className="text-xs text-green-600 font-bold flex items-center gap-1 mt-2">
                                                             <FileText size={14} /> {formData.documentName}
-                                                        </p>
-                                                    )}
+                                                        </p> : null}
                                                 </div>
                                                 {/* הצגה באיזור האישי של הלקוח */}
                                                 <div className="bg-gradient-to-l from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
@@ -2819,7 +2790,7 @@ ${clipped}`;
                                                                 checked={formData.showInClientPortal ?? true}
                                                                 onChange={e => setFormData({ ...formData, showInClientPortal: e.target.checked })}
                                                             />
-                                                            <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:-translate-x-full rtl:peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all"></div>
+                                                            <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:-translate-x-full rtl:peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all" />
                                                         </label>
                                                     </div>
                                                 </div>
@@ -2954,8 +2925,7 @@ ${clipped}`;
                                                             onChange={e => setClientSearchQuery(e.target.value)} 
                                                             className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" 
                                                         />
-                                                        {clientSearchQuery && filteredClients.length > 0 && (
-                                                            <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                                                        {clientSearchQuery && filteredClients.length > 0 ? <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                                                                 {filteredClients.slice(0, 5).map(c => (
                                                                     <button 
                                                                         key={c.id} 
@@ -2969,15 +2939,12 @@ ${clipped}`;
                                                                         <span className="text-xs text-slate-400 mr-2">{c.idNumber}</span>
                                                                     </button>
                                                                 ))}
-                                                            </div>
-                                                        )}
+                                                            </div> : null}
                                                     </div>
-                                                    {formData.linkedClientName && (
-                                                        <div className="flex items-center gap-2 mt-2 bg-indigo-50 px-4 py-2 rounded-xl">
+                                                    {formData.linkedClientName ? <div className="flex items-center gap-2 mt-2 bg-indigo-50 px-4 py-2 rounded-xl">
                                                             <span className="text-indigo-600 font-bold">מקושר ל: {formData.linkedClientName}</span>
                                                             <button onClick={() => setFormData({ ...formData, linkedClientId: undefined, linkedClientName: undefined })} className="text-red-500 hover:text-red-700 mr-auto">✕</button>
-                                                        </div>
-                                                    )}
+                                                        </div> : null}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">נציג מכירה</label>
@@ -2995,14 +2962,12 @@ ${clipped}`;
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )
+                        </div> : null
                 }
 
                 {/* --- Market Analysis Modal --- */}
                 {
-                    showMarketModal && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
+                    showMarketModal ? <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" dir="rtl">
                             <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-3xl border-none">
                                 <div className="p-8 space-y-8">
                                     <div className="flex items-center justify-between">
@@ -3086,13 +3051,11 @@ ${clipped}`;
                                     </div>
                                 </div>
                             </Card>
-                        </div>
-                    )
+                        </div> : null
                 }
                 {/* --- Referral Modal --- */}
                 {
-                    showReferralModal && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    showReferralModal ? <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
                             <div className="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl relative text-center">
                                 <button onClick={() => setShowReferralModal(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-600"><X size={20} /></button>
                                 <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-6">
@@ -3119,8 +3082,7 @@ ${clipped}`;
                                     ))}
                                 </div>
                             </div>
-                        </div>
-                    )
+                        </div> : null
                 }
             </div >
         </DashboardShell >
@@ -3201,8 +3163,7 @@ function DocumentsTab({
             </Card>
 
             {/* Upload Form Modal */}
-            {showUploadForm && selectedFile && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            {showUploadForm && selectedFile ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <Card className="w-full max-w-lg p-6 bg-white rounded-3xl shadow-2xl animate-in zoom-in-95">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-black text-slate-900">📄 פרטי המסמך</h3>
@@ -3282,8 +3243,7 @@ function DocumentsTab({
                             </Button>
                         </div>
                     </Card>
-                </div>
-            )}
+                </div> : null}
 
             {/* Documents List */}
             <div className="grid gap-4">
@@ -3299,27 +3259,21 @@ function DocumentsTab({
                                         <h4 className="font-black text-primary text-base mb-2">{doc.name}</h4>
                                         
                                         <div className="flex flex-wrap gap-2 mb-3">
-                                            {doc.documentType && (
-                                                <span className={`px-2 py-1 rounded-lg text-xs font-bold ${getDocTypeColor(doc.documentType)}`}>
+                                            {doc.documentType ? <span className={`px-2 py-1 rounded-lg text-xs font-bold ${getDocTypeColor(doc.documentType)}`}>
                                                     {doc.documentType}
-                                                </span>
-                                            )}
-                                            {doc.producer && (
-                                                <span className="px-2 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
+                                                </span> : null}
+                                            {doc.producer ? <span className="px-2 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
                                                     🏢 {doc.producer}
-                                                </span>
-                                            )}
-                                            {doc.status && (
-                                                <span className={`px-2 py-1 rounded-lg text-xs font-bold border ${getStatusColor(doc.status)}`}>
+                                                </span> : null}
+                                            {doc.status ? <span className={`px-2 py-1 rounded-lg text-xs font-bold border ${getStatusColor(doc.status)}`}>
                                                     {doc.status}
-                                                </span>
-                                            )}
+                                                </span> : null}
                                         </div>
 
                                         <div className="flex flex-wrap gap-4 text-xs text-slate-400 font-bold">
                                             <span>📅 {doc.date}</span>
                                             <span>💾 {doc.size}</span>
-                                            {doc.uploadedBy && <span>👤 {doc.uploadedBy}</span>}
+                                            {doc.uploadedBy ? <span>👤 {doc.uploadedBy}</span> : null}
                                         </div>
                                     </div>
                                 </div>

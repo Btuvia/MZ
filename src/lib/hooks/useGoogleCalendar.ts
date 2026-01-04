@@ -8,8 +8,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { googleCalendarService, GoogleCalendarEvent, CalendarSyncStatus } from '@/lib/services/google-calendar-service';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { googleCalendarService, type GoogleCalendarEvent, type CalendarSyncStatus } from '@/lib/services/google-calendar-service';
 
 interface UseGoogleCalendarReturn {
     // Connection state

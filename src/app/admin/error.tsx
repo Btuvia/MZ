@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { Button } from "@/components/ui/base";
 import { AlertTriangle, RefreshCw, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 

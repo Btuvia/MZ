@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
 import { Plus, Edit2, Trash2, GitBranch, Save, X, ChevronDown, ChevronUp, Layers, Clock, Target } from "lucide-react";
-import { firestoreService } from "@/lib/firebase/firestore-service";
+import { useState, useEffect } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { handleError, showSuccess } from "@/lib/error-handler";
-import { Workflow, WorkflowStep } from "@/types/workflow";
-import { TaskType, UserRole } from "@/types";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 import { TASK_TYPES } from "@/lib/task-constants";
+import { TaskType, UserRole } from "@/types";
+import { type Workflow, type WorkflowStep } from "@/types/workflow";
 
 export default function WorkflowsPage() {
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -256,33 +256,25 @@ export default function WorkflowsPage() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-slate-900 text-lg">{workflow.name}</h3>
-                                                {workflow.category && (
-                                                    <Badge variant="outline" className="text-xs">{workflow.category}</Badge>
-                                                )}
+                                                {workflow.category ? <Badge variant="outline" className="text-xs">{workflow.category}</Badge> : null}
                                                 {!workflow.isActive && (
                                                     <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge>
                                                 )}
                                             </div>
-                                            {workflow.description && (
-                                                <p className="text-sm text-slate-500">{workflow.description}</p>
-                                            )}
+                                            {workflow.description ? <p className="text-sm text-slate-500">{workflow.description}</p> : null}
                                             <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                                                 <span className="flex items-center gap-1">
                                                     <Layers size={14} />
                                                     {workflow.steps.length} שלבים
                                                 </span>
-                                                {workflow.estimatedDuration && (
-                                                    <span className="flex items-center gap-1">
+                                                {workflow.estimatedDuration ? <span className="flex items-center gap-1">
                                                         <Clock size={14} />
                                                         {workflow.estimatedDuration} ימים
-                                                    </span>
-                                                )}
-                                                {workflow.usageCount && (
-                                                    <span className="flex items-center gap-1">
+                                                    </span> : null}
+                                                {workflow.usageCount ? <span className="flex items-center gap-1">
                                                         <Target size={14} />
                                                         {workflow.usageCount} שימושים
-                                                    </span>
-                                                )}
+                                                    </span> : null}
                                             </div>
                                         </div>
                                     </div>
@@ -333,9 +325,7 @@ export default function WorkflowsPage() {
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="font-bold text-slate-900">{step.name}</div>
-                                                            {step.description && (
-                                                                <div className="text-sm text-slate-500 mt-1">{step.description}</div>
-                                                            )}
+                                                            {step.description ? <div className="text-sm text-slate-500 mt-1">{step.description}</div> : null}
                                                             <div className="flex items-center gap-3 mt-2 text-xs">
                                                                 <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                                                                     {TASK_TYPES.find(t => t.value === step.taskType)?.labelHe || step.taskType}
@@ -343,16 +333,12 @@ export default function WorkflowsPage() {
                                                                 <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
                                                                     {step.daysToComplete} ימים
                                                                 </span>
-                                                                {step.autoCreate && (
-                                                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                                                {step.autoCreate ? <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
                                                                         יצירה אוטומטית
-                                                                    </span>
-                                                                )}
-                                                                {step.requiresPreviousCompletion && (
-                                                                    <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                                                    </span> : null}
+                                                                {step.requiresPreviousCompletion ? <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
                                                                         דורש השלמת שלב קודם
-                                                                    </span>
-                                                                )}
+                                                                    </span> : null}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -367,8 +353,7 @@ export default function WorkflowsPage() {
                 </div>
 
                 {/* Modal */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                {isModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                             {/* Header */}
                             <div className="p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
@@ -548,8 +533,7 @@ export default function WorkflowsPage() {
                                 </Button>
                             </div>
                         </Card>
-                    </div>
-                )}
+                    </div> : null}
             </div>
         </DashboardShell>
     );

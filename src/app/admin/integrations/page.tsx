@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import IntegrationCard from "@/components/admin/integrations/IntegrationCard";
 import { Zap, Plug, ShieldCheck, Share2, Phone, Mail, Calendar as CalendarIcon, MessageCircle, CheckCircle } from "lucide-react";
-import { useGoogleCalendar } from "@/lib/hooks/useGoogleCalendar";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import IntegrationCard from "@/components/admin/integrations/IntegrationCard";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { useGoogleCalendar } from "@/lib/hooks/useGoogleCalendar";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function IntegrationsPage() {
     const searchParams = useSearchParams();
@@ -121,15 +121,13 @@ export default function IntegrationsPage() {
                 </div>
 
                 {/* Calendar Success Banner */}
-                {showCalendarSuccess && (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 animate-in slide-in-from-top duration-300">
+                {showCalendarSuccess ? <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 animate-in slide-in-from-top duration-300">
                         <CheckCircle className="text-emerald-600" size={24} />
                         <div>
                             <p className="font-bold text-emerald-800">היומן חובר בהצלחה!</p>
                             <p className="text-sm text-emerald-600">הסנכרון יתבצע אוטומטית בכל פעם שתתחבר למערכת.</p>
                         </div>
-                    </div>
-                )}
+                    </div> : null}
 
                 {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

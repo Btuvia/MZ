@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
+import { generateLeadsInsights } from "@/app/actions/gemini";
 import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { generateLeadsInsights } from "@/app/actions/gemini";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function LeadsPage() {
     const { user } = useAuth();
@@ -99,7 +99,7 @@ export default function LeadsPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4">ניהול לידים</h1>
@@ -240,7 +240,7 @@ export default function LeadsPage() {
 
                 {/* AI Insights */}
                 <Card className="border-none shadow-xl bg-slate-900 text-white p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 h-full w-1 bg-accent"></div>
+                    <div className="absolute top-0 right-0 h-full w-1 bg-accent" />
                     <div className="flex items-start gap-4">
                         <div className="h-12 w-12 rounded-xl bg-accent/20 flex items-center justify-center text-accent text-xl animate-pulse">
                             ✨

@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     Mail, Send, Inbox, FileText, BarChart3, Plus, Search,
     Star, Trash2, Archive, RefreshCw, Clock, CheckCircle2,
@@ -12,11 +10,13 @@ import {
     Play, Pause, Settings, Tag, Paperclip, Reply, Forward,
     UserPlus, Building2, ExternalLink, ArrowRight
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 // Types
 interface Email {
@@ -618,24 +618,20 @@ export default function EmailCenterPage() {
 
                 {/* Compose Modal */}
                 <AnimatePresence>
-                    {showComposeModal && (
-                        <ComposeModal 
+                    {showComposeModal ? <ComposeModal 
                             onClose={() => setShowComposeModal(false)}
                             templates={templates}
                             onSend={handleSendEmail}
-                        />
-                    )}
+                        /> : null}
                 </AnimatePresence>
 
                 {/* Campaign Modal */}
                 <AnimatePresence>
-                    {showCampaignModal && (
-                        <CampaignModal 
+                    {showCampaignModal ? <CampaignModal 
                             onClose={() => setShowCampaignModal(false)}
                             templates={templates}
                             onCreate={handleCreateCampaign}
-                        />
-                    )}
+                        /> : null}
                 </AnimatePresence>
             </div>
         </DashboardShell>
@@ -980,9 +976,7 @@ function TemplatesView({
                                 <p className="text-xs text-slate-500 mb-3 line-clamp-2">{template.preview}</p>
                                 <div className="flex items-center justify-between text-xs text-slate-500">
                                     <span>שימושים: {template.usageCount}</span>
-                                    {template.lastUsed && (
-                                        <span>עודכן: {template.lastUsed}</span>
-                                    )}
+                                    {template.lastUsed ? <span>עודכן: {template.lastUsed}</span> : null}
                                 </div>
                             </Card>
                         ))}
@@ -991,8 +985,7 @@ function TemplatesView({
             ))}
 
             {/* New Template Modal would go here */}
-            {showNewTemplateModal && (
-                <motion.div
+            {showNewTemplateModal ? <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -1075,8 +1068,7 @@ function TemplatesView({
                             </Button>
                         </div>
                     </motion.div>
-                </motion.div>
-            )}
+                </motion.div> : null}
         </div>
     );
 }
@@ -1223,16 +1215,14 @@ function CampaignsView({
                             </div>
 
                             {/* Schedule Info */}
-                            {(campaign.scheduledAt || campaign.sentAt) && (
-                                <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-sm text-slate-500">
+                            {(campaign.scheduledAt || campaign.sentAt) ? <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2 text-sm text-slate-500">
                                     <Calendar size={14} />
                                     {campaign.sentAt ? (
                                         <span>נשלח ב-{new Date(campaign.sentAt).toLocaleString('he-IL')}</span>
                                     ) : (
                                         <span>מתוזמן ל-{new Date(campaign.scheduledAt!).toLocaleString('he-IL')}</span>
                                     )}
-                                </div>
-                            )}
+                                </div> : null}
                         </Card>
                     );
                 })
@@ -1260,9 +1250,7 @@ function AnalyticsView({ analytics, campaigns }: { analytics: any; campaigns: Ca
                                 <div className={`w-12 h-12 rounded-xl bg-${stat.color}-500/20 flex items-center justify-center`}>
                                     <Icon size={24} className={`text-${stat.color}-400`} />
                                 </div>
-                                {stat.rate && (
-                                    <span className={`text-sm font-bold text-${stat.color}-400`}>{stat.rate}</span>
-                                )}
+                                {stat.rate ? <span className={`text-sm font-bold text-${stat.color}-400`}>{stat.rate}</span> : null}
                             </div>
                             <div className="text-2xl font-black text-amber-100">{stat.value}</div>
                             <div className="text-sm text-slate-500">{stat.label}</div>

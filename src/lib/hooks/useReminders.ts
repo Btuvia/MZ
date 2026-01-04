@@ -8,9 +8,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { firestoreService } from '@/lib/firebase/firestore-service';
-import { toast } from 'sonner';
 
 interface Reminder {
     id: string;

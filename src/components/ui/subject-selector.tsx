@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { TaskSubject } from '@/types/subject';
-import { Card } from './base';
 import { Check, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { type TaskSubject } from '@/types/subject';
+import { Card } from './base';
 
 interface SubjectSelectorProps {
     value?: string;
@@ -56,9 +56,7 @@ export function SubjectSelector({
                         </div>
                         <div className="text-right">
                             <div className="font-bold text-slate-200">{selectedSubject.name}</div>
-                            {selectedSubject.description && (
-                                <div className="text-xs text-slate-400">{selectedSubject.description}</div>
-                            )}
+                            {selectedSubject.description ? <div className="text-xs text-slate-400">{selectedSubject.description}</div> : null}
                         </div>
                     </div>
                 ) : (
@@ -78,8 +76,7 @@ export function SubjectSelector({
                 </svg>
             </button>
 
-            {isOpen && !disabled && (
-                <>
+            {isOpen && !disabled ? <>
                     {/* Backdrop */}
                     <div
                         className="fixed inset-0 z-10"
@@ -90,8 +87,7 @@ export function SubjectSelector({
                     <Card className="absolute z-20 w-full mt-2 max-h-96 overflow-y-auto shadow-2xl border-2 border-amber-500/20">
                         <div className="p-2 space-y-1">
                             {/* Clear option */}
-                            {allowClear && value && (
-                                <>
+                            {allowClear && value ? <>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -103,8 +99,7 @@ export function SubjectSelector({
                                         <span className="text-slate-400 text-sm">ללא נושא</span>
                                     </button>
                                     <div className="border-t border-amber-500/20 my-1" />
-                                </>
-                            )}
+                                </> : null}
 
                             {activeSubjects.length === 0 ? (
                                 <div className="px-3 py-4 text-center text-slate-400 text-sm">
@@ -139,20 +134,14 @@ export function SubjectSelector({
                                         <div className="flex-1 text-right">
                                             <div className="font-bold text-slate-200 flex items-center gap-2">
                                                 {subject.name}
-                                                {subject.relatedToPolicy && (
-                                                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                                                {subject.relatedToPolicy ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
                                                         פוליסה
-                                                    </span>
-                                                )}
-                                                {subject.isFutureLead && (
-                                                    <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                                                    </span> : null}
+                                                {subject.isFutureLead ? <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
                                                         ליד
-                                                    </span>
-                                                )}
+                                                    </span> : null}
                                             </div>
-                                            {subject.description && (
-                                                <div className="text-xs text-slate-400">{subject.description}</div>
-                                            )}
+                                            {subject.description ? <div className="text-xs text-slate-400">{subject.description}</div> : null}
                                         </div>
 
                                         {value === subject.id && (
@@ -163,8 +152,7 @@ export function SubjectSelector({
                             )}
                         </div>
                     </Card>
-                </>
-            )}
+                </> : null}
         </div>
     );
 }

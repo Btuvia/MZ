@@ -6,12 +6,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-comp
 
 // Initialize Firebase in the service worker
 firebase.initializeApp({
-    apiKey: "AIzaSyBRcSFpjUM9kJQvxi-0wD-pAw0Yt1Y9fY8",
-    authDomain: "magenzaha.firebaseapp.com",
-    projectId: "magenzaha",
-    storageBucket: "magenzaha.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abc123"
+    apiKey: 'AIzaSyBRcSFpjUM9kJQvxi-0wD-pAw0Yt1Y9fY8',
+    authDomain: 'magenzaha.firebaseapp.com',
+    projectId: 'magenzaha',
+    storageBucket: 'magenzaha.appspot.com',
+    messagingSenderId: '123456789',
+    appId: '1:123456789:web:abc123',
 });
 
 const messaging = firebase.messaging();
@@ -31,13 +31,13 @@ messaging.onBackgroundMessage((payload) => {
         actions: [
             {
                 action: 'open',
-                title: 'פתח'
+                title: 'פתח',
             },
             {
                 action: 'dismiss',
-                title: 'סגור'
-            }
-        ]
+                title: 'סגור',
+            },
+        ],
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
@@ -46,7 +46,7 @@ messaging.onBackgroundMessage((payload) => {
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
     console.log('[firebase-messaging-sw.js] Notification click:', event);
-    
+
     event.notification.close();
 
     if (event.action === 'dismiss') {
@@ -55,20 +55,19 @@ self.addEventListener('notificationclick', (event) => {
 
     // Open the app or focus existing window
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then((clientList) => {
-                // Check if there's already a window open
-                for (const client of clientList) {
-                    if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        return client.focus();
-                    }
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            // Check if there's already a window open
+            for (const client of clientList) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    return client.focus();
                 }
-                // Open new window if none exists
-                if (clients.openWindow) {
-                    const url = event.notification.data?.url || '/admin/dashboard';
-                    return clients.openWindow(url);
-                }
-            })
+            }
+            // Open new window if none exists
+            if (clients.openWindow) {
+                const url = event.notification.data?.url || '/admin/dashboard';
+                return clients.openWindow(url);
+            }
+        })
     );
 });
 

@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     FileWarning, Plus, Search, Clock, CheckCircle, XCircle,
     AlertCircle, Upload, Calendar, FileText, Camera, 
     ChevronRight, ChevronDown, Phone, MessageSquare, Eye,
     Send, ArrowRight, RefreshCw, Sparkles, Info, DollarSign
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface Claim {
     id: string;
@@ -271,12 +271,10 @@ export default function ClaimsPage() {
                                         </div>
                                         
                                         <div className="flex items-center gap-4">
-                                            {claim.amount && (
-                                                <div className="text-left">
+                                            {claim.amount ? <div className="text-left">
                                                     <div className="text-xl font-black text-amber-400">₪{claim.amount.toLocaleString()}</div>
                                                     <div className="text-xs text-slate-500">סכום התביעה</div>
-                                                </div>
-                                            )}
+                                                </div> : null}
                                             <Badge className={`bg-${statusConfig.color}-500/20 text-${statusConfig.color}-400 border-${statusConfig.color}-500/30`}>
                                                 <StatusIcon size={14} className="ml-1" />
                                                 {statusConfig.label}
@@ -309,11 +307,11 @@ export default function ClaimsPage() {
                                                                         ? 'bg-emerald-500 border-emerald-500' 
                                                                         : 'bg-slate-800 border-slate-600'
                                                                 }`}>
-                                                                    {step.completed && <CheckCircle size={12} className="text-white m-0.5" />}
+                                                                    {step.completed ? <CheckCircle size={12} className="text-white m-0.5" /> : null}
                                                                 </div>
                                                                 <div className={step.completed ? 'text-slate-300' : 'text-slate-500'}>
                                                                     <div className="font-bold">{step.label}</div>
-                                                                    {step.date && <div className="text-xs">{step.date}</div>}
+                                                                    {step.date ? <div className="text-xs">{step.date}</div> : null}
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -404,8 +402,7 @@ export default function ClaimsPage() {
                         )}
 
                         {/* Step 2: Details */}
-                        {newClaimStep === 2 && selectedType && (
-                            <Card className="p-6">
+                        {newClaimStep === 2 && selectedType ? <Card className="p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <button onClick={() => setNewClaimStep(1)} className="text-slate-400 hover:text-amber-400">
                                         <ArrowRight size={20} />
@@ -476,12 +473,10 @@ export default function ClaimsPage() {
                                         </Button>
                                     </div>
                                 </div>
-                            </Card>
-                        )}
+                            </Card> : null}
 
                         {/* Step 3: Upload Documents */}
-                        {newClaimStep === 3 && selectedType && (
-                            <Card className="p-6">
+                        {newClaimStep === 3 && selectedType ? <Card className="p-6">
                                 <div className="flex items-center gap-3 mb-6">
                                     <button onClick={() => setNewClaimStep(2)} className="text-slate-400 hover:text-amber-400">
                                         <ArrowRight size={20} />
@@ -547,8 +542,7 @@ export default function ClaimsPage() {
                                         </Button>
                                     </div>
                                 </div>
-                            </Card>
-                        )}
+                            </Card> : null}
 
                         {/* Help Box */}
                         <Card className="p-4 border-amber-500/20 bg-amber-500/5">

@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     BarChart3, TrendingUp, TrendingDown, Users, FileText, Download, 
     Calendar, Filter, RefreshCw, PieChart, Activity, Target, 
@@ -10,7 +8,9 @@ import {
     FileSpreadsheet, FileDown, ArrowUpRight, ArrowDownRight,
     Building2, Phone, Mail, Zap, Award, Shield, Loader2
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useClients, useLeads, useDeals, useUsers, useTasks, useCampaigns } from "@/lib/hooks/useQueryHooks";
 import { Deal, Lead, Client, Task, SystemUser } from "@/types";
 
@@ -536,11 +536,11 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
                             </div>
                             <div className="flex items-center justify-center gap-6 mt-4">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded bg-amber-500"></div>
+                                    <div className="w-3 h-3 rounded bg-amber-500" />
                                     <span className="text-xs text-slate-400">פנסיה</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded bg-blue-500"></div>
+                                    <div className="w-3 h-3 rounded bg-blue-500" />
                                     <span className="text-xs text-slate-400">ביטוח</span>
                                 </div>
                             </div>

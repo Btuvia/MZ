@@ -1,12 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged, User, signOut as firebaseSignOut } from "firebase/auth";
-import { auth } from "@/lib/firebase/firebase";
+import { onAuthStateChanged, type User, signOut as firebaseSignOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { googleCalendarService, CalendarSyncStatus } from "@/lib/services/google-calendar-service";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { auth } from "@/lib/firebase/firebase";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { UserRole } from "@/types";
+import { googleCalendarService, type CalendarSyncStatus } from "@/lib/services/google-calendar-service";
+import { type UserRole } from "@/types";
 
 interface AuthContextType {
     user: User | null;

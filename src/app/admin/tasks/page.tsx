@@ -1,12 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { toast } from "sonner";
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useUsers } from "@/lib/hooks/useQueryHooks";
-import type { Task, TaskStatus, TaskPriority, TaskType } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     CheckSquare, Plus, Search, Calendar, Clock, 
     AlertTriangle, User, MoreVertical,
@@ -14,7 +8,13 @@ import {
     ListTodo, Columns3, CheckCircle2, Circle,
     AlertCircle, Hourglass, X, Flag
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useUsers } from "@/lib/hooks/useQueryHooks";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import type { Task, TaskStatus, TaskPriority, TaskType } from "@/types";
 
 // View modes
 type ViewMode = 'kanban' | 'list';
@@ -259,40 +259,30 @@ export default function TaskCenterPage() {
                 <h4 className="font-bold text-amber-100 text-sm mb-2 line-clamp-2">{task.title}</h4>
 
                 {/* Description */}
-                {task.description && (
-                    <p className="text-xs text-slate-400 mb-3 line-clamp-2">{task.description}</p>
-                )}
+                {task.description ? <p className="text-xs text-slate-400 mb-3 line-clamp-2">{task.description}</p> : null}
 
                 {/* Meta */}
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
                     <div className="flex items-center gap-2">
-                        {task.date && (
-                            <span className="flex items-center gap-1">
+                        {task.date ? <span className="flex items-center gap-1">
                                 <Calendar size={10} />
                                 {task.date}
-                            </span>
-                        )}
-                        {task.time && (
-                            <span className="flex items-center gap-1">
+                            </span> : null}
+                        {task.time ? <span className="flex items-center gap-1">
                                 <Clock size={10} />
                                 {task.time}
-                            </span>
-                        )}
+                            </span> : null}
                     </div>
-                    {task.assignedToName && (
-                        <span className="flex items-center gap-1">
+                    {task.assignedToName ? <span className="flex items-center gap-1">
                             <User size={10} />
                             {task.assignedToName}
-                        </span>
-                    )}
+                        </span> : null}
                 </div>
 
                 {/* Client */}
-                {task.clientName && (
-                    <div className="mt-2 pt-2 border-t border-slate-700/50">
+                {task.clientName ? <div className="mt-2 pt-2 border-t border-slate-700/50">
                         <span className="text-[10px] text-amber-400/70">לקוח: {task.clientName}</span>
-                    </div>
-                )}
+                    </div> : null}
             </motion.div>
         );
     };
@@ -519,9 +509,7 @@ export default function TaskCenterPage() {
                                                     <td className="px-6 py-4">
                                                         <div>
                                                             <div className="font-bold text-slate-200">{task.title}</div>
-                                                            {task.description && (
-                                                                <div className="text-xs text-slate-500 truncate max-w-xs">{task.description}</div>
-                                                            )}
+                                                            {task.description ? <div className="text-xs text-slate-500 truncate max-w-xs">{task.description}</div> : null}
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
@@ -573,8 +561,7 @@ export default function TaskCenterPage() {
                 )}
 
                 {/* Add/Edit Task Modal */}
-                {showNewTaskModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
+                {showNewTaskModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
                         <Card className="w-full max-w-lg bg-slate-900 border-amber-500/20 p-6 shadow-2xl rounded-3xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-xl font-black text-amber-400">
@@ -727,8 +714,7 @@ export default function TaskCenterPage() {
                                 </div>
                             </div>
                         </Card>
-                    </div>
-                )}
+                    </div> : null}
             </div>
         </DashboardShell>
     );

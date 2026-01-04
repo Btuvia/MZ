@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/base";
-import { Upload, FileSpreadsheet, Check, AlertCircle, Loader2, X } from "lucide-react";
-import useDrivePicker from "react-google-drive-picker";
 import ExcelJS from "exceljs";
+import { Upload, FileSpreadsheet, Check, AlertCircle, Loader2, X } from "lucide-react";
 import Papa from "papaparse";
+import { useState, useRef, useCallback } from "react";
+import useDrivePicker from "react-google-drive-picker";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/base";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 
 interface ImportLeadsModalProps {
@@ -281,9 +281,9 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                             </div>
 
                             <div className="relative flex items-center gap-4 py-2">
-                                <div className="h-px bg-slate-200 flex-1"></div>
+                                <div className="h-px bg-slate-200 flex-1" />
                                 <span className="text-xs font-bold text-slate-400">או</span>
-                                <div className="h-px bg-slate-200 flex-1"></div>
+                                <div className="h-px bg-slate-200 flex-1" />
                             </div>
 
                             <Button
@@ -332,7 +332,7 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                                             <option value="">-- התעלם --</option>
                                             {SYSTEM_FIELDS.map(field => (
                                                 <option key={field.key} value={field.key}>
-                                                    {field.label} {field.required && "*"}
+                                                    {field.label} {field.required ? "*" : null}
                                                 </option>
                                             ))}
                                         </select>
@@ -354,7 +354,7 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                         <div className="text-center py-10 space-y-6">
                             <div className="relative w-24 h-24 mx-auto">
                                 <svg className="w-full h-full" viewBox="0 0 100 100">
-                                    <circle className="text-slate-100 stroke-current" strokeWidth="10" cx="50" cy="50" r="40" fill="transparent"></circle>
+                                    <circle className="text-slate-100 stroke-current" strokeWidth="10" cx="50" cy="50" r="40" fill="transparent" />
                                     <circle
                                         className="text-green-500 progress-ring__circle stroke-current transition-all duration-300"
                                         strokeWidth="10"
@@ -365,7 +365,7 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                                         fill="transparent"
                                         strokeDasharray="251.2"
                                         strokeDashoffset={251.2 - (251.2 * progress) / 100}
-                                    ></circle>
+                                     />
                                 </svg>
                                 <div className="absolute inset-0 flex items-center justify-center font-black text-xl text-slate-700">
                                     {progress}%

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Clock, Calendar, Bell, BellRing } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/base";
 
 interface ReminderPickerProps {
@@ -70,8 +70,7 @@ export function ReminderPicker({ isOpen, onClose, onSelect, itemTitle }: Reminde
 
     return (
         <AnimatePresence>
-            {isOpen && (
-                <>
+            {isOpen ? <>
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -184,8 +183,7 @@ export function ReminderPicker({ isOpen, onClose, onSelect, itemTitle }: Reminde
                             </div>
                         </div>
                     </motion.div>
-                </>
-            )}
+                </> : null}
         </AnimatePresence>
     );
 }

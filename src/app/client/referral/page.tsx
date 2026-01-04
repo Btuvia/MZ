@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import { Gift, Heart, Send, Coins, Lock, Unlock, UserPlus, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 
 export default function ReferralPage() {
     const { user } = useAuth();
@@ -392,11 +392,9 @@ function SecretGiftList({ currentCoins }: { currentCoins: number }) {
                                 <p className="text-xs text-slate-500">{gift.cost} מטבעות</p>
                             </div>
                         </div>
-                        {isUnlocked && (
-                            <button className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-800">
+                        {isUnlocked ? <button className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-800">
                                 הזמן
-                            </button>
-                        )}
+                            </button> : null}
                     </div>
                 ))}
 

@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { FileUpload } from "@/components/ui/file-upload";
-import { Sparkles, FileText, CheckCircle2, ArrowRight, BrainCircuit, Search, Zap, Calendar, Shield, Save } from "lucide-react";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { toast } from "sonner";
 import { Timestamp } from "firebase/firestore";
-
-import { analyzeInsuranceDocument, AnalysisResult } from "@/lib/ai/ai-service";
+import { Sparkles, FileText, CheckCircle2, ArrowRight, BrainCircuit, Search, Zap, Calendar, Shield, Save } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { FileUpload } from "@/components/ui/file-upload";
+import { analyzeInsuranceDocument, type AnalysisResult } from "@/lib/ai/ai-service";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 
 export default function DocumentIntelligencePage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -147,7 +146,7 @@ export default function DocumentIntelligencePage() {
                         {isAnalyzing ? (
                             <Card className="min-h-[400px] flex flex-col items-center justify-center border-none shadow-none bg-transparent">
                                 <div className="relative">
-                                    <div className="h-24 w-24 rounded-full border-4 border-slate-100 border-t-accent animate-spin"></div>
+                                    <div className="h-24 w-24 rounded-full border-4 border-slate-100 border-t-accent animate-spin" />
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <Sparkles className="text-accent animate-pulse" size={32} />
                                     </div>

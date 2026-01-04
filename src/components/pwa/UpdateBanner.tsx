@@ -7,8 +7,8 @@
 
 "use client";
 
-import { RefreshCw, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RefreshCw, X } from 'lucide-react';
 import { useServiceWorker } from '@/lib/hooks/useServiceWorker';
 
 export function UpdateBanner() {

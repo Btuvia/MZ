@@ -1,5 +1,5 @@
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Task } from "@/types";
+import { type Task } from "@/types";
 import { sendNotification } from "./notifications";
 
 /**

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardShell from "@/components/ui/dashboard-shell";
+import { useState } from "react";
 import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import LeadReviewModal from "@/components/ui/lead-review-modal";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
-import { analyzeDocument, AnalysisResult, ClientProfile } from "@/lib/services/analysis-service";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
+import { analyzeDocument, type AnalysisResult, type ClientProfile } from "@/lib/services/analysis-service";
 
 export default function DocumentAnalysisPage() {
     const router = useRouter();
@@ -96,7 +96,7 @@ export default function DocumentAnalysisPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
@@ -157,16 +157,14 @@ export default function DocumentAnalysisPage() {
                                 )}
                             </div>
 
-                            {analyzing && (
-                                <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4">
+                            {analyzing ? <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4">
                                     <div className="inline-block relative">
-                                        <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-accent animate-spin mb-4"></div>
+                                        <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-accent animate-spin mb-4" />
                                         <div className="absolute inset-0 flex items-center justify-center text-xl">🤖</div>
                                     </div>
                                     <h3 className="font-black text-lg text-primary">מנתח מסמך...</h3>
                                     <p className="text-sm text-slate-500">זה ייקח מספר שניות</p>
-                                </div>
-                            )}
+                                </div> : null}
                         </Card>
                     </div>
 
@@ -282,14 +280,12 @@ export default function DocumentAnalysisPage() {
                 </div>
 
                 {/* Lead Review Modal */}
-                {results && (
-                    <LeadReviewModal
+                {results ? <LeadReviewModal
                         isOpen={showLeadModal}
                         onClose={() => setShowLeadModal(false)}
                         onSubmit={handleConfirmLead}
                         initialData={results.client}
-                    />
-                )}
+                    /> : null}
             </div>
         </DashboardShell>
     );

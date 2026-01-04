@@ -1,12 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { CommissionCalculator, DealData, ProductType, AgentSalaryMix } from "@/lib/commissions/calculator";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { useAuth } from "@/lib/contexts/AuthContext";
-import { Card, Button, Badge } from "@/components/ui/base";
+import { motion } from "framer-motion";
 import {
     AlertCircle,
     DollarSign,
@@ -20,7 +14,13 @@ import {
     Info,
     Lock
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { CommissionCalculator, type DealData, type ProductType, type AgentSalaryMix } from "@/lib/commissions/calculator";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface ExtendedDealData extends DealData {
     agentName?: string;
@@ -276,8 +276,8 @@ export default function AdminFinancePage() {
 
                 {/* Header Hero */}
                 <div className="bg-gradient-to-r from-slate-900 via-amber-900/20 to-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden border border-amber-500/20">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] opacity-10"></div>
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+                    <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] opacity-10" />
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
@@ -310,12 +310,10 @@ export default function AdminFinancePage() {
                                 <Calculator size={16} className="ml-2" />
                                 נוסחאות חישוב
                             </Button>
-                            {isAdmin && (
-                                <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-black shadow-lg shadow-amber-500/20">
+                            {isAdmin ? <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-black shadow-lg shadow-amber-500/20">
                                     <Download size={16} className="ml-2" />
                                     ייצוא דוח
-                                </Button>
-                            )}
+                                </Button> : null}
                         </div>
                     </div>
 
@@ -377,8 +375,7 @@ export default function AdminFinancePage() {
                 </div>
 
                 {/* Formula Info Card */}
-                {isAdmin && (
-                    <Card className="border border-amber-200 shadow-xl bg-amber-50/50 p-6">
+                {isAdmin ? <Card className="border border-amber-200 shadow-xl bg-amber-50/50 p-6">
                         <div className="flex items-start gap-4">
                             <div className="p-3 bg-amber-100 rounded-xl text-amber-600">
                                 <Info size={24} />
@@ -412,8 +409,7 @@ export default function AdminFinancePage() {
                                 </p>
                             </div>
                         </div>
-                    </Card>
-                )}
+                    </Card> : null}
 
                 <div className="grid lg:grid-cols-3 gap-8">
                     {/* Main Chart Section */}
@@ -478,7 +474,7 @@ export default function AdminFinancePage() {
                                     <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-xs">
                                         <tr>
                                             <th className="p-4">לקוח</th>
-                                            {isAdmin && <th className="p-4">סוכן</th>}
+                                            {isAdmin ? <th className="p-4">סוכן</th> : null}
                                             <th className="p-4">מוצר</th>
                                             <th className="p-4">חברה</th>
                                             <th className="p-4 text-amber-600">עמלת היקף</th>
@@ -506,11 +502,9 @@ export default function AdminFinancePage() {
                                                     <td className="p-4 font-bold text-slate-700">
                                                         {deal.clientName || '—'}
                                                     </td>
-                                                    {isAdmin && (
-                                                        <td className="p-4 text-slate-500">
+                                                    {isAdmin ? <td className="p-4 text-slate-500">
                                                             {deal.agentName || '—'}
-                                                        </td>
-                                                    )}
+                                                        </td> : null}
                                                     <td className="p-4">
                                                         <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 font-medium">
                                                             {deal.productType === 'life' && '❤️ חיים'}
@@ -544,9 +538,8 @@ export default function AdminFinancePage() {
                     {/* Sidebar Stats */}
                     <div className="space-y-6">
                         {/* Top Agents Leaderboard - Admin Only */}
-                        {isAdmin && (
-                            <Card className="border-none shadow-xl bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl"></div>
+                        {isAdmin ? <Card className="border-none shadow-xl bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl" />
                                 <h3 className="font-black text-lg mb-6 flex items-center gap-2 relative z-10">
                                     <span className="bg-white/10 p-2 rounded-lg text-amber-400"><Users size={18} /></span>
                                     מובילים במכירות
@@ -588,8 +581,7 @@ export default function AdminFinancePage() {
                                         </div>
                                     )}
                                 </div>
-                            </Card>
-                        )}
+                            </Card> : null}
 
                         {/* Commission Breakdown by Type */}
                         <Card className="border border-slate-200 shadow-xl bg-white p-6">
@@ -600,28 +592,28 @@ export default function AdminFinancePage() {
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-200">
                                     <span className="flex items-center gap-2 text-amber-700 font-bold">
-                                        <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                                        <div className="w-3 h-3 rounded-full bg-amber-500" />
                                         עמלת היקף
                                     </span>
                                     <span className="font-black font-mono text-amber-700">₪{(isAdmin ? totalHeikef : getAgentCommissions(user?.displayName || '').heikef).toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
                                     <span className="flex items-center gap-2 text-blue-700 font-bold">
-                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        <div className="w-3 h-3 rounded-full bg-blue-500" />
                                         נפרעים (חודשי)
                                     </span>
                                     <span className="font-black font-mono text-blue-700">₪{(isAdmin ? totalNifraim : getAgentCommissions(user?.displayName || '').nifraim).toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                     <span className="flex items-center gap-2 text-emerald-700 font-bold">
-                                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                        <div className="w-3 h-3 rounded-full bg-emerald-500" />
                                         צבירה (פנסיה/קה״ש)
                                     </span>
                                     <span className="font-black font-mono text-emerald-700">₪{(isAdmin ? totalTzvira : getAgentCommissions(user?.displayName || '').tzvira).toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
                                     <span className="flex items-center gap-2 text-purple-700 font-bold">
-                                        <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                                        <div className="w-3 h-3 rounded-full bg-purple-500" />
                                         ניוד פנסיה
                                     </span>
                                     <span className="font-black font-mono text-purple-700">₪{(isAdmin ? totalNiud : getAgentCommissions(user?.displayName || '').niud).toLocaleString()}</span>

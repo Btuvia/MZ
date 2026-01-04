@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { 
     Shield, FileText, CheckCircle, AlertTriangle, Phone, MessageSquare, 
     Calendar, ChevronLeft, ExternalLink, Clock, Bell
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Card, Button } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 // Dynamic greeting helper
 const getGreeting = () => {
@@ -115,8 +115,8 @@ export default function ClientDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     className="glass-card bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-amber-900/30 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold"
                 >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                         <div>
                             <h1 className="text-3xl font-black mb-2 text-gradient-gold neon-text-gold">

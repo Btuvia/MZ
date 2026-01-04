@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { useAuth } from "@/lib/contexts/AuthContext";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { 
     Target, Clock, AlertTriangle, TrendingUp, Users, Calendar, 
     Plus, Phone, CheckCircle2, RefreshCw, Bell, Zap
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 // Dynamic greeting helper
 const getGreeting = () => {
@@ -25,9 +25,9 @@ const getGreeting = () => {
 // Skeleton loader for stats
 const StatCardSkeleton = () => (
     <Card className="p-6 animate-pulse">
-        <div className="h-3 w-20 bg-slate-700/50 rounded mb-4"></div>
-        <div className="h-10 w-16 bg-slate-700/50 rounded mb-2"></div>
-        <div className="h-3 w-24 bg-slate-700/30 rounded"></div>
+        <div className="h-3 w-20 bg-slate-700/50 rounded mb-4" />
+        <div className="h-10 w-16 bg-slate-700/50 rounded mb-2" />
+        <div className="h-3 w-24 bg-slate-700/30 rounded" />
     </Card>
 );
 
@@ -143,10 +143,10 @@ export default function AgentDashboard() {
                         <StatCardSkeleton />
                     </div>
                     <Card className="p-6 animate-pulse">
-                        <div className="h-6 w-40 bg-slate-700/50 rounded mb-4"></div>
+                        <div className="h-6 w-40 bg-slate-700/50 rounded mb-4" />
                         <div className="space-y-3">
                             {[1,2,3,4].map(i => (
-                                <div key={i} className="h-12 bg-slate-700/30 rounded"></div>
+                                <div key={i} className="h-12 bg-slate-700/30 rounded" />
                             ))}
                         </div>
                     </Card>
@@ -241,7 +241,7 @@ export default function AgentDashboard() {
 
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                         <Card className="border-r-4 border-r-emerald-500 p-6 flex flex-col justify-between overflow-hidden relative">
-                            <div className="absolute top-[-10px] left-[-10px] h-20 w-20 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                            <div className="absolute top-[-10px] left-[-10px] h-20 w-20 bg-emerald-500/10 rounded-full blur-2xl" />
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">יעד מכירות חודשי</span>
                                 <Target size={18} className="text-emerald-500" />
@@ -258,7 +258,7 @@ export default function AgentDashboard() {
                                     animate={{ width: `${Math.min(stats.salesGoalProgress, 100)}%` }}
                                     transition={{ duration: 1, ease: "easeOut" }}
                                     className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full shadow-lg shadow-emerald-500/30"
-                                ></motion.div>
+                                 />
                             </div>
                         </Card>
                     </motion.div>
@@ -285,7 +285,7 @@ export default function AgentDashboard() {
                                     <th className="px-6 py-4 font-black">סטטוס</th>
                                     <th className="px-6 py-4 font-black">חברה</th>
                                     <th className="px-6 py-4 font-black">עודכן</th>
-                                    <th className="px-6 py-4 font-black"></th>
+                                    <th className="px-6 py-4 font-black" />
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-700/50">

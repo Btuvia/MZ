@@ -8,12 +8,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import { 
     pushNotificationService, 
-    NotificationPreferences,
-    PushNotification 
+    type NotificationPreferences,
+    type PushNotification 
 } from '@/lib/services/push-notification-service';
-import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface UsePushNotificationsReturn {
     // State

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { Plus, Calendar, X, Sparkles, Gift, Building2, Brain, AlertCircle, CheckCircle2, RefreshCcw, Trash2 } from "lucide-react";
+import { useState, useMemo } from "react";
 import { generateWithGemini } from "@/app/actions/gemini";
+import { Card, Button } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useCampaigns, useCreateCampaign, useDeleteCampaign, useDeals } from "@/lib/hooks/useQueryHooks";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 // --- Types ---
 
@@ -130,8 +130,8 @@ export default function CampaignsPage() {
 
                 {/* Header */}
                 <div className="relative overflow-hidden rounded-[2.5rem] bg-indigo-900 p-12 text-white shadow-2xl">
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-fuchsia-600/30 via-transparent to-transparent rounded-full blur-3xl -mr-32 -mt-32"></div>
-                    <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-indigo-500/20 via-transparent to-transparent rounded-full blur-3xl -ml-20 -mb-20"></div>
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-fuchsia-600/30 via-transparent to-transparent rounded-full blur-3xl -mr-32 -mt-32" />
+                    <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-indigo-500/20 via-transparent to-transparent rounded-full blur-3xl -ml-20 -mb-20" />
 
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="text-center md:text-right">
@@ -162,11 +162,9 @@ export default function CampaignsPage() {
                 </div>
 
                 {/* Loading State */}
-                {isLoading && (
-                    <div className="flex items-center justify-center py-20">
+                {isLoading ? <div className="flex items-center justify-center py-20">
                         <RefreshCcw className="animate-spin text-indigo-500" size={40} />
-                    </div>
-                )}
+                    </div> : null}
 
                 {/* Empty State */}
                 {!isLoading && campaigns.length === 0 && (
@@ -196,7 +194,7 @@ export default function CampaignsPage() {
                             return (
                                 <Card key={campaign.id} className="border-none shadow-xl bg-white overflow-hidden group hover:shadow-2xl transition-all duration-500 rounded-[2rem]">
                                     {/* Card Header with Company & Gradient */}
-                                    <div className="h-2 bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500"></div>
+                                    <div className="h-2 bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500" />
                                     <div className="p-8 relative">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-4">
@@ -245,7 +243,7 @@ export default function CampaignsPage() {
                                                 <div
                                                     className={`h-full rounded-full transition-all duration-1000 ${percent >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-fuchsia-500'}`}
                                                     style={{ width: `${percent}%` }}
-                                                ></div>
+                                                 />
                                             </div>
                                         </div>
 
@@ -282,8 +280,7 @@ export default function CampaignsPage() {
                 )}
 
                 {/* New Campaign Modal */}
-                {showModal && (
-                    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+                {showModal ? <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
                         <Card className="w-full max-w-2xl bg-white border-none shadow-2xl overflow-y-auto max-h-[90vh] rounded-3xl">
                             <div className="p-8">
                                 <div className="flex justify-between items-center mb-8">
@@ -387,8 +384,7 @@ export default function CampaignsPage() {
                                 </div>
                             </div>
                         </Card>
-                    </div>
-                )}
+                    </div> : null}
             </div>
         </DashboardShell>
     );

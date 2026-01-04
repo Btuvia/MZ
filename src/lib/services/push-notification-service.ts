@@ -5,7 +5,7 @@
  * תומך בהתראות בזמן אמת גם כשהאפליקציה סגורה
  */
 
-import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, type Messaging } from 'firebase/messaging';
 import { app } from '@/lib/firebase/firebase';
 import { firestoreService } from '@/lib/firebase/firestore-service';
 

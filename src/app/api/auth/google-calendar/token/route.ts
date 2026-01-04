@@ -4,7 +4,7 @@
  * מחליף את קוד האישור של OAuth בטוקנים
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {

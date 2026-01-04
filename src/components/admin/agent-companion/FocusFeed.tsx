@@ -1,13 +1,13 @@
 "use client";
 
-import { Card, Button, Badge } from "@/components/ui/base";
+import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Phone, Mail, FileText, Clock, AlertTriangle, Bell } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { Card, Button, Badge } from "@/components/ui/base";
 import { ReminderPicker } from "@/components/ui/ReminderPicker";
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 
 export interface FocusItem {
     id: string;
@@ -153,7 +153,7 @@ export default function FocusFeed() {
                                     <div
                                         className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-blue-500"
                                         style={{ opacity: item.priorityScore / 100 }}
-                                    ></div>
+                                     />
 
                                     <div className="p-5 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                                         <div className="flex items-start gap-4">
@@ -173,12 +173,10 @@ export default function FocusFeed() {
                                                     <span>•</span>
                                                     <span className="text-indigo-400">{item.clientName}</span>
                                                 </div>
-                                                {item.context && (
-                                                    <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-xs text-red-300 flex items-center gap-2">
+                                                {item.context ? <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-xs text-red-300 flex items-center gap-2">
                                                         <AlertTriangle size={12} />
                                                         {item.context}
-                                                    </div>
-                                                )}
+                                                    </div> : null}
                                             </div>
                                         </div>
 

@@ -1,7 +1,7 @@
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Workflow, WorkflowStep, WorkflowInstance } from "@/types/workflow";
-import { Task, TaskStatus } from "@/types";
 import { Timestamp } from "firebase/firestore";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { type Task, TaskStatus } from "@/types";
+import { type Workflow, type WorkflowStep, WorkflowInstance } from "@/types/workflow";
 
 /**
  * Workflow Automation Service

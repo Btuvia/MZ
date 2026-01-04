@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { NotificationsPanel } from "./notifications-panel";
 import { useReminders } from "@/lib/hooks/useReminders";
+import { NotificationsPanel } from "./notifications-panel";
 
 interface NavItem {
     label: string;
@@ -53,7 +53,7 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                 <div className="mb-8 px-4 py-3 bg-gradient-to-r from-amber-500/10 to-blue-500/10 rounded-2xl border border-amber-500/20 backdrop-blur-sm">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">פרופיל משתמש</p>
                     <div className="flex items-center gap-3">
-                        <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50"></div>
+                        <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50" />
                         <p className="text-sm font-black text-amber-200">{role}</p>
                     </div>
                 </div>
@@ -104,7 +104,7 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                         </div>
 
                         <div className="flex items-center gap-4">
-                            {user && <NotificationsPanel userId={user.uid} />}
+                            {user ? <NotificationsPanel userId={user.uid} /> : null}
 
                             <div className="flex items-center gap-3 p-1.5 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl shadow-xl border border-amber-500/30 hover:border-amber-500/50 transition-all">
                                 <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black shadow-inner neon-gold">🛡️</div>

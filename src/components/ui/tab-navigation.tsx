@@ -68,7 +68,7 @@ export function TabNavigation({
                     disabled={tab.disabled}
                     className={getTabClasses(tab)}
                 >
-                    {tab.icon && <span>{tab.icon}</span>}
+                    {tab.icon ? <span>{tab.icon}</span> : null}
                     <span>{tab.labelHe || tab.label}</span>
                     {tab.badge !== undefined && tab.badge > 0 && (
                         <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full bg-red-500 text-white">

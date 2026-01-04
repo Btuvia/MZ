@@ -1,15 +1,15 @@
 "use client";
 
+import { RefreshCw, Plus, Upload, Megaphone, Trash2, UserCheck, Edit3 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { toast } from "sonner";
 import ImportLeadsModal from "@/components/leads/ImportLeadsModal";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead, useLeadStatuses } from "@/lib/hooks/useQueryHooks";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import type { Lead, LeadStatus as LeadStatusType } from "@/types";
 import type { LeadStatus } from "@/types/statuses";
-import { RefreshCw, Plus, Upload, Megaphone, Trash2, UserCheck, Edit3 } from "lucide-react";
 
 export default function LeadsPage() {
     const [search, setSearch] = useState("");
@@ -386,8 +386,7 @@ export default function LeadsPage() {
                 </Card>
 
                 {/* Add/Edit Lead Modal */}
-                {showModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
+                {showModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
                         <Card className="w-full max-w-md bg-slate-900 border-amber-500/20 p-6 shadow-2xl rounded-3xl animate-in zoom-in-95">
                             <h3 className="text-xl font-black text-amber-400 mb-6">
                                 {editingLead ? "✏️ עריכת ליד" : "➕ הוספת ליד חדש"}
@@ -497,20 +496,17 @@ export default function LeadsPage() {
                                 </div>
                             </div>
                         </Card>
-                    </div>
-                )}
+                    </div> : null}
 
                 {/* Import Modal */}
-                {showImportModal && (
-                    <ImportLeadsModal
+                {showImportModal ? <ImportLeadsModal
                         isOpen={showImportModal}
                         onClose={() => setShowImportModal(false)}
                         onSuccess={() => {
                             refetch();
                             setShowImportModal(false);
                         }}
-                    />
-                )}
+                    /> : null}
             </div>
         </DashboardShell>
     );

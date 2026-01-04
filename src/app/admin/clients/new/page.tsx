@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import { UserPlus, ArrowRight, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Card, Button } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function NewClientPage() {
     const router = useRouter();
@@ -91,7 +91,7 @@ export default function NewClientPage() {
 
                 <form onSubmit={handleSave} className="space-y-6">
                     <Card className="p-10 border-none shadow-2xl bg-white overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 w-2.5 h-full bg-accent group-hover:bg-blue-600 transition-colors"></div>
+                        <div className="absolute top-0 right-0 w-2.5 h-full bg-accent group-hover:bg-blue-600 transition-colors" />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
                             <div className="space-y-2">
@@ -159,13 +159,13 @@ export default function NewClientPage() {
                     <div className="flex flex-col gap-6 pt-4">
                         <Button
                             type="submit"
-                            disabled={loading && !showFallback}
+                            disabled={loading ? !Boolean(showFallback) : undefined}
                             className="w-full py-6 shadow-2xl shadow-accent/20 text-xl font-black rounded-[1.5rem]"
                             variant="secondary"
                         >
                             {loading && !showFallback ? (
                                 <span className="flex items-center gap-3">
-                                    <div className="w-5 h-5 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <div className="w-5 h-5 border-4 border-white/30 border-t-white rounded-full animate-spin" />
                                     מעבד נתונים ב-Firebase...
                                 </span>
                             ) : (
@@ -176,8 +176,7 @@ export default function NewClientPage() {
                             )}
                         </Button>
 
-                        {showFallback && (
-                            <div className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 animate-in fade-in zoom-in duration-500 shadow-3xl text-right">
+                        {showFallback ? <div className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 animate-in fade-in zoom-in duration-500 shadow-3xl text-right">
                                 <div className="flex items-start gap-4 text-white mb-6">
                                     <AlertTriangle size={28} className="text-amber-400 shrink-0 mt-1" />
                                     <div>
@@ -186,11 +185,9 @@ export default function NewClientPage() {
                                             ייתכן שישנה בעיית הרשאות, תקשורת או שה-FIrebase טרם הוגדר כראוי לחלוטין.
                                             כדי לא לעכב אותך, תוכל לעקוף את השמירה ולהיכנס לממשק הלקוח במצב דמו.
                                         </p>
-                                        {lastError && (
-                                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-200 font-mono" dir="ltr">
+                                        {lastError ? <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-200 font-mono" dir="ltr">
                                                 Error: {lastError}
-                                            </div>
-                                        )}
+                                            </div> : null}
                                     </div>
                                 </div>
                                 <button
@@ -201,8 +198,7 @@ export default function NewClientPage() {
                                     <span>🚀</span>
                                     מעקף מהיר: המשך לכרטיסיית דמו
                                 </button>
-                            </div>
-                        )}
+                            </div> : null}
 
                         <button
                             type="button"

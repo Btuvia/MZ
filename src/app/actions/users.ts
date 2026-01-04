@@ -1,8 +1,8 @@
 "use server";
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import { sendEmail } from "./email";
 import type { UserRole } from "@/types";
+import { sendEmail } from "./email";
 
 interface CreateUserData {
     email: string;

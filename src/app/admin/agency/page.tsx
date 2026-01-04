@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { generateWithGemini, getGeminiStatus } from "@/app/actions/gemini";
 import { Copy, Plus, Trash2, Edit2, Save, X, Check, RefreshCw, Power } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { generateWithGemini, getGeminiStatus } from "@/app/actions/gemini";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 // Types
 type TeamMember = {
@@ -372,7 +372,7 @@ Required JSON format:
                     </div>
                     <div className="flex items-center gap-4 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
                         <div className={`flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl shadow-sm border border-slate-200 transition-colors ${isGeminiConfigured ? 'border-emerald-200' : ''}`}>
-                            <span className={`h-2 w-2 rounded-full animate-pulse ${isGeminiConfigured ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
+                            <span className={`h-2 w-2 rounded-full animate-pulse ${isGeminiConfigured ? 'bg-emerald-500' : 'bg-red-400'}`} />
                             <span className="text-[10px] font-black text-slate-500 uppercase">{isGeminiConfigured ? 'GEMINI פעיל' : 'GEMINI חסר'}</span>
                         </div>
                     </div>
@@ -387,7 +387,7 @@ Required JSON format:
                                 className={`relative pb-4 px-1 text-sm font-black transition-all ${activeTab === tab.id ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
                             >
                                 <span className="flex items-center gap-2"><span className="text-lg">{tab.icon}</span>{tab.label}</span>
-                                {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.4)] animate-in slide-in-from-bottom-1 transition-all"></div>}
+                                {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.4)] animate-in slide-in-from-bottom-1 transition-all" />}
                             </button>
                         ))}
                     </nav>
@@ -504,8 +504,7 @@ Required JSON format:
                                 </div>
                             </div>
 
-                            {generatedField && (
-                                <Card className="p-6 bg-emerald-50/50 border-emerald-100 rounded-[2rem] flex items-center justify-between">
+                            {generatedField ? <Card className="p-6 bg-emerald-50/50 border-emerald-100 rounded-[2rem] flex items-center justify-between">
                                     <div>
                                         <h4 className="font-black text-lg text-emerald-800">{generatedField.label}</h4>
                                         <p className="text-xs text-emerald-600">{generatedField.description}</p>
@@ -514,12 +513,10 @@ Required JSON format:
                                         <Button onClick={() => setGeneratedField(null)} variant="ghost" className="text-slate-400">ביטול</Button>
                                         <Button onClick={() => { setCustomFields([...customFields, { ...generatedField, id: Date.now() }]); setGeneratedField(null); }} className="bg-emerald-600 text-white rounded-xl">אישור</Button>
                                     </div>
-                                </Card>
-                            )}
+                                </Card> : null}
 
                             {/* Manual Modal */}
-                            {isFieldModalOpen && (
-                                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            {isFieldModalOpen ? <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                                     <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4">
                                         <h3 className="text-xl font-black mb-4">הוספת שדה חדש</h3>
                                         <input type="text" placeholder="שם השדה" value={manualField.label} onChange={e => setManualField({ ...manualField, label: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
@@ -529,8 +526,7 @@ Required JSON format:
                                         <Button onClick={() => { setCustomFields([...customFields, { ...manualField, id: Date.now() }]); setIsFieldModalOpen(false); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black">שמור</Button>
                                         <button onClick={() => setIsFieldModalOpen(false)} className="w-full text-slate-400 text-xs font-bold mt-2">ביטול</button>
                                     </div>
-                                </div>
-                            )}
+                                </div> : null}
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {customFields.map((field, i) => (
@@ -568,7 +564,7 @@ Required JSON format:
                                     {automationChat.map((msg, i) => (
                                         <div key={i} className={`p-4 rounded-2xl max-w-[85%] ${msg.role === 'ai' ? 'bg-white/10 self-end mr-auto' : 'bg-indigo-600 self-start ml-auto'}`}>{msg.content}</div>
                                     ))}
-                                    {isGeneratingAutomation && <div className="text-slate-400 text-xs animate-pulse mr-auto">חושב...</div>}
+                                    {isGeneratingAutomation ? <div className="text-slate-400 text-xs animate-pulse mr-auto">חושב...</div> : null}
                                 </div>
                                 <div className="flex gap-2">
                                     <input 
@@ -599,7 +595,7 @@ Required JSON format:
                                     <Card key={i} className={`p-6 border-none shadow-lg rounded-[2rem] flex items-center justify-between ${auto.active ? 'bg-white' : 'bg-slate-50 opacity-60'}`}>
                                         <div className="flex items-center gap-4">
                                             <button onClick={() => { const n = [...automations]; n[i].active = !n[i].active; setAutomations(n); }} className={`w-12 h-7 rounded-full relative transition-colors ${auto.active ? 'bg-emerald-400' : 'bg-slate-200'}`}>
-                                                <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all shadow-sm ${auto.active ? 'right-6' : 'right-1'}`}></div>
+                                                <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all shadow-sm ${auto.active ? 'right-6' : 'right-1'}`} />
                                             </button>
                                             <div className="text-right">
                                                 <h4 className="font-black text-sm">{auto.title}</h4>
@@ -612,17 +608,15 @@ Required JSON format:
                             </div>
 
                             {/* Manual Automation Modal */}
-                            {isAutomationModalOpen && (
-                                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            {isAutomationModalOpen ? <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                                     <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4">
                                         <h3 className="text-xl font-black mb-4">אוטומציה חדשה</h3>
                                         <input type="text" placeholder="שם" value={manualAutomation.title} onChange={e => setManualAutomation({ ...manualAutomation, title: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none" />
-                                        <textarea placeholder="תיאור" value={manualAutomation.desc} onChange={e => setManualAutomation({ ...manualAutomation, desc: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none resize-none" rows={3}></textarea>
+                                        <textarea placeholder="תיאור" value={manualAutomation.desc} onChange={e => setManualAutomation({ ...manualAutomation, desc: e.target.value })} className="w-full bg-slate-50 p-3 rounded-xl border border-slate-100 font-bold outline-none resize-none" rows={3} />
                                         <Button onClick={() => { setAutomations([...automations, { ...manualAutomation, active: true }]); setIsAutomationModalOpen(false); }} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-black">שמור</Button>
                                         <button onClick={() => setIsAutomationModalOpen(false)} className="w-full text-slate-400 text-xs font-bold mt-2">ביטול</button>
                                     </div>
-                                </div>
-                            )}
+                                </div> : null}
                         </div>
                     )}
 
@@ -652,7 +646,7 @@ Required JSON format:
                                                         className={`h-10 w-10 rounded-full border-4 transition-all ${settings.color === c ? 'border-slate-800 scale-110' : 'border-transparent'}`}
                                                         style={{ backgroundColor: `var(--color-${c}-500, ${c})` }} // Simplified for demo
                                                     >
-                                                        <div className={`w-full h-full rounded-full bg-${c}-500`}></div>
+                                                        <div className={`w-full h-full rounded-full bg-${c}-500`} />
                                                     </button>
                                                 ))}
                                             </div>
@@ -704,7 +698,7 @@ Required JSON format:
                                                 <div>
                                                     <h5 className="font-black text-sm text-primary">{int.name}</h5>
                                                     <p className={`text-[10px] font-bold ${int.status === "מחובר" ? "text-emerald-500" : "text-slate-400"}`}>
-                                                        {int.status} {int.lastSync && `• סונכרן לאחרונה: ${int.lastSync}`}
+                                                        {int.status} {int.lastSync ? `• סונכרן לאחרונה: ${int.lastSync}` : null}
                                                     </p>
                                                 </div>
                                             </div>
@@ -725,10 +719,9 @@ Required JSON format:
             </div>
 
             {/* Team Modal */}
-            {isTeamModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+            {isTeamModalOpen ? <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
                         <h3 className="text-2xl font-black mb-6 italic text-slate-800">{editingMember ? "עריכת איש צוות" : "הוספת איש צוות"}</h3>
                         <div className="space-y-4">
                             <div>
@@ -763,8 +756,7 @@ Required JSON format:
                             <Button onClick={handleSaveTeamMember} className="flex-1 bg-indigo-600 text-white shadow-lg shadow-indigo-200">שמור</Button>
                         </div>
                     </div>
-                </div>
-            )}
+                </div> : null}
         </DashboardShell>
     );
 }

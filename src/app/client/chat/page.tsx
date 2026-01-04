@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     MessageSquare, Send, Paperclip, Image, Smile, 
     Phone, Video, MoreVertical, Check, CheckCheck,
     Clock, ArrowRight, Bot, User, Sparkles, FileText,
     Camera, Mic, X, ChevronDown
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface Message {
     id: string;
@@ -258,8 +258,7 @@ export default function ChatPage() {
 
                     {/* Typing Indicator */}
                     <AnimatePresence>
-                        {isTyping && (
-                            <motion.div
+                        {isTyping ? <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
@@ -272,8 +271,7 @@ export default function ChatPage() {
                                         <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                     </div>
                                 </div>
-                            </motion.div>
-                        )}
+                            </motion.div> : null}
                     </AnimatePresence>
 
                     <div ref={messagesEndRef} />
@@ -281,8 +279,7 @@ export default function ChatPage() {
 
                 {/* Quick Replies */}
                 <AnimatePresence>
-                    {showQuickReplies && (
-                        <motion.div
+                    {showQuickReplies ? <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
@@ -300,8 +297,7 @@ export default function ChatPage() {
                                     </button>
                                 ))}
                             </div>
-                        </motion.div>
-                    )}
+                        </motion.div> : null}
                 </AnimatePresence>
 
                 {/* Input Area */}
@@ -317,8 +313,7 @@ export default function ChatPage() {
                             </button>
                             
                             <AnimatePresence>
-                                {showAttachMenu && (
-                                    <motion.div
+                                {showAttachMenu ? <motion.div
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -345,8 +340,7 @@ export default function ChatPage() {
                                             <Camera size={18} />
                                             צלם עכשיו
                                         </button>
-                                    </motion.div>
-                                )}
+                                    </motion.div> : null}
                             </AnimatePresence>
                             
                             <input

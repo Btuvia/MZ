@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
 import { Plus, ChevronRight, ChevronLeft, Calendar as CalendarIcon, List, LayoutGrid } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { SmartTaskModal } from "@/components/SmartTaskModal";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Task, TaskStatus, Employee, SystemUser } from "@/types";
-import { TaskSubject } from "@/types/subject";
-import { Workflow } from "@/types/workflow";
-import { TaskListView } from "@/components/ui/task-list-view";
+import { AdvancedFilters, type TaskFilters } from "@/components/ui/advanced-filters";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { TaskKanbanView } from "@/components/ui/task-kanban-view";
-import { AdvancedFilters, TaskFilters } from "@/components/ui/advanced-filters";
+import { TaskListView } from "@/components/ui/task-list-view";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 import { getTaskStatusMetadata, getTaskTypeMetadata } from "@/lib/task-constants";
+import { type Task, type TaskStatus, type Employee, type SystemUser } from "@/types";
+import { type TaskSubject } from "@/types/subject";
+import { type Workflow } from "@/types/workflow";
 
 export default function CalendarPage() {
     // --- State ---
@@ -249,7 +249,7 @@ export default function CalendarPage() {
     // Generate calendar grid
     const calendarDays = [];
     for (let i = 0; i < firstDay; i++) {
-        calendarDays.push(<div key={`empty-${i}`} className="h-24 bg-slate-50/30 border border-slate-100/50"></div>);
+        calendarDays.push(<div key={`empty-${i}`} className="h-24 bg-slate-50/30 border border-slate-100/50" />);
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -478,8 +478,7 @@ export default function CalendarPage() {
                 )}
 
                 {/* Task Modal */}
-                {isTaskModalOpen && (
-                    <SmartTaskModal
+                {isTaskModalOpen ? <SmartTaskModal
                         isOpen={isTaskModalOpen}
                         onClose={() => {
                             setIsTaskModalOpen(false);
@@ -488,8 +487,7 @@ export default function CalendarPage() {
                         onSave={handleSaveTask}
                         initialDate={selectedDate}
                         existingTask={editingTask}
-                    />
-                )}
+                    /> : null}
             </div>
         </DashboardShell>
     );

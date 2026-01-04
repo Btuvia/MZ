@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, Button } from "@/components/ui/base";
 import { Send, Bot, User, Sparkles } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { generateWithGemini } from "@/app/actions/gemini";
+import { Card, Button } from "@/components/ui/base";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -99,18 +99,16 @@ export default function DataChat() {
                         </div>
                     </div>
                 ))}
-                {isLoading && (
-                    <div className="flex gap-2">
+                {isLoading ? <div className="flex gap-2">
                         <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                             <Bot size={12} />
                         </div>
                         <div className="bg-indigo-600 text-white p-2.5 rounded-xl rounded-tl-sm flex items-center gap-1 h-8">
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:75ms]"></span>
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:150ms]"></span>
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" />
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:75ms]" />
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:150ms]" />
                         </div>
-                    </div>
-                )}
+                    </div> : null}
             </div>
 
             {/* Input */}

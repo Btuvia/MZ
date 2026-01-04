@@ -6,8 +6,8 @@
 
 "use client";
 
-import { WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WifiOff } from 'lucide-react';
 import { useServiceWorker } from '@/lib/hooks/useServiceWorker';
 
 export function OfflineIndicator() {
@@ -15,8 +15,7 @@ export function OfflineIndicator() {
 
     return (
         <AnimatePresence>
-            {isOffline && (
-                <motion.div
+            {isOffline ? <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
@@ -27,8 +26,7 @@ export function OfflineIndicator() {
                         <WifiOff size={16} className="text-amber-400" />
                         <span className="text-sm font-medium">מצב אופליין</span>
                     </div>
-                </motion.div>
-            )}
+                </motion.div> : null}
         </AnimatePresence>
     );
 }

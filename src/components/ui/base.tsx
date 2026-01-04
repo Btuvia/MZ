@@ -17,12 +17,10 @@ export const Card = memo(function Card({ children, title, className = "", varian
 
     return (
         <div className={`${variantStyles[variant]} rounded-3xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 ${className}`} {...props}>
-            {title && (
-                <h3 className="mb-4 text-lg font-black text-amber-100 flex items-center gap-2">
-                    <div className="h-1.5 w-4 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full"></div>
+            {title ? <h3 className="mb-4 text-lg font-black text-amber-100 flex items-center gap-2">
+                    <div className="h-1.5 w-4 bg-gradient-to-r from-amber-500 to-blue-500 rounded-full" />
                     {title}
-                </h3>
-            )}
+                </h3> : null}
             {children}
         </div>
     );

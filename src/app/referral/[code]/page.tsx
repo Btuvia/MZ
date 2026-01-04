@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Send, User, Phone, Mail, FileText, CheckCircle, Loader2, Building2, Heart, Briefcase } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { toast, Toaster } from "sonner";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { toast, Toaster } from "sonner";
-import { Send, User, Phone, Mail, FileText, CheckCircle, Loader2, Building2, Heart, Briefcase } from "lucide-react";
 
 type CollaboratorInfo = {
     id: string;
@@ -213,12 +213,10 @@ export default function ReferralPage() {
                     <h1 className="text-3xl font-black text-slate-900 mb-2">מגן זהב</h1>
                     <p className="text-slate-600">סוכנות לביטוח פנסיוני ופיננסי</p>
                     
-                    {collaborator && (
-                        <div className="mt-4 inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-bold">
+                    {collaborator ? <div className="mt-4 inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-bold">
                             <User size={16} />
                             הופנית על ידי: {collaborator.name}
-                        </div>
-                    )}
+                        </div> : null}
                 </div>
 
                 {/* Form */}

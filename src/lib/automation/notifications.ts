@@ -1,5 +1,5 @@
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import { Timestamp } from "firebase/firestore";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 
 /**
  * Notification System

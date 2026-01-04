@@ -6,9 +6,9 @@
 
 "use client";
 
-import { useState } from 'react';
-import { Bell, X, BellRing } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, X, BellRing } from 'lucide-react';
+import { useState } from 'react';
 import { usePushNotifications } from '@/lib/hooks/usePushNotifications';
 
 interface NotificationPromptProps {
@@ -73,15 +73,15 @@ export function NotificationPrompt({ onDismiss }: NotificationPromptProps) {
                         
                         <ul className="text-sm text-slate-300 space-y-2">
                             <li className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
                                 משימות ותזכורות
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+                                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
                                 לידים חדשים
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                                 עדכוני לקוחות
                             </li>
                         </ul>

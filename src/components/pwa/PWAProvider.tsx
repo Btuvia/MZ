@@ -8,12 +8,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { useServiceWorker } from '@/lib/hooks/useServiceWorker';
+import { NotificationPrompt } from './NotificationPrompt';
+import { OfflineIndicator } from './OfflineIndicator';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { UpdateBanner } from './UpdateBanner';
-import { OfflineIndicator } from './OfflineIndicator';
-import { NotificationPrompt } from './NotificationPrompt';
-import { useServiceWorker } from '@/lib/hooks/useServiceWorker';
-import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface PWAProviderProps {
     children: React.ReactNode;
@@ -57,11 +57,9 @@ export function PWAProvider({ children }: PWAProviderProps) {
             <PWAInstallPrompt />
             
             {/* Notification prompt for admin/agent */}
-            {showNotificationPrompt && (
-                <NotificationPrompt 
+            {showNotificationPrompt ? <NotificationPrompt 
                     onDismiss={() => setShowNotificationPrompt(false)} 
-                />
-            )}
+                /> : null}
         </>
     );
 }

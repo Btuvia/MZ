@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import Link from "next/link";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { useClients } from "@/lib/hooks/useQueryHooks";
-import { useAuth } from "@/lib/contexts/AuthContext";
-import { handleError, showSuccess } from "@/lib/error-handler";
-import { Zap, Activity, Users, FileText, ArrowLeft, Bell, TrendingUp, ShieldCheck, BarChart3, Building2, Plus, Target, Calendar, Phone } from "lucide-react";
 import { motion } from "framer-motion";
+import { Zap, Activity, Users, FileText, ArrowLeft, Bell, TrendingUp, ShieldCheck, BarChart3, Building2, Plus, Target, Calendar, Phone } from "lucide-react";
+import Link from "next/link";
+import { useState, useEffect, useMemo } from "react";
 import DailyBriefing from "@/components/admin/agent-companion/DailyBriefing";
 import DataChat from "@/components/admin/agent-companion/DataChat";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { handleError, showSuccess } from "@/lib/error-handler";
+import { useClients } from "@/lib/hooks/useQueryHooks";
 import { DashboardSkeleton } from "@/lib/lazy-load";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 // Dynamic greeting helper
 const getGreeting = () => {
@@ -403,7 +403,7 @@ export default function AdminDashboard() {
                     {/* Live Pulse Feed - NEW */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50"></div>
+                            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50" />
                             <h3 className="text-xs font-black text-amber-400 uppercase tracking-widest neon-text-gold">Live Pulse</h3>
                         </div>
 
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
                                         <div className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 shadow-lg ${item.type === 'sale' ? 'bg-emerald-500 shadow-emerald-500/50' :
                                             item.type === 'lead' ? 'bg-amber-500 shadow-amber-500/50' :
                                                 item.type === 'task' ? 'bg-blue-500 shadow-blue-500/50' : 'bg-slate-400'
-                                            }`}></div>
+                                            }`} />
                                         <div>
                                             <p className="text-xs font-bold text-slate-300 leading-snug">{item.text}</p>
                                             <p className="text-[10px] text-slate-500 mt-1">{item.time}</p>
@@ -435,7 +435,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="flex gap-1 items-end h-12">
                                 {[40, 65, 50, 80, 75, 90, 85].map((h, i) => (
-                                    <div key={i} className="flex-1 bg-amber-500/40 rounded-t-sm hover:bg-amber-500/70 transition-colors" style={{ height: `${h}%` }}></div>
+                                    <div key={i} className="flex-1 bg-amber-500/40 rounded-t-sm hover:bg-amber-500/70 transition-colors" style={{ height: `${h}%` }} />
                                 ))}
                             </div>
                         </Card>
@@ -454,7 +454,7 @@ export default function AdminDashboard() {
                                     onClick={() => stat.label.includes("עמלות") && setShowRain(true)}
                                     className={`group overflow-hidden relative border-amber-500/20 p-6 hover:border-amber-500/40 ${stat.label.includes("עמלות") ? "cursor-pointer hover:scale-105 transition-transform active:scale-95 hover:neon-gold" : ""}`}
                                 >
-                                    <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-transparent via-amber-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-transparent via-amber-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     <div className="flex items-center justify-between mb-6">
                                         <div className="text-2xl h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 flex items-center justify-center group-hover:from-amber-500/30 group-hover:to-amber-600/20 transition-colors shadow-lg border border-amber-500/20">{stat.icon}</div>
                                         <div className={`px-2 py-1 rounded-lg text-[10px] font-black border ${stat.trend === 'up' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-slate-700/50 text-slate-400 border-slate-600/50'}`}>{stat.change}</div>
@@ -510,8 +510,8 @@ export default function AdminDashboard() {
                                         })}
                                     </div>
                                     <div className="flex gap-4 mt-4 text-[10px] font-bold">
-                                        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></div> <span className="text-slate-400">הופק</span></span>
-                                        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50"></div> <span className="text-slate-400">ממתין</span></span>
+                                        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" /> <span className="text-slate-400">הופק</span></span>
+                                        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50" /> <span className="text-slate-400">ממתין</span></span>
                                     </div>
                                 </div>
 
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
                                                 <th className="px-6 py-5">סטטוס מכירה</th>
                                                 <th className="px-6 py-5 text-center">פוליסות</th>
                                                 <th className="px-6 py-5">תיק (שנתי)</th>
-                                                <th className="px-6 py-5"></th>
+                                                <th className="px-6 py-5" />
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-700/50">
@@ -634,12 +634,12 @@ export default function AdminDashboard() {
                                                     </td>
                                                     <td className="px-6 py-5">
                                                         <div className="flex justify-center -space-x-2 space-x-reverse">
-                                                            {client.policiesMap && Object.keys(client.policiesMap).filter(k => client.policiesMap?.[k as keyof typeof client.policiesMap]).map((key, j) => (
+                                                            {client.policiesMap ? Object.keys(client.policiesMap).filter(k => client.policiesMap?.[k as keyof typeof client.policiesMap]).map((key, j) => (
                                                                 <div key={j} className="h-8 w-8 rounded-full bg-slate-800 border border-amber-500/30 shadow-lg flex items-center justify-center text-xs relative z-0 hover:z-10 hover:scale-110 transition-transform hover:border-amber-500/60"
                                                                     title={key === 'car' ? 'רכב' : key === 'health' ? 'בריאות' : key === 'life' ? 'חיים' : 'אחר'}>
                                                                     {key === 'car' ? '🚗' : key === 'health' ? '🩺' : key === 'life' ? '❤️' : key === 'pension' ? '💰' : key === 'home' ? '🏠' : '📄'}
                                                                 </div>
-                                                            ))}
+                                                            )) : null}
                                                             {(!client.policiesMap || Object.keys(client.policiesMap).filter(k => client.policiesMap?.[k as keyof typeof client.policiesMap]).length === 0) && <span className="text-slate-600">-</span>}
                                                         </div>
                                                     </td>

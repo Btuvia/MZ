@@ -1,16 +1,15 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { useState, useEffect } from "react";
 import { Search, UserPlus, Filter, MoreVertical, Edit2, Trash2, CheckCircle, XCircle, Handshake, FileText, Send, X, Phone, CreditCard, QrCode, Link2, Copy, Users, TrendingUp, Building2 } from "lucide-react";
-
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { createUser } from "@/app/actions/users";
-import { sendEmail } from "@/app/actions/email";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { sendEmail } from "@/app/actions/email";
+import { createUser } from "@/app/actions/users";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { handleError, showSuccess } from "@/lib/error-handler";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import type { UserRole } from "@/types";
 
 type User = {
@@ -512,7 +511,7 @@ export default function UserManagementPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4">ניהול משתמשים</h1>
@@ -671,7 +670,7 @@ export default function UserManagementPage() {
                                                     : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
                                                     }`}
                                             >
-                                                <div className={`h-2 w-2 rounded-full ${user.status === "פעיל" ? "bg-currentColor animate-pulse" : "bg-slate-400"}`}></div>
+                                                <div className={`h-2 w-2 rounded-full ${user.status === "פעיל" ? "bg-currentColor animate-pulse" : "bg-slate-400"}`} />
                                                 {user.status}
                                             </button>
                                         </td>
@@ -747,35 +746,27 @@ export default function UserManagementPage() {
                                             <span className="text-slate-400">📧</span>
                                             <span className="font-medium text-slate-600">{collab.email}</span>
                                         </div>
-                                        {collab.phone && (
-                                            <div className="flex items-center gap-2 text-sm">
+                                        {collab.phone ? <div className="flex items-center gap-2 text-sm">
                                                 <span className="text-slate-400">📱</span>
                                                 <span className="font-medium text-slate-600">{collab.phone}</span>
-                                            </div>
-                                        )}
-                                        {collab.idNumber && (
-                                            <div className="flex items-center gap-2 text-sm">
+                                            </div> : null}
+                                        {collab.idNumber ? <div className="flex items-center gap-2 text-sm">
                                                 <span className="text-slate-400">🪪</span>
                                                 <span className="font-medium text-slate-600">{collab.idNumber}</span>
-                                            </div>
-                                        )}
-                                        {collab.terms && (
-                                            <div className="mt-3 p-3 bg-slate-50 rounded-xl">
+                                            </div> : null}
+                                        {collab.terms ? <div className="mt-3 p-3 bg-slate-50 rounded-xl">
                                                 <p className="text-xs font-bold text-slate-500 mb-1">תנאי ההסכם:</p>
                                                 <p className="text-sm text-slate-600 whitespace-pre-wrap line-clamp-3">{collab.terms}</p>
-                                            </div>
-                                        )}
+                                            </div> : null}
                                         
                                         {/* Referral Code Badge */}
-                                        {collab.referralCode && (
-                                            <div className="mt-3 p-3 bg-indigo-50 rounded-xl flex items-center justify-between">
+                                        {collab.referralCode ? <div className="mt-3 p-3 bg-indigo-50 rounded-xl flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <QrCode size={16} className="text-indigo-600" />
                                                     <span className="text-xs font-bold text-indigo-600">קוד הפניה פעיל</span>
                                                 </div>
                                                 <span className="text-xs font-mono bg-indigo-100 px-2 py-1 rounded text-indigo-700">{collab.referralCode}</span>
-                                            </div>
-                                        )}
+                                            </div> : null}
                                     </div>
 
                                     <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
@@ -851,10 +842,9 @@ export default function UserManagementPage() {
             </div>
 
             {/* Add/Edit Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            {isModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-purple-500 to-indigo-500" />
                         <h3 className="text-2xl font-black font-display text-slate-900 mb-6">
                             {editingUser ? "עריכת משתמש" : "הוספת משתמש חדש"}
                         </h3>
@@ -937,14 +927,12 @@ export default function UserManagementPage() {
                             </Button>
                         </div>
                     </div>
-                </div>
-            )}
+                </div> : null}
 
             {/* Collaboration Modal */}
-            {isCollabModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            {isCollabModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
                         
                         <button 
                             onClick={closeCollabModal}
@@ -1061,24 +1049,20 @@ export default function UserManagementPage() {
                                 />
                             </div>
 
-                            {editingCollab && (
-                                <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
+                            {editingCollab ? <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
                                     <div>
                                         <p className="text-xs font-bold text-slate-500">סטטוס נוכחי</p>
                                         <Badge className={`${getCollabStatusBadge(editingCollab.status).color} border mt-1`}>
                                             {editingCollab.status}
                                         </Badge>
                                     </div>
-                                    {editingCollab.contractSentAt && (
-                                        <div className="text-left">
+                                    {editingCollab.contractSentAt ? <div className="text-left">
                                             <p className="text-xs font-bold text-slate-500">חוזה נשלח בתאריך</p>
                                             <p className="text-sm font-bold text-slate-700">
                                                 {new Date(editingCollab.contractSentAt).toLocaleDateString('he-IL')}
                                             </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                        </div> : null}
+                                </div> : null}
                         </div>
 
                         <div className="flex justify-end gap-3 mt-8 border-t border-slate-100 pt-6">
@@ -1091,12 +1075,10 @@ export default function UserManagementPage() {
                             </Button>
                         </div>
                     </div>
-                </div>
-            )}
+                </div> : null}
 
             {/* QR Code Modal */}
-            {qrModalCollab && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            {qrModalCollab ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
                         <button 
                             onClick={() => setQrModalCollab(null)}
@@ -1157,12 +1139,10 @@ export default function UserManagementPage() {
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                </div> : null}
 
             {/* Collaborator Details Modal - Leads & Stats */}
-            {detailsCollab && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+            {detailsCollab ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                         <button 
                             onClick={() => setDetailsCollab(null)}
@@ -1272,12 +1252,8 @@ export default function UserManagementPage() {
                                                             <Badge className={lead.status === 'נסגר בהצלחה' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}>
                                                                 {lead.status}
                                                             </Badge>
-                                                            {lead.closedPremium && (
-                                                                <span className="font-bold text-emerald-600">₪{lead.closedPremium.toLocaleString()}</span>
-                                                            )}
-                                                            {lead.company && (
-                                                                <span className="text-sm text-slate-500">{lead.company}</span>
-                                                            )}
+                                                            {lead.closedPremium ? <span className="font-bold text-emerald-600">₪{lead.closedPremium.toLocaleString()}</span> : null}
+                                                            {lead.company ? <span className="text-sm text-slate-500">{lead.company}</span> : null}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1293,8 +1269,7 @@ export default function UserManagementPage() {
                             );
                         })()}
                     </div>
-                </div>
-            )}
+                </div> : null}
         </DashboardShell>
     );
 }

@@ -1,14 +1,14 @@
 ﻿'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/firebase';
-import { useAuth } from '@/lib/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, Users, User, ArrowRight, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { auth, db } from '@/lib/firebase/firebase';
 
 type UserRole = 'admin' | 'agent' | 'client';
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
             <div className="max-w-6xl w-full">
                 <div className="text-center mb-8">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4" />
                     <h1 className="text-4xl font-bold text-white mb-2">מגן זהב CRM</h1>
                     <p className="text-gray-400">מערכת ניהול לסוכנויות ביטוח</p>
                 </div>
@@ -115,7 +115,7 @@ export default function LoginPage() {
                             
                             <div className="relative my-6">
                                 <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-white/10"></div>
+                                    <div className="w-full border-t border-white/10" />
                                 </div>
                                 <div className="relative flex justify-center text-sm">
                                     <span className="px-2 bg-transparent text-gray-500">או</span>

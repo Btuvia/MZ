@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { Button } from "@/components/ui/base";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/base";
 
 export default function Error({
     error,
@@ -48,11 +48,9 @@ export default function Error({
                         <p className="text-xs text-red-400 font-mono break-all">
                             {error.message}
                         </p>
-                        {error.digest && (
-                            <p className="text-xs text-slate-500 mt-2">
+                        {error.digest ? <p className="text-xs text-slate-500 mt-2">
                                 Error ID: {error.digest}
-                            </p>
-                        )}
+                            </p> : null}
                     </div>
                 )}
 

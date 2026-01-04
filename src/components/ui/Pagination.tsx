@@ -150,8 +150,7 @@ export function Pagination({
             </div>
 
             {/* Page size selector */}
-            {showPageSizeSelector && onPageSizeChange && (
-                <div className="flex items-center gap-2">
+            {showPageSizeSelector && onPageSizeChange ? <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-500">פריטים בעמוד:</span>
                     <select
                         value={pageSize}
@@ -165,15 +164,14 @@ export function Pagination({
                             </option>
                         ))}
                     </select>
-                </div>
-            )}
+                </div> : null}
         </div>
     );
 }
 
 // Hook for easy pagination state management
 import { useState, useCallback } from "react";
-import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
+import { type DocumentSnapshot, type QueryDocumentSnapshot } from "firebase/firestore";
 
 interface UsePaginationOptions {
     initialPageSize?: number;

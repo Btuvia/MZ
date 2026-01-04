@@ -1,10 +1,10 @@
 "use client";
 
-import { Card, Button, Badge } from "@/components/ui/base";
+import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, XCircle, RefreshCw, Settings, ExternalLink, Key, Lock, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { Card, Button, Badge } from "@/components/ui/base";
 
 interface IntegrationProps {
     id: string;
@@ -86,7 +86,7 @@ export default function IntegrationCard({ integration, index }: { integration: I
                 transition={{ delay: index * 0.1 }}
             >
                 <Card className="border-none shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group h-full flex flex-col relative">
-                    <div className={`absolute top-0 left-0 w-full h-1 ${integration.color}`}></div>
+                    <div className={`absolute top-0 left-0 w-full h-1 ${integration.color}`} />
 
                     <div className="p-6 flex-1 flex flex-col">
                         <div className="flex justify-between items-start mb-6">
@@ -158,8 +158,7 @@ export default function IntegrationCard({ integration, index }: { integration: I
 
             {/* Config Modal Overlay */}
             <AnimatePresence>
-                {showConfigModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {showConfigModal ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -224,8 +223,7 @@ export default function IntegrationCard({ integration, index }: { integration: I
                                 </div>
                             </div>
                         </motion.div>
-                    </div>
-                )}
+                    </div> : null}
             </AnimatePresence>
         </>
     );

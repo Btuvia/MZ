@@ -7,9 +7,9 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
-import { X, Download, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, Download, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -94,8 +94,7 @@ export function PWAInstallPrompt() {
 
     return (
         <AnimatePresence>
-            {showPrompt && (
-                <motion.div
+            {showPrompt ? <motion.div
                     initial={{ opacity: 0, y: 100 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 100 }}
@@ -153,8 +152,7 @@ export function PWAInstallPrompt() {
                             </p>
                         </div>
                     </div>
-                </motion.div>
-            )}
+                </motion.div> : null}
         </AnimatePresence>
     );
 }

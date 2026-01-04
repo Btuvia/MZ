@@ -1,13 +1,13 @@
 "use client";
 
+import { Calendar as CalendarIcon, Clock, X, User, CheckCircle2, AlertTriangle, Sparkles, BrainCircuit, Search, Paperclip, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button, Badge } from "@/components/ui/base";
-import { TaskTypeSelector } from "@/components/ui/task-type-selector";
 import { SubjectSelector } from "@/components/ui/subject-selector";
+import { TaskTypeSelector } from "@/components/ui/task-type-selector";
 import { WorkflowSelector } from "@/components/ui/workflow-selector";
-import { Calendar as CalendarIcon, Clock, X, User, CheckCircle2, AlertTriangle, Sparkles, BrainCircuit, Search, Paperclip, FileText } from "lucide-react";
-import { TaskType, TaskPriority } from "@/types";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { type TaskType, type TaskPriority } from "@/types";
 
 interface SmartTaskModalProps {
     isOpen: boolean;
@@ -254,7 +254,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                 rows={3}
                                 placeholder="תיאור מפורט של המשימה..."
                                 className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-medium text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none transition-all resize-none"
-                            ></textarea>
+                             />
                         </div>
                     </div>
 
@@ -304,7 +304,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                             <div className="space-y-2">
                                 {subtasks.map((st, i) => (
                                     <div key={i} className="flex items-center gap-3 glass-card border border-amber-500/20 p-2 rounded-lg shadow-sm animate-in slide-in-from-right-4 fade-in duration-300" style={{ animationDelay: `${i * 100}ms` }}>
-                                        <div className="h-4 w-4 rounded border border-amber-500/30 bg-slate-700/50"></div>
+                                        <div className="h-4 w-4 rounded border border-amber-500/30 bg-slate-700/50" />
                                         <span className="text-sm font-bold text-slate-200">{st.title}</span>
                                     </div>
                                 ))}
@@ -369,8 +369,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                     >לא</button>
                                 </div>
 
-                                {isLinkedToClient && (
-                                    <div className="relative">
+                                {isLinkedToClient ? <div className="relative">
                                         <div className="absolute top-3 left-3 text-slate-400 pointer-events-none">
                                             <Search size={16} />
                                         </div>
@@ -385,8 +384,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                             className="w-full glass-card border-2 border-amber-500/30 rounded-xl pl-4 pr-10 py-3 font-bold text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 outline-none text-slate-200 placeholder:text-slate-500"
                                         />
 
-                                        {showClientResults && !selectedClient && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
+                                        {showClientResults && !selectedClient ? <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
                                                 {searchResults.length > 0 ? searchResults.map(client => (
                                                     <div
                                                         key={client.id}
@@ -403,10 +401,8 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                                 )) : (
                                                     <div className="p-3 text-xs text-slate-400 text-center">לא נמצאו לקוחות</div>
                                                 )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                            </div> : null}
+                                    </div> : null}
                             </div>
 
                             <div>
@@ -475,7 +471,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                 rows={2}
                                 placeholder="הערות נוספות..."
                                 className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none resize-none"
-                            ></textarea>
+                             />
                         </div>
                     </div>
                 </div>

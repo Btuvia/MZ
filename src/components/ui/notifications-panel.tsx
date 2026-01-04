@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "./base";
 import { Bell, X, Check, Trash2, Eye } from "lucide-react";
-import { Notification, getUserNotifications, markAsRead, markAllAsRead, deleteNotification, getUnreadCount } from "@/lib/automation/notifications";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { type Notification, getUserNotifications, markAsRead, markAllAsRead, deleteNotification, getUnreadCount } from "@/lib/automation/notifications";
 import { handleError } from "@/lib/error-handler";
+import { Card } from "./base";
 
 interface NotificationsPanelProps {
     userId: string;
@@ -143,8 +143,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
             </button>
 
             {/* Dropdown Panel */}
-            {isOpen && (
-                <>
+            {isOpen ? <>
                     {/* Overlay */}
                     <div
                         className="fixed inset-0 z-10"
@@ -219,8 +218,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                                             {formatTime(notification.createdAt)}
                                                         </span>
                                                         <div className="flex gap-1">
-                                                            {!notification.isRead && notification.id && (
-                                                                <button
+                                                            {!notification.isRead && notification.id ? <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleMarkAsRead(notification.id!);
@@ -229,10 +227,8 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                                                     title="סמן כנקרא"
                                                                 >
                                                                     <Eye size={14} />
-                                                                </button>
-                                                            )}
-                                                            {notification.id && (
-                                                                <button
+                                                                </button> : null}
+                                                            {notification.id ? <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleDelete(notification.id!);
@@ -241,8 +237,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                                                     title="מחק"
                                                                 >
                                                                     <Trash2 size={14} />
-                                                                </button>
-                                                            )}
+                                                                </button> : null}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -253,8 +248,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                             )}
                         </div>
                     </Card>
-                </>
-            )}
+                </> : null}
         </div>
     );
 }

@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     TrendingUp, TrendingDown, DollarSign, Users, Target, Award,
     ArrowUpRight, ArrowDownRight, Calendar, Filter, RefreshCw,
@@ -12,9 +10,11 @@ import {
     ArrowRight, Plus
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { useState, useEffect, useMemo } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useDeals, useUsers, useCreateDeal } from "@/lib/hooks/useQueryHooks";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import type { Deal as DealType, DealStage } from "@/types";
 
 // Types
@@ -308,8 +308,8 @@ export default function SalesVisualPage() {
                                             <div className="text-2xl font-black text-amber-100">{kpi.value}</div>
                                             <div className="flex items-center justify-between mt-1">
                                                 <span className="text-sm text-slate-500">{kpi.label}</span>
-                                                {kpi.subValue && <span className="text-sm font-bold text-slate-400">{kpi.subValue}</span>}
-                                                {kpi.subLabel && <span className="text-xs text-slate-500">{kpi.subLabel}</span>}
+                                                {kpi.subValue ? <span className="text-sm font-bold text-slate-400">{kpi.subValue}</span> : null}
+                                                {kpi.subLabel ? <span className="text-xs text-slate-500">{kpi.subLabel}</span> : null}
                                             </div>
                                         </Card>
                                     </motion.div>
@@ -601,15 +601,15 @@ export default function SalesVisualPage() {
                             {/* Legend */}
                             <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-700/50">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded bg-blue-500"></div>
+                                    <div className="w-3 h-3 rounded bg-blue-500" />
                                     <span className="text-xs text-slate-400">מכירות בפועל</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded bg-slate-700"></div>
+                                    <div className="w-3 h-3 rounded bg-slate-700" />
                                     <span className="text-xs text-slate-400">יעד</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded bg-emerald-500"></div>
+                                    <div className="w-3 h-3 rounded bg-emerald-500" />
                                     <span className="text-xs text-slate-400">עמד ביעד</span>
                                 </div>
                             </div>

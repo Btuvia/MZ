@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, createContext, useContext, ReactNode } from "react";
-import { X, AlertTriangle, CheckCircle, Info, HelpCircle } from "lucide-react";
-import { Button } from "@/components/ui/base";
 import { motion, AnimatePresence } from "framer-motion";
+import { X, AlertTriangle, CheckCircle, Info, HelpCircle } from "lucide-react";
+import { useState, useCallback, createContext, useContext, type ReactNode } from "react";
+import { Button } from "@/components/ui/base";
 
 type ConfirmationType = 'danger' | 'warning' | 'info' | 'success';
 
@@ -118,8 +118,7 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
             {children}
             
             <AnimatePresence>
-                {isOpen && options && (
-                    <>
+                {isOpen && options ? <>
                         {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -193,8 +192,7 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
                                 </div>
                             </div>
                         </motion.div>
-                    </>
-                )}
+                    </> : null}
             </AnimatePresence>
         </ConfirmationContext.Provider>
     );

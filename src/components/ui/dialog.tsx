@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+import * as React from "react";
 
 interface DialogProps {
     open: boolean;
@@ -13,8 +13,7 @@ interface DialogProps {
 export const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
     return (
         <AnimatePresence>
-            {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {open ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -28,8 +27,7 @@ export const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
                     <div className="z-50 w-full max-w-lg">
                         {children}
                     </div>
-                </div>
-            )}
+                </div> : null}
         </AnimatePresence>
     );
 };
