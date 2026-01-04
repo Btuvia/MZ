@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
@@ -7,7 +7,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: 'default' | 'gold' | 'blue' | 'premium';
 }
 
-export const Card = ({ children, title, className = "", variant = 'default', ...props }: CardProps) => {
+export const Card = memo(function Card({ children, title, className = "", variant = 'default', ...props }: CardProps) {
     const variantStyles = {
         default: 'glass-card',
         gold: 'glass-card border-amber-500/30 shadow-gold',
@@ -26,20 +26,20 @@ export const Card = ({ children, title, className = "", variant = 'default', ...
             {children}
         </div>
     );
-};
+});
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'gold' | 'blue' | 'premium';
     size?: 'sm' | 'md' | 'lg';
 }
 
-export const Button = ({
+export const Button = memo(function Button({
     children,
     variant = 'primary',
     size = 'md',
     className = "",
     ...props
-}: ButtonProps) => {
+}: ButtonProps) {
     const baseStyles = "inline-flex items-center justify-center font-bold transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
 
     const variants = {
@@ -67,9 +67,9 @@ export const Button = ({
             {children}
         </button>
     );
-};
+});
 
-export const Badge = ({ children, variant = 'primary', className = "" }: { children: React.ReactNode, variant?: 'primary' | 'success' | 'warning' | 'error' | 'outline' | 'gold' | 'blue', className?: string }) => {
+export const Badge = memo(function Badge({ children, variant = 'primary', className = "" }: { children: React.ReactNode, variant?: 'primary' | 'success' | 'warning' | 'error' | 'outline' | 'gold' | 'blue', className?: string }) {
     const styles = {
         primary: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
         success: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
@@ -85,4 +85,4 @@ export const Badge = ({ children, variant = 'primary', className = "" }: { child
             {children}
         </span>
     );
-};
+});

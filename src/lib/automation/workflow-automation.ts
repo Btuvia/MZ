@@ -153,7 +153,7 @@ export async function proceedToNextStep(instanceId: string): Promise<void> {
         // Workflow completed
         await firestoreService.updateWorkflowInstance(instanceId, {
             status: 'completed',
-            completedAt: Timestamp.now(),
+            completedAt: Timestamp.now().toDate(),
         });
 
         await logAutomation('workflow_completed', {
@@ -219,7 +219,7 @@ export async function onTaskCompleted(taskId: string): Promise<void> {
  */
 async function logAutomation(
     type: string,
-    details: any
+    details: Record<string, unknown>
 ): Promise<void> {
     try {
         await firestoreService.addDocument('automation_logs', {
@@ -233,7 +233,17 @@ async function logAutomation(
 }
 
 /**
- * Get automation logs
+ * Automation Log Entry
+ */
+export interface AutomationLog {
+    id: string;
+    type: string;
+    details: Record<string, unknown>;
+    createdAt: Date;
+}
+
+/**
+ * Get automation logs with optional filters
  */
 export async function getAutomationLogs(
     filters?: {
@@ -241,9 +251,80 @@ export async function getAutomationLogs(
         workflowInstanceId?: string;
         startDate?: Date;
         endDate?: Date;
+        limit?: number;
     }
-): Promise<any[]> {
-    // This would need a more complex query implementation
-    // For now, return empty array
-    return [];
+): Promise<AutomationLog[]> {
+    try {
+        // Get all logs from Firestore
+        const allLogs = await firestoreService.getDocuments<AutomationLog>('automation_logs', []);
+        
+        let filteredLogs = allLogs;
+
+        // Apply filters
+        if (filters?.type) {
+            filteredLogs = filteredLogs.filter(log => log.type === filters.type);
+        }
+
+        if (filters?.workflowInstanceId) {
+            filteredLogs = filteredLogs.filter(log => 
+                (log.details as Record<string, unknown>)?.workflowInstanceId === filters.workflowInstanceId
+            );
+        }
+
+        if (filters?.startDate) {
+            filteredLogs = filteredLogs.filter(log => {
+                const logDate = log.createdAt instanceof Date ? log.createdAt : new Date(log.createdAt);
+                return logDate >= filters.startDate!;
+            });
+        }
+
+        if (filters?.endDate) {
+            filteredLogs = filteredLogs.filter(log => {
+                const logDate = log.createdAt instanceof Date ? log.createdAt : new Date(log.createdAt);
+                return logDate <= filters.endDate!;
+            });
+        }
+
+        // Sort by date descending (newest first)
+        filteredLogs.sort((a, b) => {
+            const aDate = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+            const bDate = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+            return bDate.getTime() - aDate.getTime();
+        });
+
+        // Apply limit
+        if (filters?.limit && filters.limit > 0) {
+            filteredLogs = filteredLogs.slice(0, filters.limit);
+        }
+
+        return filteredLogs;
+    } catch (error) {
+        console.error("Failed to get automation logs:", error);
+        return [];
+    }
+}
+
+/**
+ * Get recent automation activity summary
+ */
+export async function getAutomationSummary(): Promise<{
+    totalToday: number;
+    byType: Record<string, number>;
+    recentLogs: AutomationLog[];
+}> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const logs = await getAutomationLogs({ startDate: today, limit: 100 });
+
+    const byType: Record<string, number> = {};
+    logs.forEach(log => {
+        byType[log.type] = (byType[log.type] || 0) + 1;
+    });
+
+    return {
+        totalToday: logs.length,
+        byType,
+        recentLogs: logs.slice(0, 10),
+    };
 }

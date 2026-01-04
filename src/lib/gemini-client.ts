@@ -7,7 +7,7 @@ export const generateGeminiContent = async (
     prompt: string,
     apiKey: string,
     fileData?: { base64: string; mimeType: string },
-    model: string = "gemini-1.5-flash"
+    model: string = "gemini-2.0-flash"
 ): Promise<GeminiResponse> => {
     if (!apiKey) {
         return { text: "", error: "Missing API Key. Please configure it in Agency Settings." };

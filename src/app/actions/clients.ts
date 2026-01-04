@@ -1,8 +1,9 @@
 'use server';
 
 import { adminDb } from "@/lib/firebase/admin";
+import type { Client } from "@/types";
 
-export async function createClientAction(data: any) {
+export async function createClientAction(data: Partial<Client>) {
     if (!adminDb) {
         console.error("Firebase Admin not initialized");
         return { 
@@ -19,11 +20,12 @@ export async function createClientAction(data: any) {
         });
 
         return { success: true, id: docRef.id };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Server Action Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "שגיאה ביצירת הלקוח";
         return { 
             success: false, 
-            error: error.message || "שגיאה ביצירת הלקוח"
+            error: errorMessage
         };
     }
 }

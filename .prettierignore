@@ -1,0 +1,14 @@
+# Ignore artifacts
+build/
+.next/
+out/
+node_modules/
+coverage/
+
+# Ignore generated files
+*.min.js
+*.min.css
+package-lock.json
+
+# Ignore other
+public/sw.js

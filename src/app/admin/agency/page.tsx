@@ -6,6 +6,7 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { generateWithGemini, getGeminiStatus } from "@/app/actions/gemini";
 import { Copy, Plus, Trash2, Edit2, Save, X, Check, RefreshCw, Power } from "lucide-react";
+import { toast } from "sonner";
 
 // Types
 type TeamMember = {
@@ -186,31 +187,171 @@ export default function AgencyManagementPage() {
 
     // AI Handlers (Same as before, simplified for brevity)
     const handleGenerateField = async () => {
-        if (!fieldInput) return;
+        if (!fieldInput.trim()) {
+            toast.error("אנא תאר את השדה שברצונך ליצור");
+            return;
+        }
+        
         setIsGeneratingField(true);
         setGeneratedField(null);
+        
         try {
-            const prompt = `Create a CRM field schema JSON for: ${fieldInput}. Return ONLY JSON: { "label": string, "type": "text"|"number"|"select"|"date", "options"?: string[], "description": string }`;
+            // If API not configured, show demo
+            if (!isGeminiConfigured) {
+                setTimeout(() => {
+                    setGeneratedField({
+                        label: "שדה דמו - " + fieldInput.substring(0, 20),
+                        type: "text",
+                        description: "זהו שדה הדגמה. הגדר GEMINI_API_KEY לשימוש באמת"
+                    });
+                    toast.info("זוהי הדגמה - הגדר API key לפונקציונליות מלאה");
+                    setIsGeneratingField(false);
+                }, 1000);
+                return;
+            }
+            
+            const prompt = `You are a CRM field generator. Create a field schema based on this request in Hebrew: "${fieldInput}".
+
+Rules:
+1. The label must be in Hebrew
+2. Description must be in Hebrew and explain the field's purpose
+3. Type must be one of: "text", "number", "select", "date"
+4. If type is "select", include an "options" array with Hebrew options
+5. Return ONLY valid JSON, no markdown formatting
+
+Required JSON format:
+{
+  "label": "Hebrew field name",
+  "type": "text|number|select|date",
+  "options": ["option1", "option2"],
+  "description": "Hebrew description of what this field is for"
+}`;
+
             const result = await generateWithGemini(prompt);
-            if (!result.error) setGeneratedField(JSON.parse(result.text.replace(/```json/g, '').replace(/```/g, '').trim()));
-        } catch (e) { console.error(e); } finally { setIsGeneratingField(false); }
+            
+            if (result.error) {
+                toast.error(result.error);
+                return;
+            }
+            
+            // Clean the response text
+            let jsonText = result.text.trim();
+            
+            // Remove markdown code blocks if present
+            jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+            
+            // Find JSON object in the response
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error("לא נמצא JSON תקין בתגובה");
+            }
+            
+            const parsedField = JSON.parse(jsonMatch[0]);
+            
+            // Validate required fields
+            if (!parsedField.label || !parsedField.type || !parsedField.description) {
+                throw new Error("השדה שנוצר חסר שדות נדרשים");
+            }
+            
+            // Validate type
+            const validTypes = ['text', 'number', 'select', 'date'];
+            if (!validTypes.includes(parsedField.type)) {
+                parsedField.type = 'text'; // fallback
+            }
+            
+            setGeneratedField(parsedField);
+            toast.success("השדה נוצר בהצלחה! ניתן לאשר או לבטל");
+            
+        } catch (e) {
+            console.error("Field generation error:", e);
+            toast.error(e instanceof Error ? e.message : "שגיאה ביצירת השדה. נסה שוב");
+        } finally {
+            setIsGeneratingField(false);
+        }
     };
 
     const handleGenerateAutomation = async () => {
-        if (!automationInput) return;
+        if (!automationInput.trim()) {
+            toast.error("אנא תאר את האוטומציה שברצונך ליצור");
+            return;
+        }
+        
         const msg = automationInput;
         setAutomationChat(p => [...p, { role: 'user', content: msg }]);
         setAutomationInput("");
         setIsGeneratingAutomation(true);
+        
         try {
-            const prompt = `Act as automation architect. User Request: "${msg}". Return JSON: { "title": string, "desc": string, "icon": emoji, "active": true }`;
-            const result = await generateWithGemini(prompt);
-            if (!result.error) {
-                const newAuto = JSON.parse(result.text.replace(/```json/g, '').replace(/```/g, '').trim());
-                setAutomations(p => [...p, newAuto]);
-                setAutomationChat(p => [...p, { role: 'ai', content: `בוצע! הוספתי: ${newAuto.title}` }]);
+            // If API not configured, show demo
+            if (!isGeminiConfigured) {
+                setTimeout(() => {
+                    const demoAuto = {
+                        title: "אוטומציה דמו - " + msg.substring(0, 25),
+                        desc: "זוהי אוטומציה להדגמה. הגדר GEMINI_API_KEY לשימוש באמת",
+                        icon: "🤖",
+                        active: true,
+                        id: Date.now()
+                    };
+                    setAutomations(p => [...p, demoAuto]);
+                    setAutomationChat(p => [...p, { role: 'ai', content: `💡 הדגמה: יצרתי "${demoAuto.title}". הגדר API key לפונקציונליות מלאה.` }]);
+                    toast.info("זוהי הדגמה - הגדר API key לפונקציונליות מלאה");
+                    setIsGeneratingAutomation(false);
+                }, 1500);
+                return;
             }
-        } catch (e) { setAutomationChat(p => [...p, { role: 'ai', content: "שגיאה או מפתח API חסר." }]); } finally { setIsGeneratingAutomation(false); }
+            
+            const prompt = `You are an automation architect for a CRM system. Create an automation based on this request in Hebrew: "${msg}".
+
+Rules:
+1. All text fields must be in Hebrew
+2. Icon must be a single emoji that represents the automation
+3. Return ONLY valid JSON, no markdown formatting
+
+Required JSON format:
+{
+  "title": "Hebrew title of automation",
+  "desc": "Hebrew description of what this automation does",
+  "icon": "single emoji",
+  "active": true
+}`;
+
+            const result = await generateWithGemini(prompt);
+            
+            if (result.error) {
+                setAutomationChat(p => [...p, { role: 'ai', content: `שגיאה: ${result.error}` }]);
+                toast.error(result.error);
+                return;
+            }
+            
+            // Clean the response
+            let jsonText = result.text.trim();
+            jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+            
+            // Find JSON object
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error("לא נמצא JSON תקין בתגובה");
+            }
+            
+            const newAuto = JSON.parse(jsonMatch[0]);
+            
+            // Validate
+            if (!newAuto.title || !newAuto.desc) {
+                throw new Error("האוטומציה חסרה שדות נדרשים");
+            }
+            
+            setAutomations(p => [...p, { ...newAuto, id: Date.now() }]);
+            setAutomationChat(p => [...p, { role: 'ai', content: `✅ בוצע! הוספתי אוטומציה: "${newAuto.title}"` }]);
+            toast.success("אוטומציה נוספה בהצלחה!");
+            
+        } catch (e) {
+            console.error("Automation generation error:", e);
+            const errorMsg = e instanceof Error ? e.message : "שגיאה ביצירת האוטומציה";
+            setAutomationChat(p => [...p, { role: 'ai', content: `❌ ${errorMsg}` }]);
+            toast.error(errorMsg);
+        } finally {
+            setIsGeneratingAutomation(false);
+        }
     };
 
     const tabs = [
@@ -326,9 +467,39 @@ export default function AgencyManagementPage() {
                                         <h3 className="text-3xl font-black italic tracking-tighter">בונה שדות AI</h3>
                                     </div>
                                     <p className="text-indigo-100/80 font-medium max-w-md">תאר את השדה שאתה צריך והמערכת תבנה אותו אוטומטית</p>
+                                    
+                                    {!isGeminiConfigured && (
+                                        <div className="bg-amber-500/20 border border-amber-300/30 rounded-xl p-4 text-amber-100 text-sm">
+                                            <p className="font-bold">⚠️ נדרש מפתח Gemini API</p>
+                                            <p className="text-xs mt-1">הגדר את GEMINI_API_KEY בקובץ .env.local כדי להפעיל תכונות AI</p>
+                                            <a 
+                                                href="https://aistudio.google.com/app/apikey" 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-xs underline hover:text-white mt-2 inline-block"
+                                            >
+                                                📌 קבל מפתח חינם מ-Google AI Studio
+                                            </a>
+                                        </div>
+                                    )}
+                                    
                                     <div className="flex gap-4 pt-4 justify-center md:justify-start">
-                                        <input type="text" value={fieldInput} onChange={(e) => setFieldInput(e.target.value)} placeholder='לדוגמה: "שדה פנסיה שנתי..."' className="flex-1 bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-md text-white placeholder-white/40 text-sm font-bold outline-none" />
-                                        <Button onClick={handleGenerateField} disabled={isGeneratingField} className="bg-white text-indigo-600 hover:bg-slate-900 hover:text-white rounded-2xl px-8 shadow-xl font-black italic transition-all">{isGeneratingField ? "..." : "בנה"}</Button>
+                                        <input 
+                                            type="text" 
+                                            value={fieldInput} 
+                                            onChange={(e) => setFieldInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && !isGeneratingField && isGeminiConfigured && handleGenerateField()}
+                                            placeholder={isGeminiConfigured ? 'לדוגמה: "שדה תאריך תחילת פנסיה"' : 'נדרש מפתח API...'} 
+                                            disabled={!isGeminiConfigured}
+                                            className="flex-1 bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-md text-white placeholder-white/40 text-sm font-bold outline-none disabled:opacity-50 disabled:cursor-not-allowed" 
+                                        />
+                                        <Button 
+                                            onClick={handleGenerateField} 
+                                            disabled={isGeneratingField || !isGeminiConfigured} 
+                                            className="bg-white text-indigo-600 hover:bg-slate-900 hover:text-white rounded-2xl px-8 shadow-xl font-black italic transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isGeneratingField ? "בונה..." : "בנה"}
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -378,6 +549,21 @@ export default function AgencyManagementPage() {
                         <div className="grid lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
                             {/* AI Chat Logic reused here for Automation Builder */}
                             <Card className="p-8 bg-slate-900 text-white rounded-[3rem] min-h-[500px] flex flex-col">
+                                {!isGeminiConfigured && (
+                                    <div className="bg-amber-500/20 border border-amber-300/30 rounded-xl p-4 mb-4 text-amber-100 text-sm">
+                                        <p className="font-bold">⚠️ נדרש מפתח Gemini API</p>
+                                        <p className="text-xs mt-1">הגדר את GEMINI_API_KEY בקובץ .env.local כדי להפעיל בונה האוטומציות</p>
+                                        <a 
+                                            href="https://aistudio.google.com/app/apikey" 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-xs underline hover:text-white mt-2 inline-block"
+                                        >
+                                            📌 קבל מפתח חינם מ-Google AI Studio
+                                        </a>
+                                    </div>
+                                )}
+                                
                                 <div className="flex-1 space-y-4 mb-4 overflow-y-auto max-h-[400px] px-2 custom-scrollbar">
                                     {automationChat.map((msg, i) => (
                                         <div key={i} className={`p-4 rounded-2xl max-w-[85%] ${msg.role === 'ai' ? 'bg-white/10 self-end mr-auto' : 'bg-indigo-600 self-start ml-auto'}`}>{msg.content}</div>
@@ -385,8 +571,22 @@ export default function AgencyManagementPage() {
                                     {isGeneratingAutomation && <div className="text-slate-400 text-xs animate-pulse mr-auto">חושב...</div>}
                                 </div>
                                 <div className="flex gap-2">
-                                    <input type="text" value={automationInput} onChange={e => setAutomationInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleGenerateAutomation()} placeholder="תאר אוטומציה..." className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none font-bold" />
-                                    <button onClick={handleGenerateAutomation} className="bg-white text-indigo-900 p-3 rounded-xl hover:scale-105 transition-transform"><span className="rotate-90 block">➤</span></button>
+                                    <input 
+                                        type="text" 
+                                        value={automationInput} 
+                                        onChange={e => setAutomationInput(e.target.value)} 
+                                        onKeyDown={e => e.key === 'Enter' && !isGeneratingAutomation && isGeminiConfigured && handleGenerateAutomation()} 
+                                        placeholder={isGeminiConfigured ? "תאר אוטומציה..." : "נדרש מפתח API..."}
+                                        disabled={!isGeminiConfigured}
+                                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none font-bold disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    />
+                                    <button 
+                                        onClick={handleGenerateAutomation} 
+                                        disabled={!isGeminiConfigured || isGeneratingAutomation}
+                                        className="bg-white text-indigo-900 p-3 rounded-xl hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                    >
+                                        <span className="rotate-90 block">➤</span>
+                                    </button>
                                 </div>
                             </Card>
 

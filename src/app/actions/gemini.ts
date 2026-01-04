@@ -89,7 +89,7 @@ export async function generateWithGemini(
         return { text: "", error: "נא להגדיר GEMINI_API_KEY בקובץ .env.local" };
     }
 
-    const chosenModel = model || "gemini-1.5-flash";
+    const chosenModel = model || "gemini-2.0-flash";
     const key = makeCacheKey({ prompt, model: chosenModel, fileData });
     const cached = getCached(key);
     if (cached) return cached;

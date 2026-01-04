@@ -1,10 +1,13 @@
 "use client";
 
 import { Card, Button, Badge } from "@/components/ui/base";
-import { CheckCircle2, Phone, Mail, FileText, Clock, AlertTriangle, BellOff } from "lucide-react";
+import { CheckCircle2, Phone, Mail, FileText, Clock, AlertTriangle, Bell } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { ReminderPicker } from "@/components/ui/ReminderPicker";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export interface FocusItem {
     id: string;
@@ -18,6 +21,7 @@ export interface FocusItem {
 }
 
 export default function FocusFeed() {
+    const { user } = useAuth();
     const [items, setItems] = useState<FocusItem[]>([
         {
             id: '1',
@@ -49,14 +53,55 @@ export default function FocusFeed() {
         }
     ]);
 
+    // Reminder picker state
+    const [reminderPickerOpen, setReminderPickerOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<FocusItem | null>(null);
+
     const handleComplete = (id: string) => {
         setItems(prev => prev.filter(item => item.id !== id));
         toast.success("המשימה הושלמה בהצלחה! כל הכבוד 🎉");
     };
 
-    const handleSnooze = (id: string) => {
-        setItems(prev => prev.filter(item => item.id !== id));
-        toast.info("המשימה נדחתה לשעה הקרובה.");
+    const handleOpenReminder = (item: FocusItem) => {
+        setSelectedItem(item);
+        setReminderPickerOpen(true);
+    };
+
+    const handleSetReminder = async (reminderTime: Date) => {
+        if (!selectedItem || !user) return;
+
+        try {
+            await firestoreService.addReminder({
+                userId: user.uid,
+                title: selectedItem.title,
+                description: `${selectedItem.description} - ${selectedItem.clientName}`,
+                itemId: selectedItem.id,
+                itemType: 'focus',
+                reminderTime,
+            });
+
+            // Format the time for display
+            const timeStr = reminderTime.toLocaleString('he-IL', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+
+            // Remove from current list
+            setItems(prev => prev.filter(item => item.id !== selectedItem.id));
+            
+            toast.success(
+                <div className="space-y-1">
+                    <p className="font-bold">התזכורת נקבעה! ⏰</p>
+                    <p className="text-sm opacity-80">{timeStr}</p>
+                </div>
+            );
+        } catch (error) {
+            console.error("Error setting reminder:", error);
+            toast.error("שגיאה בהגדרת התזכורת");
+        }
     };
 
     const getIcon = (type: FocusItem['type']) => {
@@ -140,10 +185,10 @@ export default function FocusFeed() {
                                         <div className="flex gap-2 w-full md:w-auto">
                                             <Button
                                                 variant="outline"
-                                                className="flex-1 md:w-auto text-slate-300 border-slate-600 hover:bg-slate-700 font-bold"
-                                                onClick={() => handleSnooze(item.id)}
+                                                className="flex-1 md:w-auto text-slate-300 border-slate-600 hover:bg-slate-700 hover:border-amber-500/50 font-bold"
+                                                onClick={() => handleOpenReminder(item)}
                                             >
-                                                <BellOff size={18} className="ml-2" />
+                                                <Bell size={18} className="ml-2" />
                                                 הזכר
                                             </Button>
                                             <Button
@@ -161,6 +206,17 @@ export default function FocusFeed() {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Reminder Picker Modal */}
+            <ReminderPicker
+                isOpen={reminderPickerOpen}
+                onClose={() => {
+                    setReminderPickerOpen(false);
+                    setSelectedItem(null);
+                }}
+                onSelect={handleSetReminder}
+                itemTitle={selectedItem?.title || ""}
+            />
         </div>
     );
 }

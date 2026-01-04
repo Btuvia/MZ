@@ -6,10 +6,35 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import Link from "next/link"; // For navigation
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { 
+    Target, Clock, AlertTriangle, TrendingUp, Users, Calendar, 
+    Plus, Phone, CheckCircle2, RefreshCw, Bell, Zap
+} from "lucide-react";
+
+// Dynamic greeting helper
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return { text: "בוקר טוב", emoji: "☀️" };
+    if (hour >= 12 && hour < 17) return { text: "צהריים טובים", emoji: "🌤️" };
+    if (hour >= 17 && hour < 21) return { text: "ערב טוב", emoji: "🌅" };
+    return { text: "לילה טוב", emoji: "🌙" };
+};
+
+// Skeleton loader for stats
+const StatCardSkeleton = () => (
+    <Card className="p-6 animate-pulse">
+        <div className="h-3 w-20 bg-slate-700/50 rounded mb-4"></div>
+        <div className="h-10 w-16 bg-slate-700/50 rounded mb-2"></div>
+        <div className="h-3 w-24 bg-slate-700/30 rounded"></div>
+    </Card>
+);
 
 export default function AgentDashboard() {
     const { user } = useAuth();
+    const greeting = getGreeting();
+    const userName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || 'שם';
     const [stats, setStats] = useState({
         tasksToday: 0,
         urgentTasks: 0,
@@ -99,79 +124,162 @@ export default function AgentDashboard() {
         loadDashboardData();
     }, []);
 
+    // Loading skeleton
+    if (loading) {
+        return (
+            <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
+                <div className="space-y-8" dir="rtl">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-3xl font-black text-gradient-gold neon-text-gold">
+                                היי {userName}, {greeting.text}! {greeting.emoji}
+                            </h2>
+                            <p className="text-slate-400 mt-1">טוען את הנתונים שלך...</p>
+                        </div>
+                    </div>
+                    <div className="grid gap-6 sm:grid-cols-3">
+                        <StatCardSkeleton />
+                        <StatCardSkeleton />
+                        <StatCardSkeleton />
+                    </div>
+                    <Card className="p-6 animate-pulse">
+                        <div className="h-6 w-40 bg-slate-700/50 rounded mb-4"></div>
+                        <div className="space-y-3">
+                            {[1,2,3,4].map(i => (
+                                <div key={i} className="h-12 bg-slate-700/30 rounded"></div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            </DashboardShell>
+        );
+    }
+
     return (
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in slide-in-from-bottom duration-500" dir="rtl">
+                
+                {/* Header with greeting */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-2xl font-black text-primary">היעדים שלי</h2>
-                        <p className="text-slate-500">ביצועים אישיים לרבעון הנוכחי</p>
+                        <h2 className="text-3xl font-black text-gradient-gold neon-text-gold">
+                            היי {userName}, {greeting.text}! {greeting.emoji}
+                        </h2>
+                        <p className="text-slate-400 mt-1">הנה סיכום היום שלך</p>
                     </div>
                     <div className="flex gap-3">
                         <Link href="/agent/leads">
-                            <button className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl border border-border text-sm font-bold text-primary hover:shadow-md transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                            <Button variant="outline" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
+                                <Zap size={16} className="ml-2" />
                                 ניהול לידים
-                            </button>
+                            </Button>
                         </Link>
                         <Link href="/agent/sales">
-                            <button className="flex items-center gap-2 px-5 py-2.5 bg-accent rounded-xl text-sm font-bold text-white shadow-lg shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                            <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg shadow-amber-500/20">
+                                <Plus size={16} className="ml-2" />
                                 הוספת עסקה
-                            </button>
+                            </Button>
                         </Link>
                     </div>
                 </div>
 
+                {/* Urgent Alerts */}
+                {stats.urgentTasks > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-card border border-red-500/30 bg-red-500/10 p-4 rounded-2xl flex items-center gap-3"
+                    >
+                        <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+                            <AlertTriangle size={20} className="text-red-400" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-bold text-red-400">יש לך {stats.urgentTasks} משימות דחופות!</p>
+                            <p className="text-sm text-slate-400">לחץ כדי לצפות בהן</p>
+                        </div>
+                        <Link href="/agent/tasks">
+                            <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white">
+                                צפה עכשיו
+                            </Button>
+                        </Link>
+                    </motion.div>
+                )}
+
+                {/* Stats Cards */}
                 <div className="grid gap-6 sm:grid-cols-3">
-                    <Card className="border-r-4 border-r-accent p-6 flex flex-col justify-between">
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">משימות להיום</span>
-                        <div className="flex items-end justify-between mt-2">
-                            <p className="text-4xl font-black text-primary tracking-tighter">
-                                {loading ? "-" : stats.tasksToday}
-                            </p>
-                            <div className="text-xs font-bold text-slate-400 pb-1">{stats.urgentTasks} דחופות</div>
-                        </div>
-                    </Card>
-                    <Card className="border-r-4 border-r-warning p-6 flex flex-col justify-between">
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">חידושים (הערכה)</span>
-                        <div className="flex items-end justify-between mt-2">
-                            <p className="text-4xl font-black text-primary tracking-tighter">
-                                {loading ? "-" : stats.renewalsCount}
-                            </p>
-                            <div className="text-xs font-bold text-orange-400 pb-1">פער: ₪{stats.renewalsValue.toLocaleString()}</div>
-                        </div>
-                    </Card>
-                    <Card className="border-r-4 border-r-success p-6 flex flex-col justify-between overflow-hidden relative">
-                        <div className="absolute top-[-10px] left-[-10px] h-20 w-20 bg-success/5 rounded-full blur-2xl"></div>
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">יעד מכירות חודשי</span>
-                        <div className="flex items-end justify-between mt-2">
-                            <p className="text-4xl font-black text-primary tracking-tighter">
-                                {loading ? "-" : `${Math.round(stats.salesGoalProgress)}%`}
-                            </p>
-                            <div className="text-xs font-bold text-success pb-1">₪{stats.closedValue.toLocaleString()} / ₪{stats.salesGoalTotal.toLocaleString()}</div>
-                        </div>
-                        <div className="h-1.5 w-full bg-slate-100 rounded-full mt-4 overflow-hidden">
-                            <div
-                                className="h-full bg-success rounded-full shadow-sm transition-all duration-1000"
-                                style={{ width: `${Math.min(stats.salesGoalProgress, 100)}%` }}
-                            ></div>
-                        </div>
-                    </Card>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                        <Card className="border-r-4 border-r-amber-500 p-6 flex flex-col justify-between neon-gold">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">משימות להיום</span>
+                                <Clock size={18} className="text-amber-500" />
+                            </div>
+                            <div className="flex items-end justify-between mt-2">
+                                <p className="text-4xl font-black text-amber-100 tracking-tighter">
+                                    {stats.tasksToday}
+                                </p>
+                                <Badge className={stats.urgentTasks > 0 ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"}>
+                                    {stats.urgentTasks} דחופות
+                                </Badge>
+                            </div>
+                        </Card>
+                    </motion.div>
+
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                        <Card className="border-r-4 border-r-orange-500 p-6 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">חידושים קרובים</span>
+                                <RefreshCw size={18} className="text-orange-500" />
+                            </div>
+                            <div className="flex items-end justify-between mt-2">
+                                <p className="text-4xl font-black text-amber-100 tracking-tighter">
+                                    {stats.renewalsCount}
+                                </p>
+                                <span className="text-xs font-bold text-orange-400 pb-1">₪{stats.renewalsValue.toLocaleString()}</span>
+                            </div>
+                        </Card>
+                    </motion.div>
+
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                        <Card className="border-r-4 border-r-emerald-500 p-6 flex flex-col justify-between overflow-hidden relative">
+                            <div className="absolute top-[-10px] left-[-10px] h-20 w-20 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">יעד מכירות חודשי</span>
+                                <Target size={18} className="text-emerald-500" />
+                            </div>
+                            <div className="flex items-end justify-between mt-2">
+                                <p className="text-4xl font-black text-amber-100 tracking-tighter">
+                                    {Math.round(stats.salesGoalProgress)}%
+                                </p>
+                                <span className="text-xs font-bold text-emerald-400 pb-1">₪{stats.closedValue.toLocaleString()} / ₪{stats.salesGoalTotal.toLocaleString()}</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-700/50 rounded-full mt-4 overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(stats.salesGoalProgress, 100)}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full shadow-lg shadow-emerald-500/30"
+                                ></motion.div>
+                            </div>
+                        </Card>
+                    </motion.div>
                 </div>
 
-                <Card className="border-none shadow-md overflow-hidden">
-                    <div className="flex items-center justify-between p-6 border-b border-slate-50">
+                {/* Recent Clients Table */}
+                <Card className="border-amber-500/20 overflow-hidden">
+                    <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
                         <div>
-                            <h3 className="text-lg font-bold text-primary tracking-tight">לקוחות אחרונים</h3>
-                            <p className="text-xs text-slate-400 mt-0.5">דוח בזמן אמת</p>
+                            <h3 className="text-lg font-bold text-amber-100 tracking-tight flex items-center gap-2">
+                                <Users size={18} className="text-amber-500" />
+                                לקוחות אחרונים
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">דוח בזמן אמת</p>
                         </div>
-                        <Link href="/agent/clients" className="text-xs font-bold text-accent hover:underline">צפה בכל הלקוחות</Link>
+                        <Link href="/agent/clients" className="text-xs font-bold text-amber-400 hover:underline">צפה בכל הלקוחות</Link>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-right text-sm">
-                            <thead className="bg-slate-50/50">
-                                <tr className="border-b border-border text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                            <thead className="bg-slate-800/50">
+                                <tr className="border-b border-slate-700/50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
                                     <th className="px-6 py-4 font-black">לקוח</th>
                                     <th className="px-6 py-4 font-black">סוג פוליסה</th>
                                     <th className="px-6 py-4 font-black">סטטוס</th>
@@ -180,38 +288,43 @@ export default function AgentDashboard() {
                                     <th className="px-6 py-4 font-black"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border">
-                                {loading ? (
+                            <tbody className="divide-y divide-slate-700/50">
+                                {recentActivity.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-400">טוען נתונים...</td>
-                                    </tr>
-                                ) : recentActivity.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-400">אין פעילות אחרונה</td>
+                                        <td colSpan={6} className="text-center py-10 text-slate-500">אין פעילות אחרונה</td>
                                     </tr>
                                 ) : (
                                     recentActivity.map((row, i) => (
-                                        <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                        <motion.tr 
+                                            key={i} 
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: i * 0.1 }}
+                                            className="hover:bg-slate-800/50 transition-colors group"
+                                        >
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-primary group-hover:bg-accent group-hover:text-white transition-all text-xs">
+                                                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center font-bold text-slate-900 group-hover:scale-110 transition-all text-xs shadow-lg shadow-amber-500/20">
                                                         {row.name ? row.name.charAt(0) : '?'}
                                                     </div>
-                                                    <span className="font-bold text-primary">{row.name}</span>
+                                                    <span className="font-bold text-slate-200">{row.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 text-slate-500 font-medium">{row.type}</td>
+                                            <td className="px-6 py-5 text-slate-400 font-medium">{row.type}</td>
                                             <td className="px-6 py-5">
-                                                <Badge variant="outline" className="bg-slate-100 border-none">{row.status}</Badge>
+                                                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">{row.status}</Badge>
                                             </td>
-                                            <td className="px-6 py-5 text-slate-500 font-bold">{row.company}</td>
-                                            <td className="px-6 py-5 text-slate-400 font-medium">{row.updatedAt}</td>
+                                            <td className="px-6 py-5 text-slate-400 font-bold">{row.company}</td>
+                                            <td className="px-6 py-5 text-slate-500 font-medium">{row.updatedAt}</td>
                                             <td className="px-6 py-5">
-                                                <Link href={`/admin/clients/${row.id}`}>
-                                                    <Button variant="outline" size="sm" className="rounded-lg h-9 px-4 border-slate-200">ניהול תיק</Button>
+                                                <Link href={`/agent/clients/${row.id}`}>
+                                                    <Button variant="outline" size="sm" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
+                                                        <Phone size={14} className="ml-1" />
+                                                        ניהול
+                                                    </Button>
                                                 </Link>
                                             </td>
-                                        </tr>
+                                        </motion.tr>
                                     ))
                                 )}
                             </tbody>

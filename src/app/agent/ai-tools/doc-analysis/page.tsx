@@ -73,13 +73,13 @@ export default function DocumentAnalysisPage() {
                 phone: clientData.phone || "",
                 email: clientData.email || "",
                 source: "הר הביטוח AI",
-                status: "חדש",
+                status: "new" as const,
                 score: 90, // High score for Har HaBituach leads
-                lastContact: "היום",
+                lastContact: new Date(),
                 notes: `נוצר מניתוח הר הביטוח.\nפוליסות שאותרו: ${results.policies.map(p => p.company).join(", ")}.\nתובנות: ${results.insights.join(". ")}`
             };
 
-            await firestoreService.addLead(leadData);
+            await firestoreService.addLead(leadData as any);
             alert("הליד נוצר בהצלחה!");
             router.push("/agent/leads");
         } catch (error) {

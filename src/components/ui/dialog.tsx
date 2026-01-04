@@ -41,7 +41,7 @@ export const DialogContent = ({ children, className = "", dir }: { children: Rea
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "spring", duration: 0.3 }}
-            className={`relative bg-white rounded-3xl shadow-2xl overflow-hidden ${className}`}
+            className={`relative glass-card border border-amber-500/20 rounded-3xl shadow-2xl overflow-hidden ${className}`}
             dir={dir}
         >
             {children}
@@ -51,7 +51,7 @@ export const DialogContent = ({ children, className = "", dir }: { children: Rea
 
 export const DialogHeader = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
     return (
-        <div className={`px-6 py-4 border-b border-slate-100 ${className}`}>
+        <div className={`px-6 py-4 border-b border-amber-500/20 ${className}`}>
             {children}
         </div>
     );
@@ -59,7 +59,7 @@ export const DialogHeader = ({ children, className = "" }: { children: React.Rea
 
 export const DialogTitle = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
     return (
-        <h2 className={`text-xl font-bold text-slate-900 ${className}`}>
+        <h2 className={`text-xl font-bold text-amber-100 ${className}`}>
             {children}
         </h2>
     );

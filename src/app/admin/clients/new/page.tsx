@@ -54,7 +54,7 @@ export default function NewClientPage() {
             };
 
             // Use client-side Firestore SDK (Firebase Admin not configured)
-            const newId = await firestoreService.addClient(clientData);
+            const newId = await firestoreService.addClient(clientData as any);
 
             clearTimeout(timer);
             console.log("Success! New ID:", newId);

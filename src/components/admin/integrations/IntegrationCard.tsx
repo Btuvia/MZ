@@ -14,6 +14,11 @@ interface IntegrationProps {
     status: 'connected' | 'disconnected' | 'syncing';
     lastSync?: string;
     color: string;
+    // Custom action handlers for specific integrations
+    onAction?: () => void;
+    actionLabel?: string;
+    onSync?: () => void;
+    eventsCount?: number;
 }
 
 export default function IntegrationCard({ integration, index }: { integration: IntegrationProps, index: number }) {
@@ -21,7 +26,17 @@ export default function IntegrationCard({ integration, index }: { integration: I
     const [isLoading, setIsLoading] = useState(false);
     const [showConfigModal, setShowConfigModal] = useState(false);
 
+    // Update local status when prop changes
+    useState(() => {
+        setStatus(integration.status);
+    });
+
     const handleConnectClick = () => {
+        // If there's a custom action handler, use it
+        if (integration.onAction) {
+            integration.onAction();
+            return;
+        }
         setShowConfigModal(true);
     };
 
@@ -37,6 +52,11 @@ export default function IntegrationCard({ integration, index }: { integration: I
     };
 
     const handleDisconnect = () => {
+        // If there's a custom action handler, use it
+        if (integration.onAction) {
+            integration.onAction();
+            return;
+        }
         if (confirm("האם אתה בטוח שברצונך לנתק את האינטגרציה?")) {
             setStatus('disconnected');
             toast.info(`${integration.name} נותק.`);
@@ -44,6 +64,13 @@ export default function IntegrationCard({ integration, index }: { integration: I
     };
 
     const handleSync = () => {
+        // If there's a custom sync handler, use it
+        if (integration.onSync) {
+            setIsLoading(true);
+            integration.onSync();
+            setTimeout(() => setIsLoading(false), 2000);
+            return;
+        }
         setIsLoading(true);
         setTimeout(() => {
             setIsLoading(false);
@@ -67,22 +94,22 @@ export default function IntegrationCard({ integration, index }: { integration: I
                                 {integration.icon}
                             </div>
                             {status === 'connected' ? (
-                                <Badge className="bg-emerald-100 text-emerald-700 border-none flex items-center gap-1.5 px-3 py-1">
+                                <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 px-3 py-1">
                                     <CheckCircle2 size={14} /> מחובר
                                 </Badge>
                             ) : status === 'syncing' ? (
-                                <Badge className="bg-blue-100 text-blue-700 border-none flex items-center gap-1.5 px-3 py-1">
+                                <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5 px-3 py-1">
                                     <RefreshCw size={14} className="animate-spin" /> מסנכרן
                                 </Badge>
                             ) : (
-                                <Badge className="bg-slate-100 text-slate-500 border-none flex items-center gap-1.5 px-3 py-1">
+                                <Badge className="bg-slate-500/20 text-slate-300 border border-slate-500/30 flex items-center gap-1.5 px-3 py-1">
                                     <XCircle size={14} /> מנותק
                                 </Badge>
                             )}
                         </div>
 
-                        <h3 className="text-xl font-black text-slate-800 mb-2">{integration.name}</h3>
-                        <p className="text-sm text-slate-500 mb-8 leading-relaxed flex-1">{integration.description}</p>
+                        <h3 className="text-xl font-black text-amber-100 mb-2">{integration.name}</h3>
+                        <p className="text-sm text-slate-300 mb-8 leading-relaxed flex-1">{integration.description}</p>
 
                         <div className="mt-auto space-y-3">
                             {status === 'connected' ? (
@@ -90,7 +117,7 @@ export default function IntegrationCard({ integration, index }: { integration: I
                                     <div className="flex gap-2">
                                         <Button
                                             variant="outline"
-                                            className="flex-1 font-bold border-slate-200 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50"
+                                            className="flex-1 font-bold border-amber-500/30 text-amber-200 hover:border-amber-500/50 hover:text-amber-400 hover:bg-amber-500/10"
                                             onClick={handleSync}
                                             disabled={isLoading}
                                         >
@@ -100,14 +127,19 @@ export default function IntegrationCard({ integration, index }: { integration: I
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="border-slate-200 text-slate-400 hover:text-slate-600"
+                                            className="border-amber-500/30 text-slate-300 hover:text-amber-400"
                                         >
                                             <Settings size={18} />
                                         </Button>
                                     </div>
                                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 px-1 pt-2">
-                                        <span>סנכרון אחרון: {integration.lastSync || 'עכשיו'}</span>
-                                        <button onClick={handleDisconnect} className="text-red-400 hover:text-red-500 hover:underline transition-colors">נתק חיבור</button>
+                                        <span>
+                                            סנכרון אחרון: {integration.lastSync || 'עכשיו'}
+                                            {integration.eventsCount !== undefined && ` (${integration.eventsCount} אירועים)`}
+                                        </span>
+                                        <button onClick={handleDisconnect} className="text-red-400 hover:text-red-500 hover:underline transition-colors">
+                                            {integration.actionLabel || 'נתק חיבור'}
+                                        </button>
                                     </div>
                                 </>
                             ) : (
@@ -116,7 +148,7 @@ export default function IntegrationCard({ integration, index }: { integration: I
                                     onClick={handleConnectClick}
                                     disabled={isLoading}
                                 >
-                                    {isLoading ? "מתחבר..." : "חבר למערכת"} <ExternalLink size={16} className="ml-2" />
+                                    {isLoading ? "מתחבר..." : (integration.actionLabel || "חבר למערכת")} <ExternalLink size={16} className="ml-2" />
                                 </Button>
                             )}
                         </div>
@@ -140,7 +172,7 @@ export default function IntegrationCard({ integration, index }: { integration: I
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
+                            className="glass-card border border-amber-500/20 rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
                         >
                             <div className={`p-6 ${integration.color} text-white flex justify-between items-center`}>
                                 <div className="flex items-center gap-3">
@@ -153,27 +185,27 @@ export default function IntegrationCard({ integration, index }: { integration: I
                             </div>
 
                             <div className="p-8 space-y-6">
-                                <p className="text-sm text-slate-500 font-medium">כדי לחבר את {integration.name}, אנו צריכים לאמת את החשבון שלך.</p>
+                                <p className="text-sm text-slate-300 font-medium">כדי לחבר את {integration.name}, אנו צריכים לאמת את החשבון שלך.</p>
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                                            <Key size={14} className="text-indigo-500" /> API Key / Token
+                                        <label className="text-xs font-black text-amber-200 uppercase tracking-wider flex items-center gap-2">
+                                            <Key size={14} className="text-amber-400" /> API Key / Token
                                         </label>
                                         <input
                                             type="password"
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                            className="w-full glass-card border border-amber-500/20 rounded-xl p-3 text-sm font-mono text-slate-200 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 transition-all placeholder-slate-500"
                                             placeholder="sk_live_..."
                                             defaultValue="******************"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                                            <Lock size={14} className="text-indigo-500" /> Secret Key
+                                        <label className="text-xs font-black text-amber-200 uppercase tracking-wider flex items-center gap-2">
+                                            <Lock size={14} className="text-amber-400" /> Secret Key
                                         </label>
                                         <input
                                             type="password"
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                            className="w-full glass-card border border-amber-500/20 rounded-xl p-3 text-sm font-mono text-slate-200 outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 transition-all placeholder-slate-500"
                                             placeholder="whsec_..."
                                             defaultValue="******************"
                                         />

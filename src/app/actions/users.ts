@@ -2,8 +2,17 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { sendEmail } from "./email";
+import type { UserRole } from "@/types";
 
-export async function createUser(data: any) {
+interface CreateUserData {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    agency?: string;
+}
+
+export async function createUser(data: CreateUserData) {
     if (!adminAuth || !adminDb) {
         // Firebase Admin requires Service Account credentials
         // For now, return a helpful message
@@ -59,8 +68,9 @@ export async function createUser(data: any) {
 
         return { success: true, uid: userRecord.uid };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Create User Error:", error);
-        return { success: false, error: error.message };
+        const errorMessage = error instanceof Error ? error.message : "שגיאה ביצירת המשתמש";
+        return { success: false, error: errorMessage };
     }
 }

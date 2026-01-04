@@ -5,6 +5,7 @@ import { Card } from "./base";
 import { Bell, X, Check, Trash2, Eye } from "lucide-react";
 import { Notification, getUserNotifications, markAsRead, markAllAsRead, deleteNotification, getUnreadCount } from "@/lib/automation/notifications";
 import { useRouter } from "next/navigation";
+import { handleError } from "@/lib/error-handler";
 
 interface NotificationsPanelProps {
     userId: string;
@@ -28,7 +29,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
             setNotifications(allNotifications);
             setUnreadCount(count);
         } catch (error) {
-            console.error("Failed to load notifications:", error);
+            handleError(error, { context: 'טעינת התראות', silent: true });
         } finally {
             setLoading(false);
         }
@@ -49,7 +50,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
             await markAsRead(notificationId);
             await loadNotifications();
         } catch (error) {
-            console.error("Failed to mark as read:", error);
+            handleError(error, { context: 'סימון כנקראה', silent: true });
         }
     };
 
@@ -58,7 +59,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
             await markAllAsRead(userId);
             await loadNotifications();
         } catch (error) {
-            console.error("Failed to mark all as read:", error);
+            handleError(error, { context: 'סימון הכל כנקרא', silent: true });
         }
     };
 
@@ -67,7 +68,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
             await deleteNotification(notificationId);
             await loadNotifications();
         } catch (error) {
-            console.error("Failed to delete notification:", error);
+            handleError(error, { context: 'מחיקת התראה' });
         }
     };
 

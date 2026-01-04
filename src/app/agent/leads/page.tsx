@@ -52,19 +52,19 @@ export default function LeadsPage() {
             phone: "050-0000000",
             email: "test@example.com",
             source: "ידני",
-            status: "חדש",
+            status: "new" as const,
             score: 50,
-            lastContact: "עכשיו",
+            lastContact: new Date(),
             notes: "נוצר ידנית"
         };
-        const id = await firestoreService.addLead(newLead);
+        const id = await firestoreService.addLead(newLead as any);
         setLeads(prev => [...prev, { ...newLead, id }]);
     };
 
     const updateLeadStatus = async (id: string, newStatus: string) => {
         // Optimistic update
         setLeads(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l));
-        await firestoreService.updateLead(id, { status: newStatus });
+        await firestoreService.updateLead(id, { status: newStatus } as any);
     };
 
     const filteredLeads = leads.filter(lead =>
@@ -214,13 +214,13 @@ export default function LeadsPage() {
                                                     lastName: lead.name.split(' ').slice(1).join(' ') || '',
                                                     email: lead.email,
                                                     phone: lead.phone,
-                                                    status: 'פעיל',
+                                                    status: 'active',
                                                     source: lead.source,
                                                     notes: lead.notes
-                                                });
+                                                } as any);
 
                                                 // 2. Update Lead Status
-                                                await updateLeadStatus(lead.id, "בוצעה המרה");
+                                                await updateLeadStatus(lead.id, "won");
 
                                                 alert("הליד הומר ללקוח בהצלחה! 🎉");
                                             } catch (e: any) {

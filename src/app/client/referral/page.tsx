@@ -42,13 +42,13 @@ export default function ReferralPage() {
                 lastName: formData.contactName.split(" ").slice(1).join(" ") || "",
                 phone: formData.phone,
                 email: "", // Not provided in simplified form
-                status: "New",
+                status: "new",
                 source: "Referral",
                 interestedIn: formData.product,
                 referredBy: user?.uid || "unknown_client", // Link to current user
                 createdAt: new Date(),
                 notes: `System: Referral from client. Call back at: ${formData.callTime}`
-            });
+            } as any);
 
             // 2. Feedback
             toast.success("ההפניה התקבלה בהצלחה! 75 מטבעות יחכו לך לאחר הסגירה.");

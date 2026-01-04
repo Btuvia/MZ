@@ -26,6 +26,10 @@ interface ExtendedDealData extends DealData {
     agentName?: string;
     clientName?: string;
     clientId?: string;
+    // שדות מיוחדים למכירות פלטינום
+    platinumOneTime?: number;
+    platinumMonthly?: number;
+    platinumProductName?: string;
 }
 
 export default function AdminFinancePage() {
@@ -56,7 +60,7 @@ export default function AdminFinancePage() {
     ]);
 
     // בדיקה האם המשתמש הוא אדמין
-    const isAdmin = role === 'admin' || role === 'מנהל' || role === 'אדמין';
+    const isAdmin = role === 'admin' || role === 'manager';
 
     // פונקציות המרה
     const mapPolicyTypeToProductType = (type: string): ProductType => {
@@ -140,6 +144,33 @@ export default function AdminFinancePage() {
                             agentName: client.salesRepresentative || 'לא משויך',
                             clientName: client.name,
                             clientId: client.id
+                        };
+                        allDeals.push(deal);
+                    });
+                }
+
+                // מכירות פלטינום - עמלות מיוחדות
+                if (client.platinumSales && Array.isArray(client.platinumSales)) {
+                    client.platinumSales.forEach((platinum: any) => {
+                        const isDental = platinum.productName === 'פלטינום דנטל';
+                        const monthlyPremium = parseFloat(platinum.monthlyPremium) || 0;
+                        
+                        // עמלת פלטינום: חד פעמית = פרמיה × 3, נפרעים = 45% (או 30% לדנטל)
+                        const deal: ExtendedDealData = {
+                            id: platinum.id || `platinum-${client.id}-${Date.now()}`,
+                            productType: 'platinum_service',
+                            company: 'פלטינום',
+                            monthlyPremium: monthlyPremium,
+                            startDate: platinum.saleDate ? new Date(platinum.saleDate) : new Date(),
+                            status: 'active',
+                            opsStatus: 'policy_issued', // פלטינום תמיד מופק אוטומטית
+                            agentName: client.salesRepresentative || 'לא משויך',
+                            clientName: client.name,
+                            clientId: client.id,
+                            // שדות מיוחדים לפלטינום
+                            platinumOneTime: monthlyPremium * 3,
+                            platinumMonthly: monthlyPremium * (isDental ? 0.30 : 0.45),
+                            platinumProductName: platinum.productName
                         };
                         allDeals.push(deal);
                     });

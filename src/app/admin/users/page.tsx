@@ -10,6 +10,8 @@ import { firestoreService } from "@/lib/firebase/firestore-service";
 import { createUser } from "@/app/actions/users";
 import { sendEmail } from "@/app/actions/email";
 import { toast } from "sonner";
+import { handleError, showSuccess } from "@/lib/error-handler";
+import type { UserRole } from "@/types";
 
 type User = {
     id: string;
@@ -99,7 +101,7 @@ export default function UserManagementPage() {
             })) as User[];
             setUsers(mappedUsers);
         } catch (error) {
-            console.error("Failed to load users:", error);
+            handleError(error, { context: 'טעינת משתמשים' });
         } finally {
             setLoading(false);
         }
@@ -110,7 +112,7 @@ export default function UserManagementPage() {
             const data = await firestoreService.getCollaborations();
             setCollaborations(data as Collaboration[]);
         } catch (error) {
-            console.error("Failed to load collaborations:", error);
+            handleError(error, { context: 'טעינת שיתופי פעולה', silent: true });
             // Initialize with empty array if no data
             setCollaborations([]);
         }
@@ -135,7 +137,7 @@ export default function UserManagementPage() {
                 email: formData.email,
                 firstName: formData.firstName,
                 lastName: formData.lastName,
-                role: formData.role,
+                role: formData.role as UserRole,
                 agency: formData.agency
             });
 
@@ -146,14 +148,28 @@ export default function UserManagementPage() {
             } else {
                 alert("שגיאה: " + res.error);
             }
-        } catch (e: any) {
-            alert("שגיאה בתקשורת: " + e.message);
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : "שגיאה לא ידועה";
+            alert("שגיאה בתקשורת: " + errorMessage);
         }
     };
 
     const handleDeleteUser = (id: string) => {
         if (confirm("האם אתה בטוח שברצונך למחוק משתמש זה?")) {
             setUsers(users.filter(u => u.id !== id));
+        }
+    };
+
+    const handleChangeRole = async (userId: string, newRole: "admin" | "agent" | "client") => {
+        try {
+            await firestoreService.updateUserRole(userId, newRole);
+            setUsers(users.map(u => 
+                u.id === userId ? { ...u, role: newRole } : u
+            ));
+            toast.success(`תפקיד המשתמש שונה ל${getRoleBadge(newRole).label}`);
+        } catch (error) {
+            console.error("Error changing user role:", error);
+            toast.error("שגיאה בשינוי תפקיד המשתמש");
         }
     };
 
@@ -631,9 +647,21 @@ export default function UserManagementPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <Badge className={getRoleBadge(user.role).color}>
-                                                {getRoleBadge(user.role).label}
-                                            </Badge>
+                                            <select
+                                                value={user.role}
+                                                onChange={(e) => handleChangeRole(user.id, e.target.value as "admin" | "agent" | "client")}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer transition-all ${
+                                                    user.role === 'admin' 
+                                                        ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                                        : user.role === 'agent'
+                                                        ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <option value="admin">מנהל מערכת</option>
+                                                <option value="agent">סוכן</option>
+                                                <option value="client">לקוח</option>
+                                            </select>
                                         </td>
                                         <td className="px-6 py-5">
                                             <button

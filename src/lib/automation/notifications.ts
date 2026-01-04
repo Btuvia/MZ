@@ -61,11 +61,11 @@ export async function getUserNotifications(
     unreadOnly: boolean = false
 ): Promise<Notification[]> {
     try {
-        const notifications = await firestoreService.getDocuments('notifications', [
+        const notifications = await firestoreService.getDocuments<Notification>('notifications', [
             { field: 'userId', operator: '==', value: userId },
         ]);
 
-        let filteredNotifications = notifications as Notification[];
+        let filteredNotifications = notifications;
 
         if (unreadOnly) {
             filteredNotifications = filteredNotifications.filter(n => !n.isRead);
@@ -73,8 +73,8 @@ export async function getUserNotifications(
 
         // Sort by createdAt descending
         filteredNotifications.sort((a, b) => {
-            const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
-            const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
+            const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : (a.createdAt as Timestamp).toMillis();
+            const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : (b.createdAt as Timestamp).toMillis();
             return bTime - aTime;
         });
 

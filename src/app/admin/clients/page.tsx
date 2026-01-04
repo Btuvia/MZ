@@ -1,41 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Search, UserPlus, Filter, MoreVertical, Edit2, Trash2 } from "lucide-react";
+import { firestoreService, PaginatedResult } from "@/lib/firebase/firestore-service";
+import { handleError, showSuccess } from "@/lib/error-handler";
+import { Search, UserPlus, Filter, MoreVertical, Edit2, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Pagination, usePagination } from "@/components/ui/Pagination";
+import { Client } from "@/types";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 
 export default function ClientsListPage() {
-    const [clients, setClients] = useState<any[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
     const router = useRouter();
 
+    const pagination = usePagination({ initialPageSize: 25 });
+
+    // Load total count once
     useEffect(() => {
-        const loadClients = async () => {
-            const data = await firestoreService.getClients();
-            setClients(data);
-            setLoading(false);
+        const loadCount = async () => {
+            try {
+                const count = await firestoreService.getClientsCount();
+                setTotalCount(count);
+            } catch (error) {
+                handleError(error, { context: 'ספירת לקוחות', silent: true });
+            }
         };
-        loadClients();
+        loadCount();
     }, []);
 
-    const filteredClients = clients.filter(client =>
-        client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.idNumber?.includes(searchTerm) ||
-        client.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Load clients with pagination
+    const loadClients = useCallback(async () => {
+        setLoading(true);
+        try {
+            const result = await firestoreService.getClientsPaginated({
+                pageSize: pagination.pageSize,
+                lastDoc: pagination.currentPage === 1 ? null : pagination.lastDoc,
+                orderByField: 'createdAt',
+                orderDirection: 'desc'
+            });
+            
+            setClients(result.data);
+            setHasMore(result.hasMore);
+            
+            if (result.lastDoc) {
+                pagination.setLastDoc(result.lastDoc);
+            }
+        } catch (error) {
+            handleError(error, { context: 'טעינת לקוחות' });
+        } finally {
+            setLoading(false);
+        }
+    }, [pagination.currentPage, pagination.pageSize]);
+
+    useEffect(() => {
+        loadClients();
+    }, [loadClients]);
+
+    // Filter clients locally (for current page)
+    const filteredClients = searchTerm
+        ? clients.filter(client =>
+            client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            client.nationalId?.includes(searchTerm) ||
+            client.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : clients;
 
     const handleDelete = async (id: string) => {
         if (confirm("האם למחוק לקוח זה?")) {
-            await firestoreService.deleteClient(id);
-            setClients(clients.filter(c => c.id !== id));
+            try {
+                await firestoreService.deleteClient(id);
+                setClients(clients.filter(c => c.id !== id));
+                setTotalCount(prev => prev - 1);
+                showSuccess('הלקוח נמחק בהצלחה');
+            } catch (error) {
+                handleError(error, { context: 'מחיקת לקוח' });
+            }
         }
     };
+
+    const handlePageChange = (page: number) => {
+        if (page > pagination.currentPage) {
+            pagination.goToNextPage(pagination.lastDoc as QueryDocumentSnapshot);
+        } else if (page < pagination.currentPage) {
+            pagination.goToPrevPage();
+        } else if (page === 1) {
+            pagination.reset();
+        }
+    };
+
+    const handlePageSizeChange = (newSize: number) => {
+        pagination.setPageSize(newSize);
+    };
+
+    const totalPages = Math.ceil(totalCount / pagination.pageSize);
 
     return (
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
@@ -75,49 +140,70 @@ export default function ClientsListPage() {
                 {/* List */}
                 <Card className="border-amber-500/20 overflow-hidden min-h-[400px] p-0">
                     {loading ? (
-                        <div className="p-12 text-center text-slate-500">טוען נתונים...</div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-right">
-                                <thead className="bg-slate-800/50">
-                                    <tr className="border-b border-slate-700/50">
-                                        <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">שם מלא</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">ת.ז</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">סטטוס</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">פעולות</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-700/50">
-                                    {filteredClients.map((client) => (
-                                        <tr key={client.id} className="hover:bg-amber-500/5 transition-colors group">
-                                            <td className="px-6 py-5">
-                                                <div className="font-black text-slate-200">{client.name}</div>
-                                                <div className="text-xs text-slate-500">{client.email} | {client.phone}</div>
-                                            </td>
-                                            <td className="px-6 py-5 font-bold text-slate-400">{client.idNumber}</td>
-                                            <td className="px-6 py-5">
-                                                <Badge variant={client.status === 'פעיל' ? 'success' : 'outline'}>
-                                                    {client.status}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-6 py-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Link href={`/admin/clients/${client.id}`}>
-                                                    <Button size="sm" variant="outline" className="border-amber-500/30 text-amber-400"><Edit2 size={14} /></Button>
-                                                </Link>
-                                                <Button size="sm" variant="outline" className="text-red-400 hover:bg-red-500/10 border-red-500/30" onClick={() => handleDelete(client.id)}>
-                                                    <Trash2 size={14} />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredClients.length === 0 && (
-                                        <tr>
-                                            <td colSpan={4} className="py-12 text-center text-slate-500 italic">לא נמצאו לקוחות</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                        <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
+                            <Loader2 className="animate-spin text-amber-500" size={32} />
+                            <span>טוען נתונים...</span>
                         </div>
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-right">
+                                    <thead className="bg-slate-800/50">
+                                        <tr className="border-b border-slate-700/50">
+                                            <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">שם מלא</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">ת.ז</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">סטטוס</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-amber-400/70 uppercase tracking-widest">פעולות</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-700/50">
+                                        {filteredClients.map((client) => (
+                                            <tr key={client.id} className="hover:bg-amber-500/5 transition-colors group">
+                                                <td className="px-6 py-5">
+                                                    <div className="font-black text-slate-200">{client.name}</div>
+                                                    <div className="text-xs text-slate-500">{client.email} | {client.phone}</div>
+                                                </td>
+                                                <td className="px-6 py-5 font-bold text-slate-400">{client.nationalId}</td>
+                                                <td className="px-6 py-5">
+                                                    <Badge variant={client.status === 'active' ? 'success' : 'outline'}>
+                                                        {client.status === 'active' ? 'פעיל' : client.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-5 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Link href={`/admin/clients/${client.id}`}>
+                                                        <Button size="sm" variant="outline" className="border-amber-500/30 text-amber-400"><Edit2 size={14} /></Button>
+                                                    </Link>
+                                                    <Button size="sm" variant="outline" className="text-red-400 hover:bg-red-500/10 border-red-500/30" onClick={() => handleDelete(client.id)}>
+                                                        <Trash2 size={14} />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredClients.length === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="py-12 text-center text-slate-500 italic">לא נמצאו לקוחות</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            {totalCount > 0 && (
+                                <div className="border-t border-slate-700/50 bg-slate-800/30">
+                                    <Pagination
+                                        currentPage={pagination.currentPage}
+                                        totalPages={totalPages}
+                                        totalItems={totalCount}
+                                        pageSize={pagination.pageSize}
+                                        onPageChange={handlePageChange}
+                                        onPageSizeChange={handlePageSizeChange}
+                                        hasMore={hasMore}
+                                        loading={loading}
+                                    />
+                                </div>
+                            )}
+                        </>
                     )}
                 </Card>
 

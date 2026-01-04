@@ -39,5 +39,23 @@ GEMINI_API_KEY="כאן_את_המפתח_מגוגל"
 
 RESEND_API_KEY="כאן_את_המפתח_מ_resend"
 
+# --- חלק 4: סנכרון יומן (Google Calendar) - לא חובה ---
+# כדי שהמערכת תסנכרן אוטומטית עם יומן גוגל בכל התחברות.
+# 1. כנס לאתר: https://console.cloud.google.com/
+# 2. בחר את הפרויקט שלך (או צור חדש)
+# 3. לחץ על "APIs & Services" > "Credentials"
+# 4. לחץ "Create Credentials" > "OAuth 2.0 Client ID"
+# 5. בחר "Web application" ותן שם
+# 6. ב-"Authorized redirect URIs" הוסף:
+#    http://localhost:3000/api/auth/google-calendar/callback
+# 7. העתק את ה-Client ID וה-Client Secret:
+
+GOOGLE_CLIENT_ID="כאן_את_ה_client_id_מגוגל"
+GOOGLE_CLIENT_SECRET="כאן_את_ה_client_secret_מגוגל"
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="כאן_את_אותו_client_id_שוב"
+
+# הערה: וודא שאתה מפעיל את Google Calendar API בפרויקט:
+# https://console.cloud.google.com/apis/library/calendar-json.googleapis.com
+
 # --- הגדרות כלליות ---
 NEXT_PUBLIC_APP_URL="http://localhost:3000"

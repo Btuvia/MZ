@@ -77,7 +77,7 @@ export default function StatusesPage() {
     };
 
     const handleSave = async () => {
-        if (!editingStatus) return;
+        if (!editingStatus || !editingStatus.name) return;
 
         try {
             if ('id' in editingStatus && editingStatus.id) {
@@ -88,11 +88,12 @@ export default function StatusesPage() {
                     await firestoreService.updateTaskStatus(editingStatus.id, editingStatus);
                 }
             } else {
-                // Add new
+                // Add new - name is guaranteed to exist from the check above
+                const dataWithName = editingStatus as (Partial<LeadStatus | TaskStatus> & { name: string });
                 if (activeTab === 'lead') {
-                    await firestoreService.addLeadStatus(editingStatus);
+                    await firestoreService.addLeadStatus(dataWithName);
                 } else {
-                    await firestoreService.addTaskStatus(editingStatus);
+                    await firestoreService.addTaskStatus(dataWithName);
                 }
             }
             await loadStatuses();

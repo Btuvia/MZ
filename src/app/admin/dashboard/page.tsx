@@ -1,29 +1,66 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import Link from "next/link";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Zap, Activity, Users, FileText, ArrowLeft, Bell, TrendingUp, ShieldCheck, BarChart3, Building2 } from "lucide-react";
+import { useClients } from "@/lib/hooks/useQueryHooks";
+import { useAuth } from "@/lib/contexts/AuthContext";
+import { handleError, showSuccess } from "@/lib/error-handler";
+import { Zap, Activity, Users, FileText, ArrowLeft, Bell, TrendingUp, ShieldCheck, BarChart3, Building2, Plus, Target, Calendar, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 import DailyBriefing from "@/components/admin/agent-companion/DailyBriefing";
 import DataChat from "@/components/admin/agent-companion/DataChat";
+import { DashboardSkeleton } from "@/lib/lazy-load";
+
+// Dynamic greeting helper
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return { text: "בוקר טוב", emoji: "☀️" };
+    if (hour >= 12 && hour < 17) return { text: "צהריים טובים", emoji: "🌤️" };
+    if (hour >= 17 && hour < 21) return { text: "ערב טוב", emoji: "🌅" };
+    return { text: "לילה טוב", emoji: "🌙" };
+};
+
+// Format today's date in Hebrew
+const getTodayDate = () => {
+    return new Date().toLocaleDateString('he-IL', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+};
 
 interface ClientData {
     id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    status: "active" | "inactive" | "lead";
-    policies: any[];
-    pensionSales?: any[];
-    insuranceSales?: any[];
-    tasks?: any[];
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    status?: "active" | "inactive" | "lead";
+    policies?: Record<string, unknown>[];
+    pensionSales?: Record<string, unknown>[];
+    insuranceSales?: Record<string, unknown>[];
+    tasks?: Record<string, unknown>[];
     opsStatus?: string;
     salesRepresentative?: string;
+    // Computed fields for display
+    salesStatus?: { label: string; color: string };
+    activity?: { label: string; color: string };
+    portfolio?: string;
+    agent?: string;
+    policiesMap?: {
+        life?: boolean;
+        health?: boolean;
+        pension?: boolean;
+        car?: boolean;
+        home?: boolean;
+        child?: boolean;
+    };
 }
 
 interface SalesAnalytics {
@@ -92,22 +129,14 @@ const CommissionsRain = ({ isActive, onComplete }: { isActive: boolean, onComple
 
 export default function AdminDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
-    const [clients, setClients] = useState<any[]>([]);
     const [showRain, setShowRain] = useState(false);
-    const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics>({
-        totalSold: 0,
-        totalIssued: 0,
-        byMonth: {},
-        byCompany: {},
-        byAgent: {}
-    });
-    const [stats, setStats] = useState([
-        { label: "סה״כ לקוחות", value: "0", change: "+0%", icon: "👤", trend: "up" },
-        { label: "עמלות (ש״ח)", value: "₪0", change: "+0%", icon: "💰", trend: "up" },
-        { label: "יעד חודשי", value: "84%", change: "עוד ₪12k", icon: "🎯", trend: "neutral" },
-        { label: "לידים חדשים", value: "0", change: "השבוע", icon: "⚡", trend: "up" },
-    ]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { user } = useAuth();
+    const greeting = getGreeting();
+    const todayDate = getTodayDate();
+    const userName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || 'שם';
+
+    // Use React Query for data fetching with caching
+    const { data: clientsData, isLoading, error } = useClients();
 
     // Mock Live Pulse Feed
     const [pulseFeed, setPulseFeed] = useState([
@@ -117,160 +146,193 @@ export default function AdminDashboard() {
         { id: 4, text: "מסמך חדש הועלה לתיק: מנחם גולן", time: "לפני שעה", type: "doc" }
     ]);
 
-    useEffect(() => {
-        const loadDashboardData = async () => {
-            try {
-                const clientsData = await firestoreService.getClients();
-
-                const loadedClients: any[] = [];
-                let totalPremium = 0;
-                
-                // Analytics tracking
-                const analytics: SalesAnalytics = {
+    // Memoize heavy analytics computation
+    const { clients, salesAnalytics, stats } = useMemo(() => {
+        if (!clientsData) {
+            return {
+                clients: [] as ClientData[],
+                salesAnalytics: {
                     totalSold: 0,
                     totalIssued: 0,
                     byMonth: {},
                     byCompany: {},
                     byAgent: {}
-                };
+                },
+                stats: [
+                    { label: "סה״כ לקוחות", value: "0", change: "+0%", icon: "👤", trend: "up" },
+                    { label: "עמלות (ש״ח)", value: "₪0", change: "+0%", icon: "💰", trend: "up" },
+                    { label: "יעד חודשי", value: "84%", change: "עוד ₪12k", icon: "🎯", trend: "neutral" },
+                    { label: "לידים חדשים", value: "0", change: "השבוע", icon: "⚡", trend: "up" },
+                ]
+            };
+        }
 
-                const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-                const months = Array.from({ length: 6 }, (_, i) => {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() - i);
-                    return d.toISOString().slice(0, 7);
-                }).reverse();
-
-                // Initialize months
-                months.forEach(m => {
-                    analytics.byMonth[m] = { sold: 0, issued: 0 };
-                });
-
-                clientsData.forEach((clientData: any) => {
-                    const hasPension = (clientData.pensionSales?.length || 0) > 0;
-                    const hasInsurance = (clientData.insuranceSales?.length || 0) > 0;
-                    const hasPolicies = (clientData.policies?.length || 0) > 0;
-                    const agentName = clientData.salesRepresentative || 'לא משויך';
-
-                    // Initialize agent if not exists
-                    if (!analytics.byAgent[agentName]) {
-                        analytics.byAgent[agentName] = { sold: 0, issued: 0 };
-                    }
-
-                    // Count policies and track analytics
-                    const allSales = [
-                        ...(clientData.policies || []).map((p: any) => ({
-                            ...p,
-                            type: 'policy',
-                            company: p.company || 'לא ידוע',
-                            date: p.startDate || new Date().toISOString()
-                        })),
-                        ...(clientData.insuranceSales || []).map((ins: any) => ({
-                            ...ins,
-                            type: 'insurance',
-                            company: ins.company || 'לא ידוע',
-                            date: ins.saleDate || new Date().toISOString()
-                        })),
-                        ...(clientData.pensionSales || []).map((pen: any) => ({
-                            ...pen,
-                            type: 'pension',
-                            company: pen.company || 'לא ידוע',
-                            date: pen.joinDate || new Date().toISOString()
-                        }))
-                    ];
-
-                    allSales.forEach((sale: any) => {
-                        const company = sale.company;
-                        const opsStatus = sale.opsStatus || clientData.opsStatus;
-                        const saleMonth = sale.date ? new Date(sale.date).toISOString().slice(0, 7) : currentMonth;
-                        const isIssued = opsStatus === 'policy_issued' || opsStatus === 'פוליסה הופקה';
-
-                        // Initialize company if not exists
-                        if (!analytics.byCompany[company]) {
-                            analytics.byCompany[company] = { sold: 0, issued: 0 };
-                        }
-
-                        // Count as sold
-                        analytics.totalSold++;
-                        analytics.byCompany[company].sold++;
-                        analytics.byAgent[agentName].sold++;
-                        if (analytics.byMonth[saleMonth]) {
-                            analytics.byMonth[saleMonth].sold++;
-                        }
-
-                        // Count as issued if policy was issued
-                        if (isIssued) {
-                            analytics.totalIssued++;
-                            analytics.byCompany[company].issued++;
-                            analytics.byAgent[agentName].issued++;
-                            if (analytics.byMonth[saleMonth]) {
-                                analytics.byMonth[saleMonth].issued++;
-                            }
-                        }
-                    });
-
-                    // Calculate Premiums
-                    const policyPremiums = (clientData.policies || []).reduce((sum: number, p: any) => {
-                        const val = parseFloat(p.premium?.toString().replace(/[^\d.-]/g, '') || "0");
-                        return sum + (isNaN(val) ? 0 : val);
-                    }, 0);
-                    const insurancePremiums = (clientData.insuranceSales || []).reduce((sum: number, p: any) => {
-                        const val = parseFloat(p.premium?.toString().replace(/[^\d.-]/g, '') || "0");
-                        return sum + (isNaN(val) ? 0 : val);
-                    }, 0);
-
-                    totalPremium += policyPremiums + insurancePremiums;
-
-                    // Format for table
-                    loadedClients.push({
-                        ...clientData,
-                        fullName: clientData.name || `${clientData.firstName || ''} ${clientData.lastName || ''}`.trim(),
-                        salesStatus: (hasPension || hasInsurance)
-                            ? { label: "נמכר בהצלחה", color: "bg-emerald-50 text-emerald-600 border-emerald-100" }
-                            : (hasPolicies ? { label: "לקוח קיים", color: "bg-indigo-50 text-indigo-600 border-indigo-100" } : { label: "ליד חדש", color: "bg-amber-50 text-amber-600 border-amber-100" }),
-                        activity: { label: "פעיל", color: "bg-slate-50 text-slate-500 border-slate-100" },
-                        portfolio: `₪${(policyPremiums + insurancePremiums).toLocaleString()}`,
-                        agent: agentName,
-                        policiesMap: {
-                            life: clientData.policies?.some((p: any) => p.type?.includes("חיים") || p.type?.includes("ריסק")) || clientData.insuranceSales?.some((p: any) => p.product?.includes("ריסק")),
-                            health: clientData.policies?.some((p: any) => p.type?.includes("בריאות")) || clientData.insuranceSales?.some((p: any) => p.product?.includes("בריאות")),
-                            pension: clientData.policies?.some((p: any) => p.type?.includes("פנסיה") || p.type?.includes("גמל")) || (clientData.pensionSales?.length || 0) > 0,
-                            car: clientData.policies?.some((p: any) => p.type?.includes("רכב")),
-                            home: clientData.policies?.some((p: any) => p.type?.includes("דירה")),
-                            child: false
-                        }
-                    });
-                });
-
-                setClients(loadedClients);
-                setSalesAnalytics(analytics);
-
-                // Calculate heikef commission (premium × 9.7)
-                const heikefCommission = totalPremium * 9.7;
-
-                // Update Stats
-                setStats([
-                    { label: "סה״כ לקוחות", value: loadedClients.length.toString(), change: "+12.5%", icon: "👥", trend: "up" },
-                    { label: "עמלות היקף", value: `₪${heikefCommission.toLocaleString()}`, change: "+8.2%", icon: "💰", trend: "up" },
-                    { label: "פוליסות הופקו", value: `${analytics.totalIssued}/${analytics.totalSold}`, change: `${Math.round((analytics.totalIssued / Math.max(analytics.totalSold, 1)) * 100)}%`, icon: "✅", trend: "up" },
-                    { label: "לידים חדשים", value: loadedClients.filter(c => c.salesStatus.label === 'ליד חדש').length.toString(), change: "+4 השבוע", icon: "⚡", trend: "up" },
-                ]);
-
-            } catch (error) {
-                console.error("Failed to load dashboard data", error);
-            } finally {
-                setIsLoading(false);
-            }
+        // Cast clients data to work with flexible types
+        const rawClients = clientsData as unknown as ClientData[];
+        const loadedClients: ClientData[] = [];
+        let totalPremium = 0;
+        
+        // Analytics tracking
+        const analytics: SalesAnalytics = {
+            totalSold: 0,
+            totalIssued: 0,
+            byMonth: {},
+            byCompany: {},
+            byAgent: {}
         };
 
-        loadDashboardData();
-    }, []);
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const months = Array.from({ length: 6 }, (_, i) => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            return d.toISOString().slice(0, 7);
+        }).reverse();
+
+        months.forEach(m => {
+            analytics.byMonth[m] = { sold: 0, issued: 0 };
+        });
+
+        rawClients.forEach((clientData) => {
+            const hasPension = (clientData.pensionSales?.length || 0) > 0;
+            const hasInsurance = (clientData.insuranceSales?.length || 0) > 0;
+            const hasPolicies = (clientData.policies?.length || 0) > 0;
+            const agentName = clientData.salesRepresentative || 'לא משויך';
+
+            if (!analytics.byAgent[agentName]) {
+                analytics.byAgent[agentName] = { sold: 0, issued: 0 };
+            }
+
+            const policies = (clientData.policies || []) as Record<string, unknown>[];
+            const insuranceSales = (clientData.insuranceSales || []) as Record<string, unknown>[];
+            const pensionSales = (clientData.pensionSales || []) as Record<string, unknown>[];
+
+            const allSales = [
+                ...policies.map((p) => ({
+                    ...p,
+                    type: 'policy',
+                    company: (p.company as string) || 'לא ידוע',
+                    date: (p.startDate as string) || new Date().toISOString(),
+                    opsStatus: p.opsStatus as string | undefined
+                })),
+                ...insuranceSales.map((ins) => ({
+                    ...ins,
+                    type: 'insurance',
+                    company: (ins.company as string) || 'לא ידוע',
+                    date: (ins.saleDate as string) || new Date().toISOString(),
+                    opsStatus: ins.opsStatus as string | undefined
+                })),
+                ...pensionSales.map((pen) => ({
+                    ...pen,
+                    type: 'pension',
+                    company: (pen.company as string) || 'לא ידוע',
+                    date: (pen.joinDate as string) || new Date().toISOString(),
+                    opsStatus: pen.opsStatus as string | undefined
+                }))
+            ];
+
+            allSales.forEach((sale) => {
+                const company = sale.company;
+                const opsStatus = sale.opsStatus || clientData.opsStatus;
+                const saleMonth = sale.date ? new Date(sale.date).toISOString().slice(0, 7) : currentMonth;
+                const isIssued = opsStatus === 'policy_issued' || opsStatus === 'פוליסה הופקה';
+
+                if (!analytics.byCompany[company]) {
+                    analytics.byCompany[company] = { sold: 0, issued: 0 };
+                }
+
+                analytics.totalSold++;
+                analytics.byCompany[company].sold++;
+                analytics.byAgent[agentName].sold++;
+                if (analytics.byMonth[saleMonth]) {
+                    analytics.byMonth[saleMonth].sold++;
+                }
+
+                if (isIssued) {
+                    analytics.totalIssued++;
+                    analytics.byCompany[company].issued++;
+                    analytics.byAgent[agentName].issued++;
+                    if (analytics.byMonth[saleMonth]) {
+                        analytics.byMonth[saleMonth].issued++;
+                    }
+                }
+            });
+
+            const policyPremiums = policies.reduce((sum: number, p) => {
+                const val = parseFloat(String(p.premium || '').replace(/[^\d.-]/g, '') || "0");
+                return sum + (isNaN(val) ? 0 : val);
+            }, 0);
+            const insurancePremiums = insuranceSales.reduce((sum: number, p) => {
+                const val = parseFloat(String(p.premium || '').replace(/[^\d.-]/g, '') || "0");
+                return sum + (isNaN(val) ? 0 : val);
+            }, 0);
+
+            totalPremium += policyPremiums + insurancePremiums;
+
+            loadedClients.push({
+                ...clientData,
+                fullName: clientData.name || `${clientData.firstName || ''} ${clientData.lastName || ''}`.trim(),
+                salesStatus: (hasPension || hasInsurance)
+                    ? { label: "נמכר בהצלחה", color: "bg-emerald-50 text-emerald-600 border-emerald-100" }
+                    : (hasPolicies ? { label: "לקוח קיים", color: "bg-indigo-50 text-indigo-600 border-indigo-100" } : { label: "ליד חדש", color: "bg-amber-50 text-amber-600 border-amber-100" }),
+                activity: { label: "פעיל", color: "bg-slate-50 text-slate-500 border-slate-100" },
+                portfolio: `₪${(policyPremiums + insurancePremiums).toLocaleString()}`,
+                agent: agentName,
+                policiesMap: {
+                    life: policies.some((p) => String(p.type || '').includes("חיים") || String(p.type || '').includes("ריסק")) || insuranceSales.some((p) => String(p.product || '').includes("ריסק")),
+                    health: policies.some((p) => String(p.type || '').includes("בריאות")) || insuranceSales.some((p) => String(p.product || '').includes("בריאות")),
+                    pension: policies.some((p) => String(p.type || '').includes("פנסיה") || String(p.type || '').includes("גמל")) || (pensionSales.length > 0),
+                    car: policies.some((p) => String(p.type || '').includes("רכב")),
+                    home: policies.some((p) => String(p.type || '').includes("דירה")),
+                    child: false
+                }
+            } as ClientData);
+        });
+
+        const heikefCommission = totalPremium * 9.7;
+
+        return {
+            clients: loadedClients,
+            salesAnalytics: analytics,
+            stats: [
+                { label: "סה״כ לקוחות", value: loadedClients.length.toString(), change: "+12%", icon: "👤", trend: "up" },
+                { label: "עמלות (ש״ח)", value: `₪${heikefCommission.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`, change: "+8%", icon: "💰", trend: "up" },
+                { label: "יעד חודשי", value: "84%", change: "עוד ₪12k", icon: "🎯", trend: "neutral" },
+                { label: "לידים חדשים", value: loadedClients.filter(c => c.salesStatus?.label === "ליד חדש").length.toString(), change: "השבוע", icon: "⚡", trend: "up" },
+            ]
+        };
+    }, [clientsData]);
+
+    // Handle error from React Query
+    useEffect(() => {
+        if (error) {
+            handleError(error, { context: 'טעינת דשבורד' });
+        }
+    }, [error]);
 
     const filteredClients = clients.filter(client =>
         client.fullName?.includes(searchTerm) ||
         client.id?.includes(searchTerm) ||
         client.email?.includes(searchTerm)
     );
+
+    // Show loading skeleton
+    if (isLoading) {
+        return (
+            <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
+                <div className="space-y-10" dir="rtl">
+                    <header className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="text-right">
+                            <h2 className="text-4xl font-black text-gradient-gold italic leading-none font-display mb-2 neon-text-gold">
+                                היי {userName}, {greeting.text}! {greeting.emoji}
+                            </h2>
+                            <p className="text-slate-400 font-medium">טוען נתונים...</p>
+                        </div>
+                    </header>
+                    <DashboardSkeleton />
+                </div>
+            </DashboardShell>
+        );
+    }
 
     return (
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
@@ -280,13 +342,16 @@ export default function AdminDashboard() {
                 <header className="flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="text-right">
                         <h2 className="text-4xl font-black text-gradient-gold italic leading-none font-display mb-2 neon-text-gold">
-                            היי רועי, בוקר טוב! 👋
+                            היי {userName}, {greeting.text}! {greeting.emoji}
                         </h2>
-                        <p className="text-slate-400 font-medium">הנה מה שקורה בסוכנות היום.</p>
+                        <p className="text-slate-400 font-medium flex items-center gap-2">
+                            <Calendar size={14} />
+                            {todayDate} • הנה מה שקורה בסוכנות היום
+                        </p>
                     </div>
 
-                    <div className="w-full md:w-auto flex-1 max-w-md">
-                        <div className="relative group">
+                    <div className="flex items-center gap-3">
+                        <div className="relative group flex-1 min-w-[280px]">
                             <input
                                 type="text"
                                 placeholder="חיפוש מהיר של לקוח..."
@@ -298,6 +363,34 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 </header>
+
+                {/* Quick Actions Bar */}
+                <div className="flex flex-wrap gap-3">
+                    <Link href="/admin/clients/new">
+                        <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg shadow-amber-500/20">
+                            <Plus size={16} className="ml-2" />
+                            הוסף לקוח
+                        </Button>
+                    </Link>
+                    <Link href="/admin/tasks">
+                        <Button variant="outline" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
+                            <Target size={16} className="ml-2" />
+                            משימה חדשה
+                        </Button>
+                    </Link>
+                    <Link href="/admin/leads">
+                        <Button variant="outline" className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10">
+                            <Zap size={16} className="ml-2" />
+                            סקירת לידים
+                        </Button>
+                    </Link>
+                    <Link href="/admin/calendar">
+                        <Button variant="outline" className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">
+                            <Calendar size={16} className="ml-2" />
+                            לוח שנה
+                        </Button>
+                    </Link>
+                </div>
 
                 {/* Briefing Bar (moved from AI Companion) */}
                 <DailyBriefing />
@@ -535,19 +628,19 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-5">
-                                                        <span className={`inline-flex items-center whitespace-nowrap px-3 py-1.5 rounded-xl font-black text-[10px] border ${client.salesStatus.color}`}>
-                                                            {client.salesStatus.label}
+                                                        <span className={`inline-flex items-center whitespace-nowrap px-3 py-1.5 rounded-xl font-black text-[10px] border ${client.salesStatus?.color || 'bg-slate-50 text-slate-500'}`}>
+                                                            {client.salesStatus?.label || 'לא ידוע'}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-5">
                                                         <div className="flex justify-center -space-x-2 space-x-reverse">
-                                                            {Object.keys(client.policiesMap).filter(k => client.policiesMap[k]).map((key, j) => (
+                                                            {client.policiesMap && Object.keys(client.policiesMap).filter(k => client.policiesMap?.[k as keyof typeof client.policiesMap]).map((key, j) => (
                                                                 <div key={j} className="h-8 w-8 rounded-full bg-slate-800 border border-amber-500/30 shadow-lg flex items-center justify-center text-xs relative z-0 hover:z-10 hover:scale-110 transition-transform hover:border-amber-500/60"
                                                                     title={key === 'car' ? 'רכב' : key === 'health' ? 'בריאות' : key === 'life' ? 'חיים' : 'אחר'}>
                                                                     {key === 'car' ? '🚗' : key === 'health' ? '🩺' : key === 'life' ? '❤️' : key === 'pension' ? '💰' : key === 'home' ? '🏠' : '📄'}
                                                                 </div>
                                                             ))}
-                                                            {Object.keys(client.policiesMap).filter(k => client.policiesMap[k]).length === 0 && <span className="text-slate-600">-</span>}
+                                                            {(!client.policiesMap || Object.keys(client.policiesMap).filter(k => client.policiesMap?.[k as keyof typeof client.policiesMap]).length === 0) && <span className="text-slate-600">-</span>}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-5">

@@ -13,7 +13,9 @@ import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
 import { toast } from "sonner";
 import LifecycleTracker from "@/components/client/LifecycleTracker";
 import { sendEmail } from "@/app/actions/email";
+import { createClientAndSendCredentials } from "@/app/actions/client-credentials";
 import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 // --- Types & Interfaces ---
 
@@ -109,10 +111,99 @@ type InsuranceProduct = {
     numInsured: number;
 };
 
+// ===== Platinum Products Pricing & Types =====
+type PlatinumSale = {
+    id: string;
+    productName: 'פלטינום בריאות' | 'פלטינום פרמיום' | 'רופא עד הבית' | 'פלטינום רפואה משלימה' | 'פלטינום דנטל';
+    clientAge: number;
+    discount: 10 | 20 | 30;
+    monthlyPremium: number;
+    calculatedPremium: number; // מחיר לפני הנחה
+    saleDate: string;
+    status: 'ממתין להפקה' | 'הופקה' | 'נשלח לפלטינום';
+};
+
+// פרטי תשלום לפלטינום
+type PlatinumPaymentDetails = {
+    // פרטי אשראי
+    paymentMethod: 'אשראי' | 'הוראת קבע';
+    creditCardNumber?: string;
+    creditCardExpiry?: string;
+    creditCardPayerIdNumber?: string;
+    creditCardPayerPhone?: string;
+    // הוראת קבע
+    bankAccountNumber?: string;
+    bankBranch?: string;
+    bankName?: string;
+    accountType?: 'עו"ש' | 'חיסכון';
+    // יום גבייה
+    billingDay?: 2 | 10 | 15 | 20;
+};
+
+// טבלת מחירי פלטינום לפי גיל
+const PLATINUM_PRICING: Record<string, Record<string, number>> = {
+    'פלטינום בריאות': {
+        '0-17': 43, '18-29': 76, '30-39': 102, '40-49': 132, '50-54': 162, '55-59': 210, '60-64': 278, '65-69': 395, '70-74': 511, '75+': 676
+    },
+    'פלטינום פרמיום': {
+        '0-17': 63, '18-29': 105, '30-39': 138, '40-49': 179, '50-54': 226, '55-59': 294, '60-64': 388, '65-69': 544, '70-74': 703, '75+': 930
+    },
+    'רופא עד הבית': {
+        '0-17': 25, '18-29': 35, '30-39': 45, '40-49': 55, '50-54': 65, '55-59': 80, '60-64': 100, '65-69': 130, '70-74': 165, '75+': 210
+    },
+    'פלטינום רפואה משלימה': {
+        '0-17': 30, '18-29': 45, '30-39': 60, '40-49': 75, '50-54': 95, '55-59': 115, '60-64': 140, '65-69': 175, '70-74': 220, '75+': 280
+    },
+    'פלטינום דנטל': {
+        '0-17': 38, '18-29': 52, '30-39': 68, '40-49': 85, '50-54': 105, '55-59': 130, '60-64': 160, '65-69': 200, '70-74': 250, '75+': 320
+    }
+};
+
+// פונקציה לחישוב מחיר לפי גיל
+const getPlatinumPrice = (productName: string, age: number): number => {
+    const pricing = PLATINUM_PRICING[productName];
+    if (!pricing) return 0;
+    
+    if (age <= 17) return pricing['0-17'];
+    if (age <= 29) return pricing['18-29'];
+    if (age <= 39) return pricing['30-39'];
+    if (age <= 49) return pricing['40-49'];
+    if (age <= 54) return pricing['50-54'];
+    if (age <= 59) return pricing['55-59'];
+    if (age <= 64) return pricing['60-64'];
+    if (age <= 69) return pricing['65-69'];
+    if (age <= 74) return pricing['70-74'];
+    return pricing['75+'];
+};
+
+// פונקציה לחישוב עמלות פלטינום
+const calculatePlatinumCommission = (sale: PlatinumSale) => {
+    const monthlyPremium = sale.monthlyPremium;
+    const isDental = sale.productName === 'פלטינום דנטל';
+    
+    // עמלה חד פעמית = פרמיה X 3
+    const oneTimeCommission = monthlyPremium * 3;
+    
+    // עמלת נפרעים - 45% רגיל, 30% לדנטל
+    const nifraaimRate = isDental ? 0.30 : 0.45;
+    const monthlyCommission = monthlyPremium * nifraaimRate;
+    
+    return {
+        oneTimeCommission,
+        monthlyCommission,
+        nifraaimRate: nifraaimRate * 100
+    };
+};
+
 type ClientData = {
     id: string;
     name: string;
+    // סוג זיהוי ומספר
+    idType: 'תעודת זהות' | 'דרכון';
     idNumber: string;
+    // שדות נוספים לדרכון
+    passportCountry?: string;      // מדינת הנפקה
+    passportExpiry?: string;       // תוקף דרכון
     phone: string;
     email: string;
     status: "פעיל" | "לא פעיל" | "נמכר";
@@ -126,6 +217,8 @@ type ClientData = {
     tasks: Task[];
     pensionSales: PensionProduct[];
     insuranceSales: InsuranceProduct[];
+    platinumSales: PlatinumSale[]; // מכירות כתב שירות פלטינום
+    platinumPayment?: PlatinumPaymentDetails; // פרטי תשלום לפלטינום
     documents: ClientDocument[];
     interactions: Interaction[];
     externalPolicies?: ExternalPolicy[];
@@ -156,6 +249,7 @@ type ClientData = {
 const INITIAL_CLIENT: ClientData = {
     id: "active",
     name: "שרה אולט בסמוט",
+    idType: "תעודת זהות",
     idNumber: "329919617",
     phone: "0534261094",
     email: "sarabismot@gmail.com",
@@ -177,6 +271,8 @@ const INITIAL_CLIENT: ClientData = {
     ],
     pensionSales: [],
     insuranceSales: [],
+    platinumSales: [], // מכירות כתב שירות פלטינום
+    platinumPayment: undefined, // פרטי תשלום לפלטינום
 
     documents: [],
     interactions: [
@@ -189,6 +285,7 @@ const INITIAL_CLIENT: ClientData = {
 export default function ClientDetailsPage() {
     const params = useParams();
     const clientId = params.id as string || "active";
+    const { user } = useAuth(); // Get current user for agent name
     const [activeTab, setActiveTab] = useState("סיכום"); // שינוי ברירת מחדל לסיכום
 
     // Main Persisted State
@@ -210,6 +307,14 @@ export default function ClientDetailsPage() {
     // Sales Forms State
     const [pensionForm, setPensionForm] = useState<Partial<PensionProduct>>({});
     const [insuranceForm, setInsuranceForm] = useState<Partial<InsuranceProduct>>({});
+    const [platinumForm, setPlatinumForm] = useState<{
+        productName?: PlatinumSale['productName'];
+        clientAge?: number;
+        discount?: 10 | 20 | 30;
+        monthlyPremium?: number;
+    }>({});
+    const [platinumPaymentForm, setPlatinumPaymentForm] = useState<Partial<PlatinumPaymentDetails>>({});
+    const [isSubmittingPlatinum, setIsSubmittingPlatinum] = useState(false);
     const [showPlatinumSelect, setShowPlatinumSelect] = useState(false);
     const [showReferralModal, setShowReferralModal] = useState(false);
     const [showMarketModal, setShowMarketModal] = useState(false);
@@ -463,8 +568,8 @@ export default function ClientDetailsPage() {
                     priority: priorityMap[formData.priority] || "medium",
                     date: formData.dueDate,
                     time: "10:00",
-                    type: "task",
-                    status: statusMap[formData.status] || "pending",
+                    type: "task" as const,
+                    status: (statusMap[formData.status] || "pending") as any,
                     client: client.name,
                     clientId: client.id,
                     assignee: formData.assignee || "admin"
@@ -473,10 +578,10 @@ export default function ClientDetailsPage() {
                 // Only call Firestore if NOT in demo/active mode
                 if (client.id && client.id !== "active" && client.id !== "new") {
                     if (formData.id) {
-                        await firestoreService.updateTask(formData.id, taskData);
+                        await firestoreService.updateTask(formData.id, taskData as any);
                         setClientTasks(prev => prev.map(t => t.id === formData.id ? { ...t, ...taskData } : t));
                     } else {
-                        const newId = await firestoreService.addTask(taskData);
+                        const newId = await firestoreService.addTask(taskData as any);
                         setClientTasks(prev => [...prev, { ...taskData, id: newId }]);
                     }
                 } else {
@@ -550,63 +655,40 @@ export default function ClientDetailsPage() {
     };
 
     const handleSoldClientAutomation = async (data: any) => {
-        if (!data.email) return alert("לא ניתן ליצור משתמש ללא אימייל");
-
-        const password = Math.random().toString(36).slice(-8) + "Aa1!"; // Weak random password for demo
+        if (!data.email) {
+            toast.error("לא ניתן ליצור משתמש ללא אימייל");
+            return;
+        }
 
         try {
-            const res = await fetch("/api/admin/users/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email: data.email,
-                    password: password,
-                    displayName: data.name,
-                    role: "client"
-                })
+            toast.loading("יוצר חשבון ושולח פרטי התחברות...", { id: 'client-automation' });
+
+            // Use the secure server action to create client credentials
+            const result = await createClientAndSendCredentials({
+                clientId: client.id,
+                clientEmail: data.email,
+                clientName: data.name || client.name,
+                agentName: user?.displayName || undefined
             });
 
-            const result = await res.json();
-
             if (result.success) {
-                // Determine gender for Hebrew text (naive check)
-                const isFemale = data.name.split(" ")[0].endsWith("ה") || data.name.split(" ")[0].endsWith("ת");
-                const dear = isFemale ? "יקרה" : "יקר";
+                toast.success(
+                    `✅ הלקוח קיבל גישה לפורטל!\n${result.message || 'פרטי התחברות נשלחו למייל'}`,
+                    { id: 'client-automation', duration: 5000 }
+                );
 
-                // Simulate Email Sending
-                console.log(`
-                📧 מייל נשלח ללקוח: ${data.email}
-                -------------------------------------------------
-                נושא: ברוכים הבאים למגן זהב! פרטי התחברות למערכת
-                
-                שלום ${data.name} ה${dear},
-                
-                אנו שמחים לבשר לך שתהליך ההצטרפות הושלם בהצלחה! 🥂
-                כעת באפשרותך להיכנס לאזור האישי ולצפות בכל התיק הביטוחי שלך.
-                
-                פרטי ההתחברות שלך:
-                שם משתמש: ${data.email}
-                סיסמה זמנית: ${password}
-                
-                להתחברות: https://app.insurcrm.com/login
-                
-                בברכה,
-                צוות מגן זהב
-                -------------------------------------------------
-                `);
-
-                alert(`סטטוס שונה ל"נמכר"! \n\n✅ נוצר משתמש במערכת\n📧 נשלח מייל ללקוח עם הסיסמה: ${password}`);
+                // Note: Portal access is tracked in the users collection, not in clients
+                console.log('Client portal access granted, uid:', result.uid);
             } else {
-                console.error(result.error);
-                alert("שגיאה ביצירת משתמש: " + result.error);
+                toast.error(`שגיאה: ${result.error}`, { id: 'client-automation' });
             }
-        } catch (e) {
-            console.error(e);
-            alert("שגיאה בתקשורת עם השרת");
+        } catch (error: any) {
+            console.error("שגיאה ביצירת חשבון ללקוח:", error);
+            toast.error(`שגיאה בתקשורת: ${error.message || 'נסה שוב'}`, { id: 'client-automation' });
         }
     };
 
-    const deleteItem = async (key: "family" | "policies" | "tasks" | "pensionSales" | "insuranceSales", id: string) => {
+    const deleteItem = async (key: "family" | "policies" | "tasks" | "pensionSales" | "insuranceSales" | "platinumSales", id: string) => {
         if (confirm("האם למחוק פריט זה?")) {
             if (key === "tasks") {
                 await firestoreService.deleteTask(id);
@@ -661,6 +743,221 @@ export default function ClientDetailsPage() {
         setInsuranceForm({});
         setShowPlatinumSelect(false);
     };
+
+    // === Platinum Sales Logic ===
+    const handleAddPlatinum = () => {
+        if (!platinumForm.productName || !platinumForm.clientAge || !platinumForm.discount || !platinumForm.monthlyPremium) {
+            toast.error("נא מלא את כל השדות");
+            return;
+        }
+
+        // בדיקה שהנחה לדנטל לא עולה על 10%
+        if (platinumForm.productName === 'פלטינום דנטל' && platinumForm.discount > 10) {
+            toast.error("הנחה מקסימלית לפלטינום דנטל היא 10%");
+            return;
+        }
+
+        const calculatedPrice = getPlatinumPrice(platinumForm.productName, platinumForm.clientAge);
+        
+        const newSale: PlatinumSale = {
+            id: Date.now().toString(),
+            productName: platinumForm.productName,
+            clientAge: platinumForm.clientAge,
+            discount: platinumForm.discount,
+            calculatedPremium: calculatedPrice,
+            monthlyPremium: platinumForm.monthlyPremium,
+            saleDate: new Date().toISOString(),
+            status: 'ממתין להפקה' // ממתין עד שילחצו על "הפק מוצרי פלטינום"
+        };
+
+        // חישוב עמלות
+        const commission = calculatePlatinumCommission(newSale);
+        
+        // שמירה ללקוח
+        saveData("platinumSales", [...(client.platinumSales || []), newSale]);
+        
+        // הצגת הודעת הצלחה
+        toast.success(
+            `✅ מוצר ${platinumForm.productName} נשמר!\n` +
+            `💰 עמלה צפויה: ₪${commission.oneTimeCommission.toFixed(0)} חד-פעמי`,
+            { duration: 3000 }
+        );
+        
+        // איפוס טופס
+        setPlatinumForm({});
+    };
+
+    // הפקת מוצרי פלטינום ושליחה למייל
+    const handleSubmitPlatinumProducts = async () => {
+        const pendingProducts = (client.platinumSales || []).filter(s => s.status === 'ממתין להפקה');
+        
+        if (pendingProducts.length === 0) {
+            toast.error("אין מוצרים להפקה");
+            return;
+        }
+
+        // בדיקת פרטי תשלום
+        if (!platinumPaymentForm.paymentMethod) {
+            toast.error("נא למלא פרטי תשלום");
+            return;
+        }
+
+        if (platinumPaymentForm.paymentMethod === 'אשראי') {
+            if (!platinumPaymentForm.creditCardNumber || !platinumPaymentForm.creditCardExpiry) {
+                toast.error("נא למלא פרטי כרטיס אשראי");
+                return;
+            }
+        } else {
+            if (!platinumPaymentForm.bankAccountNumber || !platinumPaymentForm.bankBranch || !platinumPaymentForm.bankName) {
+                toast.error("נא למלא פרטי הוראת קבע");
+                return;
+            }
+        }
+
+        if (!platinumPaymentForm.billingDay) {
+            toast.error("נא לבחור יום גבייה");
+            return;
+        }
+
+        setIsSubmittingPlatinum(true);
+
+        try {
+            // חישוב סה"כ
+            const totalMonthly = pendingProducts.reduce((sum, p) => sum + p.monthlyPremium, 0);
+            const totalOneTime = pendingProducts.reduce((sum, p) => sum + (p.monthlyPremium * 3), 0);
+
+            // הכנת תוכן המייל
+            const productsHtml = pendingProducts.map(p => `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${p.productName}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${p.discount}%</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">₪${p.monthlyPremium}</td>
+                </tr>
+            `).join('');
+
+            const emailHtml = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="he">
+            <head>
+                <meta charset="UTF-8">
+                <title>הזמנת מוצרי פלטינום - ${client.name}</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; direction: rtl; padding: 20px;">
+                <div style="max-width: 700px; margin: 0 auto; background: #f9f9f9; padding: 30px; border-radius: 10px;">
+                    <h1 style="color: #1a365d; text-align: center;">🌟 הזמנת מוצרי פלטינום חדשה</h1>
+                    
+                    <h2 style="color: #2563eb; border-bottom: 2px solid #ffd700; padding-bottom: 10px;">פרטי הלקוח</h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr><td style="padding: 8px; font-weight: bold;">שם מלא:</td><td>${client.name}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">${client.idType || 'תעודת זהות'}:</td><td>${client.idNumber}</td></tr>
+                        ${client.idType === 'דרכון' ? `
+                        <tr><td style="padding: 8px; font-weight: bold;">מדינת הנפקה:</td><td>${client.passportCountry || '-'}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">תוקף דרכון:</td><td>${client.passportExpiry || '-'}</td></tr>
+                        ` : ''}
+                        <tr><td style="padding: 8px; font-weight: bold;">אימייל:</td><td>${client.email}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">טלפון:</td><td>${client.phone}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">תאריך לידה:</td><td>${client.birthDate || '-'}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">כתובת:</td><td>${client.address.street} ${client.address.num}, ${client.address.city}</td></tr>
+                    </table>
+
+                    <h2 style="color: #2563eb; border-bottom: 2px solid #ffd700; padding-bottom: 10px;">פרטי תשלום</h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr><td style="padding: 8px; font-weight: bold;">אמצעי תשלום:</td><td>${platinumPaymentForm.paymentMethod}</td></tr>
+                        ${platinumPaymentForm.paymentMethod === 'אשראי' ? `
+                        <tr><td style="padding: 8px; font-weight: bold;">מספר כרטיס:</td><td>****${platinumPaymentForm.creditCardNumber?.slice(-4)}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">תוקף:</td><td>${platinumPaymentForm.creditCardExpiry}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">ת.ז. בעל הכרטיס:</td><td>${platinumPaymentForm.creditCardPayerIdNumber || '-'}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">טלפון בעל הכרטיס:</td><td>${platinumPaymentForm.creditCardPayerPhone || '-'}</td></tr>
+                        ` : `
+                        <tr><td style="padding: 8px; font-weight: bold;">בנק:</td><td>${platinumPaymentForm.bankName}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">סניף:</td><td>${platinumPaymentForm.bankBranch}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">מספר חשבון:</td><td>${platinumPaymentForm.bankAccountNumber}</td></tr>
+                        <tr><td style="padding: 8px; font-weight: bold;">סוג חשבון:</td><td>${platinumPaymentForm.accountType || 'עו"ש'}</td></tr>
+                        `}
+                        <tr><td style="padding: 8px; font-weight: bold;">יום גבייה:</td><td>${platinumPaymentForm.billingDay} לחודש</td></tr>
+                    </table>
+
+                    <h2 style="color: #2563eb; border-bottom: 2px solid #ffd700; padding-bottom: 10px;">המוצרים שנרכשו</h2>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background: #2563eb; color: white;">
+                                <th style="padding: 12px; text-align: right;">מוצר</th>
+                                <th style="padding: 12px; text-align: right;">הנחה</th>
+                                <th style="padding: 12px; text-align: right;">מחיר חודשי</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productsHtml}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #ffd700; font-weight: bold;">
+                                <td colspan="2" style="padding: 12px;">סה"כ חודשי:</td>
+                                <td style="padding: 12px;">₪${totalMonthly}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <p style="margin: 0;"><strong>🏢 סוכנות:</strong> מגן זהב</p>
+                        <p style="margin: 5px 0;"><strong>👤 נציג:</strong> ${client.salesRepresentative || user?.displayName || 'לא צוין'}</p>
+                        <p style="margin: 0;"><strong>📅 תאריך:</strong> ${new Date().toLocaleDateString('he-IL')}</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            // שליחת המייל
+            const emailResult = await sendEmail({
+                to: 'shaked@platinum.org.il',
+                subject: `🌟 הזמנת פלטינום חדשה - ${client.name} - ${pendingProducts.length} מוצרים`,
+                html: emailHtml
+            });
+
+            if (emailResult.success) {
+                // עדכון סטטוס כל המוצרים ל"נשלח לפלטינום"
+                const updatedSales = (client.platinumSales || []).map(sale => 
+                    sale.status === 'ממתין להפקה' 
+                        ? { ...sale, status: 'נשלח לפלטינום' as const }
+                        : sale
+                );
+
+                // שמירת פרטי התשלום
+                saveData("platinumSales", updatedSales);
+                saveData("platinumPayment", platinumPaymentForm);
+
+                toast.success(
+                    `✅ ${pendingProducts.length} מוצרי פלטינום נשלחו בהצלחה!\n` +
+                    `📧 נשלח ל: shaked@platinum.org.il\n` +
+                    `💰 סה"כ חודשי: ₪${totalMonthly}`,
+                    { duration: 6000 }
+                );
+
+                // איפוס טופס תשלום
+                setPlatinumPaymentForm({});
+            } else {
+                toast.error(`שגיאה בשליחת המייל: ${emailResult.error}`);
+            }
+        } catch (error: any) {
+            console.error('Error submitting platinum products:', error);
+            toast.error(`שגיאה: ${error.message || 'נסה שוב'}`);
+        } finally {
+            setIsSubmittingPlatinum(false);
+        }
+    };
+
+    // חישוב מחיר פלטינום אוטומטי כשמשתנה המוצר או הגיל
+    const calculatePlatinumPremium = () => {
+        if (!platinumForm.productName || !platinumForm.clientAge) return null;
+        
+        const basePrice = getPlatinumPrice(platinumForm.productName, platinumForm.clientAge);
+        const discountRate = platinumForm.discount || 0;
+        const finalPrice = basePrice * (1 - discountRate / 100);
+        
+        return { basePrice, finalPrice };
+    };
+
+    const platinumPriceCalc = calculatePlatinumPremium();
 
     const handleReferral = (type: string) => {
         const isElementary = type === "ביטוח אלמנטרי";
@@ -853,15 +1150,15 @@ ${clipped}`;
         // Create a new task for this lead
         const taskData = {
             title: `ליד חדש: ${policy.productType} - ${policy.company}`,
-            priority: "high",
+            priority: "high" as const,
             dueDate: new Date().toISOString().split('T')[0],
-            status: "pending",
-            type: "lead",
+            status: "pending" as const,
+            type: "task" as const,
             clientName: client.name,
             description: `פרמיה נוכחית: ${policy.premium}, מסתיים ב: ${policy.endDate}`
         };
 
-        firestoreService.addTask(taskData).then(() => {
+        firestoreService.addTask(taskData as any).then(() => {
             toast.success(`נוצר ליד חדש עבור פוליסת ${policy.productType}`);
         });
     };
@@ -1416,6 +1713,444 @@ ${clipped}`;
                                     </div>
                                 )}
                             </div>
+                        </Card>
+
+                        {/* ===== Platinum Service Sale Section ===== */}
+                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift group">
+                            <h4 className="text-xl font-black mb-6 border-b border-slate-100 pb-4 flex items-center gap-3">
+                                <span className="bg-gradient-to-br from-amber-400 to-yellow-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">⭐</span>
+                                <span className="text-gradient">מכירת כתב שירות פלטינום</span>
+                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full mr-auto">מופקת אוטומטית</span>
+                            </h4>
+
+                            <div className="space-y-4 bg-gradient-to-br from-slate-50 to-amber-50/30 p-6 rounded-2xl mb-8 border border-slate-200/50">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* שם המוצר */}
+                                    <div className="col-span-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">שם המוצר</label>
+                                        <select 
+                                            value={platinumForm.productName || ""} 
+                                            onChange={e => setPlatinumForm({ ...platinumForm, productName: e.target.value as PlatinumSale['productName'] })} 
+                                            className="input-premium mt-1"
+                                        >
+                                            <option value="">בחר מוצר...</option>
+                                            <option value="פלטינום בריאות">פלטינום בריאות</option>
+                                            <option value="פלטינום פרמיום">פלטינום פרמיום</option>
+                                            <option value="רופא עד הבית">רופא עד הבית</option>
+                                            <option value="פלטינום רפואה משלימה">פלטינום רפואה משלימה</option>
+                                            <option value="פלטינום דנטל">פלטינום דנטל</option>
+                                        </select>
+                                    </div>
+
+                                    {/* גיל הלקוח */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">גיל הלקוח</label>
+                                        <input 
+                                            type="number" 
+                                            min="0" 
+                                            max="120"
+                                            value={platinumForm.clientAge || ""} 
+                                            onChange={e => setPlatinumForm({ ...platinumForm, clientAge: +e.target.value })} 
+                                            className="input-premium mt-1" 
+                                            placeholder="הזן גיל"
+                                        />
+                                    </div>
+
+                                    {/* הנחה */}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            הנחה {platinumForm.productName === 'פלטינום דנטל' && <span className="text-amber-600">(מקס 10%)</span>}
+                                        </label>
+                                        <select 
+                                            value={platinumForm.discount || ""} 
+                                            onChange={e => setPlatinumForm({ ...platinumForm, discount: +e.target.value as 10 | 20 | 30 })} 
+                                            className="input-premium mt-1"
+                                        >
+                                            <option value="">בחר הנחה...</option>
+                                            <option value="10">10%</option>
+                                            {platinumForm.productName !== 'פלטינום דנטל' && (
+                                                <>
+                                                    <option value="20">20%</option>
+                                                    <option value="30">30%</option>
+                                                </>
+                                            )}
+                                        </select>
+                                    </div>
+
+                                    {/* חישוב אוטומטי */}
+                                    {platinumPriceCalc && (
+                                        <div className="col-span-2 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-xs text-amber-600 font-bold">מחיר בסיס לפי גיל:</span>
+                                                    <span className="text-lg font-black text-amber-700 mr-2">₪{platinumPriceCalc.basePrice}</span>
+                                                </div>
+                                                <div className="text-left">
+                                                    <span className="text-xs text-emerald-600 font-bold">מחיר סופי אחרי הנחה:</span>
+                                                    <span className="text-xl font-black text-emerald-700 mr-2">₪{platinumPriceCalc.finalPrice.toFixed(0)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* עלות חודשית סופית */}
+                                    <div className="col-span-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">עלות חודשית סופית (₪)</label>
+                                        <input 
+                                            type="number" 
+                                            value={platinumForm.monthlyPremium || ""} 
+                                            onChange={e => setPlatinumForm({ ...platinumForm, monthlyPremium: +e.target.value })} 
+                                            className="input-premium mt-1" 
+                                            placeholder={platinumPriceCalc ? `מומלץ: ₪${platinumPriceCalc.finalPrice.toFixed(0)}` : "הזן סכום"}
+                                        />
+                                    </div>
+
+                                    {/* תצוגת עמלות צפויות */}
+                                    {platinumForm.monthlyPremium && platinumForm.productName && (
+                                        <div className="col-span-2 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
+                                            <h5 className="text-xs font-bold text-indigo-600 mb-2">💰 עמלות צפויות:</h5>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                                <div>
+                                                    <span className="text-slate-500">עמלה חד-פעמית:</span>
+                                                    <span className="font-bold text-indigo-700 mr-2">₪{(platinumForm.monthlyPremium * 3).toFixed(0)}</span>
+                                                    <span className="text-[10px] text-slate-400">(פרמיה × 3)</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-500">עמלת נפרעים:</span>
+                                                    <span className="font-bold text-indigo-700 mr-2">
+                                                        ₪{(platinumForm.monthlyPremium * (platinumForm.productName === 'פלטינום דנטל' ? 0.30 : 0.45)).toFixed(0)}/חודש
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400">
+                                                        ({platinumForm.productName === 'פלטינום דנטל' ? '30%' : '45%'})
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Button 
+                                    onClick={handleAddPlatinum} 
+                                    className="w-full mt-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-xl rounded-2xl font-bold py-3 transition-all hover:scale-[1.02] hover:shadow-2xl"
+                                >
+                                    <Plus size={16} className="inline ml-2" /> אישור מכירה
+                                </Button>
+                            </div>
+
+                            {/* List of Platinum Sales */}
+                            <div className="space-y-3">
+                                <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <span className="bg-amber-100 text-amber-600 px-2 py-1 rounded-lg">{(client.platinumSales || []).length}</span>
+                                    מכירות פלטינום
+                                </h5>
+                                {(client.platinumSales || []).map((item, index) => {
+                                    const commission = calculatePlatinumCommission(item);
+                                    return (
+                                        <div key={item.id} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-md text-sm group/item hover:shadow-lg hover:border-amber-200 transition-all duration-300" style={{ animationDelay: `${index * 50}ms` }}>
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl flex items-center justify-center text-amber-600 font-bold">
+                                                        ⭐
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-primary">{item.productName}</p>
+                                                        <p className="text-xs text-slate-400">גיל {item.clientAge} • הנחה {item.discount}% • ₪{item.monthlyPremium}/חודש</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">{item.status}</span>
+                                                    <button onClick={() => deleteItem("platinumSales", item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                                                <div className="text-slate-500">עמלה חד-פעמית: <span className="font-bold text-indigo-600">₪{commission.oneTimeCommission.toFixed(0)}</span></div>
+                                                <div className="text-slate-500">עמלת נפרעים: <span className="font-bold text-indigo-600">₪{commission.monthlyCommission.toFixed(0)}/חודש</span></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {(!client.platinumSales || client.platinumSales.length === 0) && (
+                                    <div className="text-center py-8 text-slate-400">
+                                        <div className="text-4xl mb-2 opacity-50">⭐</div>
+                                        <p className="text-sm">אין מכירות פלטינום</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Payment Details Section */}
+                            {client.platinumSales && client.platinumSales.length > 0 && (
+                                <div className="mt-6 pt-6 border-t-2 border-amber-200">
+                                    <h5 className="text-sm font-bold text-amber-700 mb-4 flex items-center gap-2">
+                                        <span className="bg-amber-100 p-2 rounded-lg">💳</span>
+                                        פרטי תשלום לפלטינום
+                                    </h5>
+
+                                    {/* ID Type Selection */}
+                                    <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">סוג מסמך זיהוי</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setClient({ ...client, idType: 'תעודת זהות' })}
+                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                                    client.idType === 'תעודת זהות' 
+                                                        ? 'bg-blue-500 text-white border-blue-500 shadow-lg' 
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                                                }`}
+                                            >
+                                                🪪 תעודת זהות
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setClient({ ...client, idType: 'דרכון' })}
+                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                                    client.idType === 'דרכון' 
+                                                        ? 'bg-blue-500 text-white border-blue-500 shadow-lg' 
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
+                                                }`}
+                                            >
+                                                🛂 דרכון
+                                            </button>
+                                        </div>
+
+                                        {/* Passport Fields */}
+                                        {client.idType === 'דרכון' && (
+                                            <div className="grid grid-cols-2 gap-3 mt-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ארץ הנפקה</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={client.passportCountry || ""} 
+                                                        onChange={e => setClient({ ...client, passportCountry: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="ארץ הנפקת הדרכון"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">תוקף דרכון</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={client.passportExpiry || ""} 
+                                                        onChange={e => setClient({ ...client, passportExpiry: e.target.value })} 
+                                                        className="input-premium mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Payment Method Selection */}
+                                    <div className="mb-4">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">אמצעי תשלום</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, paymentMethod: 'אשראי' })}
+                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                                    platinumPaymentForm.paymentMethod === 'אשראי' 
+                                                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg' 
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+                                                }`}
+                                            >
+                                                💳 כרטיס אשראי
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, paymentMethod: 'הוראת קבע' })}
+                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                                                    platinumPaymentForm.paymentMethod === 'הוראת קבע' 
+                                                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg' 
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+                                                }`}
+                                            >
+                                                🏦 הוראת קבע
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Credit Card Fields */}
+                                    {platinumPaymentForm.paymentMethod === 'אשראי' && (
+                                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200 space-y-3">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר כרטיס אשראי</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={platinumPaymentForm.creditCardNumber || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardNumber: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                                                        maxLength={19}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">תוקף</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={platinumPaymentForm.creditCardExpiry || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardExpiry: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="MM/YY"
+                                                        maxLength={5}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ת"ז גורם משלם</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={platinumPaymentForm.creditCardPayerIdNumber || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardPayerIdNumber: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="מספר ת.ז של בעל הכרטיס"
+                                                        maxLength={9}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">טלפון בעל הכרטיס</label>
+                                                    <input 
+                                                        type="tel" 
+                                                        value={platinumPaymentForm.creditCardPayerPhone || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardPayerPhone: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="050-0000000"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Direct Debit Fields */}
+                                    {platinumPaymentForm.paymentMethod === 'הוראת קבע' && (
+                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 space-y-3">
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">שם הבנק</label>
+                                                    <select 
+                                                        value={platinumPaymentForm.bankName || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankName: e.target.value })} 
+                                                        className="input-premium mt-1"
+                                                    >
+                                                        <option value="">בחר בנק...</option>
+                                                        <option value="הפועלים">הפועלים</option>
+                                                        <option value="לאומי">לאומי</option>
+                                                        <option value="דיסקונט">דיסקונט</option>
+                                                        <option value="מזרחי טפחות">מזרחי טפחות</option>
+                                                        <option value="הבינלאומי">הבינלאומי</option>
+                                                        <option value="יהב">יהב</option>
+                                                        <option value="מרכנתיל">מרכנתיל</option>
+                                                        <option value="אוצר החייל">אוצר החייל</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר סניף</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={platinumPaymentForm.bankBranch || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankBranch: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="מספר סניף"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר חשבון</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={platinumPaymentForm.bankAccountNumber || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankAccountNumber: e.target.value })} 
+                                                        className="input-premium mt-1" 
+                                                        placeholder="מספר חשבון"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">סוג חשבון</label>
+                                                <div className="grid grid-cols-2 gap-3 mt-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, accountType: 'עו"ש' })}
+                                                        className={`p-2 rounded-lg border-2 font-bold text-xs transition-all ${
+                                                            platinumPaymentForm.accountType === 'עו"ש' 
+                                                                ? 'bg-blue-500 text-white border-blue-500' 
+                                                                : 'bg-white text-slate-600 border-slate-200'
+                                                        }`}
+                                                    >
+                                                        עו"ש
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, accountType: 'חיסכון' })}
+                                                        className={`p-2 rounded-lg border-2 font-bold text-xs transition-all ${
+                                                            platinumPaymentForm.accountType === 'חיסכון' 
+                                                                ? 'bg-blue-500 text-white border-blue-500' 
+                                                                : 'bg-white text-slate-600 border-slate-200'
+                                                        }`}
+                                                    >
+                                                        חיסכון
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Billing Day */}
+                                    <div className="mt-4">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">יום גבייה בחודש</label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {[2, 10, 15, 20].map(day => (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, billingDay: day as 2 | 10 | 15 | 20 })}
+                                                    className={`p-3 rounded-xl border-2 font-bold text-lg transition-all ${
+                                                        platinumPaymentForm.billingDay === day 
+                                                            ? 'bg-amber-500 text-white border-amber-500 shadow-lg' 
+                                                            : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300'
+                                                    }`}
+                                                >
+                                                    {day}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <Button 
+                                        onClick={handleSubmitPlatinumProducts} 
+                                        disabled={isSubmittingPlatinum || !client.platinumSales?.some(s => s.status === 'ממתין להפקה')}
+                                        className="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xl rounded-2xl font-bold py-4 transition-all hover:scale-[1.02] hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmittingPlatinum ? (
+                                            <>
+                                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full inline-block ml-2"></div>
+                                                שולח לפלטינום...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send size={18} className="inline ml-2" />
+                                                הפק מוצרי פלטינום ({client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0})
+                                            </>
+                                        )}
+                                    </Button>
+
+                                    {/* Products Status Summary */}
+                                    <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                                        <div className="bg-amber-50 p-2 rounded-lg border border-amber-200">
+                                            <div className="font-black text-amber-700">{client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0}</div>
+                                            <div className="text-amber-600">ממתינים</div>
+                                        </div>
+                                        <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
+                                            <div className="font-black text-blue-700">{client.platinumSales?.filter(s => s.status === 'הופקה').length || 0}</div>
+                                            <div className="text-blue-600">הופקו</div>
+                                        </div>
+                                        <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                                            <div className="font-black text-emerald-700">{client.platinumSales?.filter(s => s.status === 'נשלח לפלטינום').length || 0}</div>
+                                            <div className="text-emerald-600">נשלחו</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </Card>
                     </div>
                 )}

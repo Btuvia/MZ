@@ -290,7 +290,7 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                                 variant="outline"
                                 className="w-full h-14 bg-white hover:bg-slate-50 border-slate-200 text-slate-700 flex items-center justify-center gap-3"
                                 onClick={() => {
-                                    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY; // Reuse Firebase Key
+                                    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
                                     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
                                     if (!apiKey || !clientId) {

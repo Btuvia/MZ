@@ -5,10 +5,23 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button } from "@/components/ui/base";
 import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import LifecycleTracker from "@/components/client/LifecycleTracker";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Shield, FileText, CheckCircle, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
+import { 
+    Shield, FileText, CheckCircle, AlertTriangle, Phone, MessageSquare, 
+    Calendar, ChevronLeft, ExternalLink, Clock, Bell
+} from "lucide-react";
+import Link from "next/link";
+
+// Dynamic greeting helper
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return { text: "בוקר טוב", emoji: "☀️" };
+    if (hour >= 12 && hour < 17) return { text: "צהריים טובים", emoji: "🌤️" };
+    if (hour >= 17 && hour < 21) return { text: "ערב טוב", emoji: "🌅" };
+    return { text: "לילה טוב", emoji: "🌙" };
+};
 
 export default function ClientDashboard() {
     const router = useRouter();
@@ -47,9 +60,7 @@ export default function ClientDashboard() {
                         policies: [
                             { type: "ביטוח חיים", company: "הראל", status: "active" },
                             { type: "ביטוח בריאות", company: "מגדל", status: "active" }
-                        ],
-                        salesStatus: 'negotiation',
-                        opsStatus: 'medical_pending'
+                        ]
                     });
                 }
             } catch (error) {
@@ -80,38 +91,88 @@ export default function ClientDashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center mesh-gradient">
-                <div className="animate-spin text-4xl">🛡️</div>
-            </div>
+            <DashboardShell role="לקוח" navItems={CLIENT_NAV_ITEMS}>
+                <div className="min-h-[60vh] flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin text-5xl mb-4">🛡️</div>
+                        <p className="text-slate-400 font-medium">טוען את התיק שלך...</p>
+                    </div>
+                </div>
+            </DashboardShell>
         );
     }
+
+    const greeting = getGreeting();
+    const firstName = client?.name?.split(" ")[0] || "שם";
 
     return (
         <DashboardShell role="לקוח" navItems={CLIENT_NAV_ITEMS}>
             <div className="space-y-8 pb-20" dir="rtl">
 
                 {/* Hero */}
-                <div className="glass-card bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-amber-900/30 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-amber-900/30 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold"
+                >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-                    <div className="relative z-10 flex justify-between items-center">
+                    <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                         <div>
-                            <h1 className="text-3xl font-black mb-2 text-gradient-gold neon-text-gold">שלום, {client.name.split(" ")[0]} 👋</h1>
+                            <h1 className="text-3xl font-black mb-2 text-gradient-gold neon-text-gold">
+                                {greeting.text}, {firstName}! {greeting.emoji}
+                            </h1>
                             <p className="text-blue-300 font-medium text-sm neon-text-blue">כיף לראות אותך שוב!</p>
                         </div>
-                        <div className="h-16 w-16 bg-gradient-to-br from-amber-500/30 to-amber-600/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-amber-500/40 shadow-lg shadow-amber-500/30">
-                            <Shield className="text-amber-400" size={32} />
+                        <div className="flex gap-3">
+                            <Link href="/client/chat">
+                                <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg shadow-amber-500/20">
+                                    <MessageSquare size={16} className="ml-2" />
+                                    צ'אט עם הסוכן
+                                </Button>
+                            </Link>
+                            <Button variant="outline" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10" onClick={() => toast.info("הסוכן שלך יחזור אליך בקרוב")}>
+                                <Phone size={16} className="ml-2" />
+                                התקשר אליי
+                            </Button>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Status Tracker */}
-                <div>
-                    <h3 className="text-lg font-black text-amber-100 mb-4 px-2 flex items-center gap-2">
-                        <span className="bg-blue-500/20 p-1.5 rounded-lg text-blue-400 border border-blue-500/30"><CheckCircle size={16} /></span>
-                        סטטוס תהליך
-                    </h3>
-                    <LifecycleTracker client={client} readOnly={true} />
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Link href="/client/claims">
+                        <Card className="p-4 text-center hover:border-amber-500/50 transition-all cursor-pointer group">
+                            <div className="w-12 h-12 mx-auto mb-3 bg-red-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <AlertTriangle size={24} className="text-red-400" />
+                            </div>
+                            <p className="font-bold text-slate-200 text-sm">הגשת תביעה</p>
+                        </Card>
+                    </Link>
+                    <Link href="/client/documents">
+                        <Card className="p-4 text-center hover:border-amber-500/50 transition-all cursor-pointer group">
+                            <div className="w-12 h-12 mx-auto mb-3 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FileText size={24} className="text-blue-400" />
+                            </div>
+                            <p className="font-bold text-slate-200 text-sm">המסמכים שלי</p>
+                        </Card>
+                    </Link>
+                    <Link href="/client/compare">
+                        <Card className="p-4 text-center hover:border-amber-500/50 transition-all cursor-pointer group">
+                            <div className="w-12 h-12 mx-auto mb-3 bg-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Shield size={24} className="text-purple-400" />
+                            </div>
+                            <p className="font-bold text-slate-200 text-sm">השוואת מוצרים</p>
+                        </Card>
+                    </Link>
+                    <Link href="/client/contact">
+                        <Card className="p-4 text-center hover:border-amber-500/50 transition-all cursor-pointer group">
+                            <div className="w-12 h-12 mx-auto mb-3 bg-emerald-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Calendar size={24} className="text-emerald-400" />
+                            </div>
+                            <p className="font-bold text-slate-200 text-sm">קביעת פגישה</p>
+                        </Card>
+                    </Link>
                 </div>
 
                 {/* Shield Grid */}

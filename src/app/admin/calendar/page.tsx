@@ -6,7 +6,7 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { Plus, ChevronRight, ChevronLeft, Calendar as CalendarIcon, List, LayoutGrid } from "lucide-react";
 import { SmartTaskModal } from "@/components/SmartTaskModal";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { Task, TaskStatus, Employee } from "@/types";
+import { Task, TaskStatus, Employee, SystemUser } from "@/types";
 import { TaskSubject } from "@/types/subject";
 import { Workflow } from "@/types/workflow";
 import { TaskListView } from "@/components/ui/task-list-view";
@@ -48,14 +48,27 @@ export default function CalendarPage() {
                     firestoreService.getUsers(),
                 ]);
 
-                setTasks(fetchedTasks.map((t: any) => ({
+                setTasks(fetchedTasks.map((t: Task) => ({
                     ...t,
                     status: t.status || (t.completed ? "completed" : "new"),
                     subtasks: t.subtasks || [],
                 })) as Task[]);
                 setSubjects(fetchedSubjects as TaskSubject[]);
                 setWorkflows(fetchedWorkflows as Workflow[]);
-                setUsers(fetchedUsers as Employee[]);
+                // Map SystemUser to Employee format for calendar display
+                setUsers(fetchedUsers.map((u: SystemUser) => ({
+                    id: u.id,
+                    name: u.displayName,
+                    email: u.email,
+                    phone: u.phone || '',
+                    position: u.role,
+                    avatarUrl: u.avatarUrl,
+                    activeClientsCount: 0,
+                    monthlySales: 0,
+                    xp: 0,
+                    level: 1,
+                    badges: [],
+                })) as Employee[]);
             } catch (error) {
                 console.error("Failed to load data", error);
             }

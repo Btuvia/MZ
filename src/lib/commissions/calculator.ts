@@ -1,5 +1,5 @@
 // Types for commission calculation
-export type ProductType = 'life' | 'health' | 'pension' | 'keren_hishtalmut' | 'pension_transfer' | 'manager_insurance' | 'investment' | 'finance' | 'elementary';
+export type ProductType = 'life' | 'health' | 'pension' | 'keren_hishtalmut' | 'pension_transfer' | 'manager_insurance' | 'investment' | 'finance' | 'elementary' | 'platinum_service';
 
 export interface DealData {
     id: string;
@@ -119,6 +119,9 @@ export class CommissionCalculator {
             case 'investment':
             case 'finance':
                 this.calculateFinanceCommission(deal, result);
+                break;
+            case 'platinum_service':
+                this.calculatePlatinumCommission(deal, result);
                 break;
         }
 
@@ -258,6 +261,45 @@ export class CommissionCalculator {
         };
 
         result.notes.push(`✅ עמלת ניוד: ₪${salary.toLocaleString()} × 12 × 0.008 = ₪${result.niudCommission.toLocaleString()}`);
+    }
+
+    /**
+     * חישוב עמלות כתב שירות פלטינום
+     * עמלה חד-פעמית = פרמיה חודשית × 3
+     * עמלת נפרעים = 45% מהפרמיה (30% לדנטל)
+     */
+    private static calculatePlatinumCommission(deal: DealData, result: CommissionResult) {
+        if (!deal.monthlyPremium || deal.monthlyPremium <= 0) {
+            result.notes.push('❌ חסרה פרמיה חודשית לחישוב עמלת פלטינום');
+            return;
+        }
+
+        const monthlyPremium = deal.monthlyPremium;
+        
+        // בדיקה אם זה דנטל (אפשר להעביר מידע נוסף דרך deal)
+        // נבדוק אם יש מאפיין מיוחד או נשתמש בברירת מחדל של 45%
+        const isDental = (deal as any).platinumProductName === 'פלטינום דנטל';
+        const nifraaimRate = isDental ? 0.30 : 0.45;
+
+        // עמלה חד-פעמית = פרמיה × 3
+        result.heikefCommission = monthlyPremium * 3;
+        
+        // עמלת נפרעים = 45% או 30% מהפרמיה החודשית
+        result.nifraaimCommission = monthlyPremium * nifraaimRate;
+
+        result.breakdown = {
+            type: 'כתב שירות פלטינום',
+            formula: `חד-פעמי: ₪${monthlyPremium} × 3 = ₪${result.heikefCommission.toFixed(2)} | נפרעים: ₪${monthlyPremium} × ${nifraaimRate * 100}% = ₪${result.nifraaimCommission.toFixed(2)}/חודש`,
+            values: {
+                monthlyPremium,
+                oneTimeMultiplier: 3,
+                nifraaimRate: nifraaimRate * 100,
+                isDental: isDental ? 1 : 0
+            }
+        };
+
+        result.notes.push(`✅ עמלת פלטינום חד-פעמית: ₪${monthlyPremium.toLocaleString()} × 3 = ₪${result.heikefCommission.toLocaleString()}`);
+        result.notes.push(`✅ עמלת נפרעים פלטינום: ₪${monthlyPremium.toLocaleString()} × ${nifraaimRate * 100}% = ₪${result.nifraaimCommission.toLocaleString()}/חודש`);
     }
 
     /**

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { NotificationsPanel } from "./notifications-panel";
+import { useReminders } from "@/lib/hooks/useReminders";
 
 interface NavItem {
     label: string;
@@ -22,6 +23,9 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
     const pathname = usePathname();
     const [scrolled, setScrolled] = useState(false);
     const { user } = useAuth();
+    
+    // Initialize reminders system - checks every minute
+    useReminders(60000);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);

@@ -214,18 +214,18 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 p-4" dir="rtl">
-            <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl animate-in zoom-in-95 duration-300 relative flex flex-col max-h-[90vh]">
+            <div className="glass-card border border-amber-500/20 rounded-3xl w-full max-w-4xl shadow-2xl animate-in zoom-in-95 duration-300 relative flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <div className="p-6 border-b border-amber-500/20 flex justify-between items-center shrink-0">
                     <div>
-                        <h2 className="text-2xl font-black text-slate-800 font-display flex items-center gap-2">
+                        <h2 className="text-2xl font-black text-amber-100 font-display flex items-center gap-2">
                             {existingTask ? "עריכת משימה" : "משימה חדשה"}
-                            <span className="bg-indigo-100 text-indigo-600 text-xs px-2 py-1 rounded-full">3.0</span>
+                            <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3.0</span>
                         </h2>
                         <p className="text-slate-400 text-xs font-bold mt-1">ניהול מתקדם עם AI, תהליכים ונושאים</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-red-500">
+                    <button onClick={onClose} className="p-2 hover:bg-slate-700/50 rounded-full transition-colors text-slate-400 hover:text-red-400">
                         <X size={20} />
                     </button>
                 </div>
@@ -236,24 +236,24 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                     {/* Title & Description */}
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">נושא המשימה</label>
+                            <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">נושא המשימה</label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="לדוגמה: הכנת תיק לקוח לפגישה..."
-                                className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-lg text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none transition-all"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">פירוט (תיאור)</label>
+                            <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">פירוט (תיאור)</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={3}
                                 placeholder="תיאור מפורט של המשימה..."
-                                className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-3 font-medium text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+                                className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-medium text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none transition-all resize-none"
                             ></textarea>
                         </div>
                     </div>
@@ -283,15 +283,15 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                     </div>
 
                     {/* AI Breakdown */}
-                    <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100">
+                    <div className="glass-card border border-amber-500/20 rounded-2xl p-4">
                         <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-black text-indigo-900 text-sm flex items-center gap-2">
-                                <BrainCircuit size={16} className="text-indigo-500" />
+                            <h4 className="font-black text-amber-200 text-sm flex items-center gap-2">
+                                <BrainCircuit size={16} className="text-amber-400" />
                                 פירוק משימה חכם (AI)
                             </h4>
                             <Button
                                 size="sm"
-                                className="bg-white text-indigo-600 hover:bg-indigo-50 border border-indigo-200 text-xs gap-2"
+                                className="glass-card text-amber-400 hover:bg-slate-700/50 border border-amber-500/30 text-xs gap-2"
                                 onClick={handleGenerateSubtasks}
                                 disabled={isGeneratingAI || !title}
                             >
@@ -303,14 +303,14 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                         {subtasks.length > 0 ? (
                             <div className="space-y-2">
                                 {subtasks.map((st, i) => (
-                                    <div key={i} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 shadow-sm animate-in slide-in-from-right-4 fade-in duration-300" style={{ animationDelay: `${i * 100}ms` }}>
-                                        <div className="h-4 w-4 rounded border border-slate-300 bg-slate-50"></div>
-                                        <span className="text-sm font-bold text-slate-700">{st.title}</span>
+                                    <div key={i} className="flex items-center gap-3 glass-card border border-amber-500/20 p-2 rounded-lg shadow-sm animate-in slide-in-from-right-4 fade-in duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                                        <div className="h-4 w-4 rounded border border-amber-500/30 bg-slate-700/50"></div>
+                                        <span className="text-sm font-bold text-slate-200">{st.title}</span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs text-indigo-400/80 italic text-center py-2">ה-AI שלנו מוכן לעזור לך לתכנן את המשימה...</p>
+                            <p className="text-xs text-slate-400 italic text-center py-2">ה-AI שלנו מוכן לעזור לך לתכנן את המשימה...</p>
                         )}
                     </div>
 
@@ -319,14 +319,14 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                         {/* Time & Date */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">מועד לביצוע</label>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">מועד לביצוע</label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <input
                                             type="date"
                                             value={date}
                                             onChange={(e) => setDate(e.target.value)}
-                                            className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-sm text-slate-200 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                         />
                                     </div>
                                     <div className="relative w-24">
@@ -334,18 +334,18 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                             type="time"
                                             value={time}
                                             onChange={(e) => setTime(e.target.value)}
-                                            className="w-full bg-slate-50 border-slate-200 rounded-xl px-2 py-3 font-bold text-sm text-center focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            className="w-full glass-card border-amber-500/20 rounded-xl px-2 py-3 font-bold text-sm text-slate-200 text-center focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                         />
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">אחראי משימה</label>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">אחראי משימה</label>
                                 <select
                                     value={assignee}
                                     onChange={(e) => setAssignee(e.target.value)}
-                                    className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-3 font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-sm text-slate-200 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                 >
                                     <option value="admin">מנהל ראשי (אני)</option>
                                     <option value="agent_1">ישראל ישראלי (סוכן)</option>
@@ -357,15 +357,15 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                         {/* Client Linking */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">שיוך ללקוח</label>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">שיוך ללקוח</label>
                                 <div className="flex gap-2 mb-2">
                                     <button
                                         onClick={() => setIsLinkedToClient(true)}
-                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${isLinkedToClient ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-white'}`}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${isLinkedToClient ? 'bg-amber-500 text-slate-900 border-amber-500' : 'glass-card text-slate-400 border-amber-500/20 hover:bg-slate-700/50'}`}
                                     >כן</button>
                                     <button
                                         onClick={() => { setIsLinkedToClient(false); setSelectedClient(null); }}
-                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${!isLinkedToClient ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-white'}`}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${!isLinkedToClient ? 'bg-slate-700 text-slate-200 border-slate-600' : 'glass-card text-slate-400 border-amber-500/20 hover:bg-slate-700/50'}`}
                                     >לא</button>
                                 </div>
 
@@ -382,11 +382,11 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                                 if (selectedClient) setSelectedClient(null);
                                                 setClientSearchTerm(e.target.value);
                                             }}
-                                            className="w-full bg-white border-2 border-indigo-100 rounded-xl pl-4 pr-10 py-3 font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-indigo-900 placeholder:text-indigo-300"
+                                            className="w-full glass-card border-2 border-amber-500/30 rounded-xl pl-4 pr-10 py-3 font-bold text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 outline-none text-slate-200 placeholder:text-slate-500"
                                         />
 
                                         {showClientResults && !selectedClient && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-100 max-h-40 overflow-y-auto z-10">
+                                            <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
                                                 {searchResults.length > 0 ? searchResults.map(client => (
                                                     <div
                                                         key={client.id}
@@ -395,9 +395,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                                             setClientSearchTerm("");
                                                             setShowClientResults(false);
                                                         }}
-                                                        className="p-3 hover:bg-indigo-50 cursor-pointer flex items-center gap-2 text-sm font-bold text-slate-700"
+                                                        className="p-3 hover:bg-slate-700/50 cursor-pointer flex items-center gap-2 text-sm font-bold text-slate-200"
                                                     >
-                                                        <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px]">👤</div>
+                                                        <div className="h-6 w-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-[10px]">👤</div>
                                                         {client.name}
                                                     </div>
                                                 )) : (
@@ -410,15 +410,15 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">דחיפות (Priority)</label>
-                                <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-200">
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">דחיפות (Priority)</label>
+                                <div className="flex glass-card rounded-xl p-1 border border-amber-500/20">
                                     {(["low", "medium", "high", "urgent"] as const).map((p) => (
                                         <button
                                             key={p}
                                             onClick={() => setPriority(p)}
                                             className={`flex-1 text-[10px] font-black py-2 rounded-lg transition-all ${priority === p
-                                                ? (p === 'urgent' ? 'bg-red-600 text-white shadow-md' : p === 'high' ? 'bg-red-500 text-white shadow-md shadow-red-200' : p === 'medium' ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-blue-500 text-white shadow-md shadow-blue-200')
-                                                : 'text-slate-400 hover:bg-white'
+                                                ? (p === 'urgent' ? 'bg-red-600 text-white shadow-md' : p === 'high' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : p === 'medium' ? 'bg-amber-500 text-slate-900 shadow-md shadow-amber-500/30' : 'bg-blue-500 text-white shadow-md shadow-blue-500/30')
+                                                : 'text-slate-400 hover:bg-slate-700/50'
                                                 }`}
                                         >
                                             {p === 'urgent' ? 'קריטי' : p === 'high' ? 'דחוף' : p === 'medium' ? 'רגיל' : 'נמוך'}
@@ -430,65 +430,65 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                     </div>
 
                     {/* Additional Fields */}
-                    <div className="border-t border-slate-200 pt-6">
-                        <h3 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
-                            <FileText size={16} className="text-slate-400" />
+                    <div className="border-t border-amber-500/20 pt-6">
+                        <h3 className="text-sm font-black text-amber-200 mb-4 flex items-center gap-2">
+                            <FileText size={16} className="text-amber-400" />
                             שדות נוספים (אופציונלי)
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-2">ת.ז לקוח</label>
+                                <label className="block text-xs font-bold text-slate-300 mb-2">ת.ז לקוח</label>
                                 <input
                                     type="text"
                                     value={idNumber}
                                     onChange={(e) => setIdNumber(e.target.value)}
                                     placeholder="123456789"
-                                    className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-2">מעסיק</label>
+                                <label className="block text-xs font-bold text-slate-300 mb-2">מעסיק</label>
                                 <input
                                     type="text"
                                     value={employerName}
                                     onChange={(e) => setEmployerName(e.target.value)}
                                     placeholder="שם המעסיק"
-                                    className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-2">סוכן</label>
+                                <label className="block text-xs font-bold text-slate-300 mb-2">סוכן</label>
                                 <input
                                     type="text"
                                     value={agentName}
                                     onChange={(e) => setAgentName(e.target.value)}
                                     placeholder="שם הסוכן"
-                                    className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                 />
                             </div>
                         </div>
                         <div className="mt-4">
-                            <label className="block text-xs font-bold text-slate-600 mb-2">הערות</label>
+                            <label className="block text-xs font-bold text-slate-300 mb-2">הערות</label>
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 rows={2}
                                 placeholder="הערות נוספות..."
-                                className="w-full bg-slate-50 border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none resize-none"
                             ></textarea>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-3xl flex justify-between items-center shrink-0">
+                <div className="p-6 border-t border-amber-500/20 bg-slate-800/50 rounded-b-3xl flex justify-between items-center shrink-0">
                     <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
                         <AlertTriangle size={12} className="text-amber-500" />
                         SLA יחושב אוטומטית משעת היעד
                     </p>
                     <div className="flex gap-3">
-                        <Button variant="ghost" onClick={onClose} className="text-slate-500 hover:text-slate-700">ביטול</Button>
-                        <Button onClick={handleSave} className="bg-indigo-600 text-white shadow-xl shadow-indigo-200 font-black px-8">שמור משימה</Button>
+                        <Button variant="ghost" onClick={onClose} className="text-slate-400 hover:text-slate-200">ביטול</Button>
+                        <Button onClick={handleSave} className="bg-amber-500 text-slate-900 shadow-xl shadow-amber-500/30 font-black px-8 hover:bg-amber-400">שמור משימה</Button>
                     </div>
                 </div>
 

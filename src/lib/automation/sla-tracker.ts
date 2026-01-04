@@ -107,6 +107,36 @@ export async function checkOverdueTasks(): Promise<Task[]> {
     }
 }
 
+// Track sent warnings to prevent duplicates (in-memory cache, resets on server restart)
+// For production, use Redis or Firestore to persist this
+const sentWarnings = new Set<string>();
+
+/**
+ * Check if a warning was already sent for this task
+ */
+function wasWarningSent(taskId: string): boolean {
+    return sentWarnings.has(taskId);
+}
+
+/**
+ * Mark warning as sent
+ */
+function markWarningSent(taskId: string): void {
+    sentWarnings.add(taskId);
+    
+    // Auto-cleanup after 24 hours to allow re-sending if still at risk
+    setTimeout(() => {
+        sentWarnings.delete(taskId);
+    }, 24 * 60 * 60 * 1000);
+}
+
+/**
+ * Clear warning tracking (useful for testing)
+ */
+export function clearWarningCache(): void {
+    sentWarnings.clear();
+}
+
 /**
  * Check tasks approaching SLA deadline and send warnings
  */
@@ -124,15 +154,15 @@ export async function checkSLAWarnings(): Promise<Task[]> {
             const { isAtRisk, hours } = calculateRemainingTime(task);
 
             if (isAtRisk) {
-                // Send warning notification (only once)
-                // Check if we already sent a warning (you'd need to track this)
-                if (task.assignedTo) {
+                // Only send notification if we haven't sent one already
+                if (task.assignedTo && !wasWarningSent(task.id)) {
                     await sendNotification(task.assignedTo, {
                         type: 'sla_warning',
                         title: 'אזהרת SLA',
                         message: `המשימה "${task.title}" תסתיים בעוד ${hours} שעות`,
                         taskId: task.id,
                     });
+                    markWarningSent(task.id);
                 }
 
                 atRiskTasks.push(task);
@@ -223,19 +253,18 @@ export async function getSLAReport(
 }
 
 /**
- * Initialize SLA monitoring (call on app start)
+ * @deprecated Use API route /api/cron/sla-check instead
+ * This function uses setInterval which doesn't work properly in Next.js serverless environment.
+ * 
+ * For production, set up a Cron job (Vercel Cron, GitHub Actions, etc.) 
+ * that calls: POST /api/cron/sla-check
  */
 export function initializeSLAMonitoring(): void {
-    // Run checks every 5 minutes
-    const interval = 5 * 60 * 1000; // 5 minutes
-
-    // Run immediately
+    console.warn(
+        "⚠️ initializeSLAMonitoring is deprecated. " +
+        "Use /api/cron/sla-check API route with external cron service instead."
+    );
+    
+    // Only run once on initialization, don't use setInterval
     runSLAChecks();
-
-    // Then run periodically
-    setInterval(() => {
-        runSLAChecks();
-    }, interval);
-
-    console.log("SLA monitoring initialized");
 }

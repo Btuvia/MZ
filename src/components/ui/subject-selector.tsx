@@ -27,7 +27,7 @@ export function SubjectSelector({
 
     return (
         <div className="relative">
-            <label className="block text-sm font-bold text-slate-700 mb-2">
+            <label className="block text-sm font-bold text-amber-200 mb-2">
                 נושא
                 {!value && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
             </label>
@@ -38,8 +38,8 @@ export function SubjectSelector({
                 disabled={disabled}
                 className={`w-full px-4 py-3 rounded-xl border-2 text-right flex items-center justify-between transition-all
           ${disabled
-                        ? 'bg-slate-50 border-slate-200 cursor-not-allowed'
-                        : 'bg-white border-slate-200 hover:border-indigo-300 cursor-pointer'
+                        ? 'glass-card border-slate-700 cursor-not-allowed'
+                        : 'glass-card border-amber-500/20 hover:border-amber-500/40 cursor-pointer'
                     }
         `}
             >
@@ -47,17 +47,17 @@ export function SubjectSelector({
                     <div className="flex items-center gap-3">
                         <div
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: selectedSubject.color ? `${selectedSubject.color}20` : '#f1f5f9' }}
+                            style={{ backgroundColor: selectedSubject.color ? `${selectedSubject.color}20` : '#1e293b' }}
                         >
                             <Tag
                                 size={20}
-                                style={{ color: selectedSubject.color || '#64748b' }}
+                                style={{ color: selectedSubject.color || '#94a3b8' }}
                             />
                         </div>
                         <div className="text-right">
-                            <div className="font-bold text-slate-800">{selectedSubject.name}</div>
+                            <div className="font-bold text-slate-200">{selectedSubject.name}</div>
                             {selectedSubject.description && (
-                                <div className="text-xs text-slate-500">{selectedSubject.description}</div>
+                                <div className="text-xs text-slate-400">{selectedSubject.description}</div>
                             )}
                         </div>
                     </div>
@@ -87,7 +87,7 @@ export function SubjectSelector({
                     />
 
                     {/* Dropdown */}
-                    <Card className="absolute z-20 w-full mt-2 max-h-96 overflow-y-auto shadow-2xl border-2 border-slate-200">
+                    <Card className="absolute z-20 w-full mt-2 max-h-96 overflow-y-auto shadow-2xl border-2 border-amber-500/20">
                         <div className="p-2 space-y-1">
                             {/* Clear option */}
                             {allowClear && value && (
@@ -98,11 +98,11 @@ export function SubjectSelector({
                                             onChange('');
                                             setIsOpen(false);
                                         }}
-                                        className="w-full px-3 py-2 rounded-lg text-right hover:bg-slate-50 border-2 border-transparent transition-all"
+                                        className="w-full px-3 py-2 rounded-lg text-right hover:bg-slate-700/50 border-2 border-transparent transition-all"
                                     >
                                         <span className="text-slate-400 text-sm">ללא נושא</span>
                                     </button>
-                                    <div className="border-t border-slate-100 my-1" />
+                                    <div className="border-t border-amber-500/20 my-1" />
                                 </>
                             )}
 
@@ -121,42 +121,42 @@ export function SubjectSelector({
                                         }}
                                         className={`w-full px-3 py-3 rounded-lg text-right flex items-center gap-3 transition-all
                       ${value === subject.id
-                                                ? 'bg-indigo-50 border-2 border-indigo-300'
-                                                : 'hover:bg-slate-50 border-2 border-transparent'
+                                                ? 'bg-amber-500/20 border-2 border-amber-500/40'
+                                                : 'hover:bg-slate-700/50 border-2 border-transparent'
                                             }
                     `}
                                     >
                                         <div
                                             className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                                            style={{ backgroundColor: subject.color ? `${subject.color}20` : '#f1f5f9' }}
+                                            style={{ backgroundColor: subject.color ? `${subject.color}20` : '#1e293b' }}
                                         >
                                             <Tag
                                                 size={20}
-                                                style={{ color: subject.color || '#64748b' }}
+                                                style={{ color: subject.color || '#94a3b8' }}
                                             />
                                         </div>
 
                                         <div className="flex-1 text-right">
-                                            <div className="font-bold text-slate-800 flex items-center gap-2">
+                                            <div className="font-bold text-slate-200 flex items-center gap-2">
                                                 {subject.name}
                                                 {subject.relatedToPolicy && (
-                                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
                                                         פוליסה
                                                     </span>
                                                 )}
                                                 {subject.isFutureLead && (
-                                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                                    <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
                                                         ליד
                                                     </span>
                                                 )}
                                             </div>
                                             {subject.description && (
-                                                <div className="text-xs text-slate-500">{subject.description}</div>
+                                                <div className="text-xs text-slate-400">{subject.description}</div>
                                             )}
                                         </div>
 
                                         {value === subject.id && (
-                                            <Check size={20} className="text-indigo-600 shrink-0" />
+                                            <Check size={20} className="text-amber-400 shrink-0" />
                                         )}
                                     </button>
                                 ))

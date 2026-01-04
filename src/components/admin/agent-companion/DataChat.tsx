@@ -12,7 +12,7 @@ interface Message {
 
 export default function DataChat() {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: 'שלום! אני ה-AI של הסוכנות. אתה יכול לשאול אותי שאלות על לקוחות, פוליסות, או לבקש ניתוח נתונים.' }
+        { role: 'assistant', content: 'שלום! שאל אותי על לקוחות, פוליסות או בקש ניתוח נתונים.' }
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -67,58 +67,61 @@ export default function DataChat() {
     }, []);
 
     return (
-        <Card className="bg-white border-none shadow-xl flex flex-col h-[500px] overflow-hidden rounded-[2rem] relative">
-            <div className="bg-indigo-600 p-4 flex items-center gap-3 shadow-lg z-10">
-                <div className="bg-white/20 p-2 rounded-xl text-white backdrop-blur-md">
-                    <Sparkles size={20} />
+        <Card className="bg-slate-900/90 backdrop-blur-xl border-indigo-500/30 shadow-xl flex flex-col h-[420px] overflow-hidden rounded-2xl relative">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-4 flex items-center gap-3 shadow-lg z-10 shrink-0">
+                <div className="bg-white/20 p-2 rounded-xl text-white backdrop-blur-md shrink-0">
+                    <Sparkles size={18} />
                 </div>
-                <div>
-                    <h3 className="font-black text-white text-lg leading-tight">עוזר אישי (Data Chat)</h3>
-                    <p className="text-indigo-200 text-xs font-medium">מחובר לבסיס הנתונים</p>
+                <div className="min-w-0">
+                    <h3 className="font-bold text-white text-sm leading-tight truncate">עוזר AI</h3>
+                    <p className="text-indigo-200 text-[10px] font-medium truncate">מחובר לנתונים</p>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50" ref={scrollRef}>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-900/50 custom-scrollbar" ref={scrollRef}>
                 {messages.map((m, i) => (
-                    <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
                         <div className={`
-                            w-8 h-8 rounded-full flex items-center justify-center shrink-0
-                            ${m.role === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}
+                            w-7 h-7 rounded-full flex items-center justify-center shrink-0
+                            ${m.role === 'user' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}
                         `}>
-                            {m.role === 'user' ? <User size={14} /> : <Bot size={14} />}
+                            {m.role === 'user' ? <User size={12} /> : <Bot size={12} />}
                         </div>
                         <div className={`
-                            p-3 rounded-2xl max-w-[80%] text-sm font-medium shadow-sm leading-relaxed
+                            p-2.5 rounded-xl max-w-[85%] text-xs font-medium shadow-sm leading-relaxed break-words
                             ${m.role === 'user'
-                                ? 'bg-white text-slate-800 rounded-tr-none border border-slate-100'
-                                : 'bg-indigo-600 text-white rounded-tl-none shadow-indigo-200'}
+                                ? 'bg-slate-800 text-slate-200 rounded-tr-sm border border-slate-700'
+                                : 'bg-indigo-600 text-white rounded-tl-sm'}
                         `}>
                             {m.content}
                         </div>
                     </div>
                 ))}
                 {isLoading && (
-                    <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                            <Bot size={14} />
+                    <div className="flex gap-2">
+                        <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                            <Bot size={12} />
                         </div>
-                        <div className="bg-indigo-600 text-white p-3 rounded-2xl rounded-tl-none shadow-indigo-200 flex items-center gap-1.5 h-10">
+                        <div className="bg-indigo-600 text-white p-2.5 rounded-xl rounded-tl-sm flex items-center gap-1 h-8">
                             <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce delay-75"></span>
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce delay-150"></span>
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:75ms]"></span>
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:150ms]"></span>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="p-4 bg-white border-t border-slate-100">
+            {/* Input */}
+            <div className="p-3 bg-slate-800/50 border-t border-slate-700/50 shrink-0">
                 <form
                     onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                    className="flex gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition-all"
+                    className="flex gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-700 focus-within:border-indigo-500 transition-all"
                 >
                     <input
-                        className="flex-1 bg-transparent border-none outline-none px-4 text-sm font-bold text-slate-700 placeholder:text-slate-400"
-                        placeholder="שאל אותי משהו..."
+                        className="flex-1 min-w-0 bg-transparent border-none outline-none px-3 text-xs font-medium text-slate-200 placeholder:text-slate-500"
+                        placeholder="שאל אותי..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                     />
@@ -126,9 +129,9 @@ export default function DataChat() {
                         type="submit"
                         size="sm"
                         disabled={isLoading || !input.trim()}
-                        className="rounded-full h-10 w-10 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shrink-0"
+                        className="rounded-lg h-8 w-8 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shrink-0 p-0 flex items-center justify-center"
                     >
-                        <Send size={16} />
+                        <Send size={14} />
                     </Button>
                 </form>
             </div>

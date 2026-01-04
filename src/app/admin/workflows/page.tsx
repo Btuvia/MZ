@@ -5,6 +5,7 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { Plus, Edit2, Trash2, GitBranch, Save, X, ChevronDown, ChevronUp, Layers, Clock, Target } from "lucide-react";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { handleError, showSuccess } from "@/lib/error-handler";
 import { Workflow, WorkflowStep } from "@/types/workflow";
 import { TaskType, UserRole } from "@/types";
 import { TASK_TYPES } from "@/lib/task-constants";
@@ -33,7 +34,7 @@ export default function WorkflowsPage() {
             const data = await firestoreService.getWorkflows();
             setWorkflows(data as Workflow[]);
         } catch (error) {
-            console.error("Failed to load workflows:", error);
+            handleError(error, { context: 'טעינת תהליכים' });
         } finally {
             setIsLoading(false);
         }
@@ -134,17 +135,18 @@ export default function WorkflowsPage() {
         try {
             if (editingWorkflow) {
                 await firestoreService.updateWorkflow(editingWorkflow.id, workflowData);
+                showSuccess('התהליך עודכן בהצלחה');
             } else {
                 await firestoreService.createWorkflow({
                     ...workflowData,
                     createdBy: "admin",
                 });
+                showSuccess('התהליך נוצר בהצלחה');
             }
             await loadWorkflows();
             setIsModalOpen(false);
         } catch (error) {
-            console.error("Failed to save workflow:", error);
-            alert("שגיאה בשמירת התהליך");
+            handleError(error, { context: 'שמירת תהליך' });
         }
     };
 
@@ -152,10 +154,10 @@ export default function WorkflowsPage() {
         if (confirm(`האם למחוק את התהליך "${workflow.name}"?`)) {
             try {
                 await firestoreService.deleteWorkflow(workflow.id);
+                showSuccess('התהליך נמחק בהצלחה');
                 await loadWorkflows();
             } catch (error) {
-                console.error("Failed to delete workflow:", error);
-                alert("שגיאה במחיקת התהליך");
+                handleError(error, { context: 'מחיקת תהליך' });
             }
         }
     };
@@ -165,9 +167,10 @@ export default function WorkflowsPage() {
             await firestoreService.updateWorkflow(workflow.id, {
                 isActive: !workflow.isActive
             });
+            showSuccess(workflow.isActive ? 'התהליך הושבת' : 'התהליך הופעל');
             await loadWorkflows();
         } catch (error) {
-            console.error("Failed to toggle workflow:", error);
+            handleError(error, { context: 'שינוי סטטוס תהליך' });
         }
     };
 

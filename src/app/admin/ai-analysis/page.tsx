@@ -55,11 +55,11 @@ export default function DocumentIntelligencePage() {
                     description: `הפוליסה בחברת ${policy.company} מסתיימת ב-${policy.expirationDate}. פרמיה נוכחית: ₪${policy.premium}. יש ליצור קשר לשימור/ניוד.`,
                     dueDate: Timestamp.fromDate(targetDate),
                     priority: "high",
-                    status: "todo",
-                    type: "sales",
+                    status: "new",
+                    type: "call",
                     assignedTo: "agent",
                     clientName: analysisResult.clientName
-                });
+                } as any);
                 tasksCreated++;
             }
 

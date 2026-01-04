@@ -58,15 +58,16 @@ export default function LeadSourcesPage() {
     };
 
     const handleSave = async () => {
-        if (!editingSource) return;
+        if (!editingSource || !editingSource.name) return;
 
         try {
             if ('id' in editingSource && editingSource.id) {
                 // Update existing
                 await firestoreService.updateLeadSource(editingSource.id, editingSource);
             } else {
-                // Add new
-                await firestoreService.addLeadSource(editingSource);
+                // Add new - name is guaranteed to exist from the check above
+                const dataWithName = editingSource as (Partial<LeadSource> & { name: string });
+                await firestoreService.addLeadSource(dataWithName);
             }
             await loadSources();
             setIsEditing(false);

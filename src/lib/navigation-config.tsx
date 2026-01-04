@@ -1,4 +1,4 @@
-import { LucideIcon, Home, Users, BarChart3, Calendar, Layers, ShieldCheck, UserCircle, Briefcase, Sparkles, GraduationCap, FileText, Settings, HelpCircle, MessageSquare, Wallet, Zap, Gift, Bot } from "lucide-react";
+import { LucideIcon, Home, Users, BarChart3, Calendar, Layers, ShieldCheck, UserCircle, Briefcase, Sparkles, GraduationCap, FileText, Settings, HelpCircle, MessageSquare, Wallet, Zap, Gift, Bot, CheckSquare, Mail, Upload, FileWarning, Scale } from "lucide-react";
 
 export interface NavItem {
     label: string;
@@ -12,9 +12,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     { label: "ניהול לקוחות", href: "/admin/clients", icon: <Users size={18} /> },
     { label: "סוכנים וצוותים", href: "/admin/users", icon: <UserCircle size={18} /> },
     { label: "ניהול לידים", href: "/admin/leads", icon: <Layers size={18} /> },
-    { label: "תהליכי מכירה", href: "/admin/sales", icon: <Briefcase size={18} /> },
+    { label: "תהליכי מכירה", href: "/admin/sales-visual", icon: <Briefcase size={18} /> },
+    { label: "מרכז משימות", href: "/admin/tasks", icon: <CheckSquare size={18} /> },
     { label: "יומן פעילות", href: "/admin/calendar", icon: <Calendar size={18} /> },
-    { label: "אנליטיקס ודוחות", href: "/admin/analytics", icon: <BarChart3 size={18} /> },
+    { label: "מרכז דוחות", href: "/admin/reports", icon: <BarChart3 size={18} /> },
+    { label: "מרכז אימיילים", href: "/admin/emails", icon: <Mail size={18} /> },
     { label: "מרכז תקשורת", href: "/admin/communication", icon: <MessageSquare size={18} /> },
     { label: "ניתוח מסמכים (AI)", href: "/admin/ai-analysis", icon: <FileText size={18} /> },
     { label: "ניהול מבצעים", href: "/admin/campaigns", icon: <Zap size={18} /> },
@@ -40,6 +42,9 @@ export const CLIENT_NAV_ITEMS: NavItem[] = [
     { label: "הפוליסות שלי", href: "/client/policies", icon: <ShieldCheck size={18} /> },
     { label: "חסכונות ופנסיה", href: "/client/savings", icon: <Wallet size={18} /> },
     { label: "מסמכים ואישורים", href: "/client/documents", icon: <FileText size={18} /> },
+    { label: "הגשת תביעה", href: "/client/claims", icon: <FileWarning size={18} /> },
+    { label: "השוואת מוצרים", href: "/client/compare", icon: <Scale size={18} /> },
+    { label: "צ'אט עם הסוכן", href: "/client/chat", icon: <MessageSquare size={18} /> },
     { label: "חבר מביא חבר", href: "/client/referral", icon: <Gift size={18} /> },
-    { label: "צור קשר", href: "/client/contact", icon: <MessageSquare size={18} /> },
+    { label: "צור קשר", href: "/client/contact", icon: <HelpCircle size={18} /> },
 ];

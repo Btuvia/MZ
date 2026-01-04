@@ -66,9 +66,9 @@ export default function ReferralPage() {
     const loadCollaborator = async () => {
         try {
             const collaborations = await firestoreService.getCollaborations();
-            const found = collaborations.find((c: any) => c.referralCode === code);
+            const found = collaborations.find((c) => c.referralCode === code);
             
-            if (found) {
+            if (found && found.id) {
                 setCollaborator({
                     id: found.id,
                     name: found.name,
@@ -148,7 +148,7 @@ export default function ReferralPage() {
                 updatedAt: new Date()
             };
 
-            await firestoreService.addClient(clientData);
+            await firestoreService.addClient(clientData as any);
             setSubmitted(true);
             toast.success("הפרטים נשלחו בהצלחה!");
         } catch (err) {

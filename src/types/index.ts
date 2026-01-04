@@ -1,5 +1,158 @@
 export type UserRole = 'admin' | 'agent' | 'client' | 'manager';
 
+// ============================================
+// SYSTEM USER (for authentication)
+// ============================================
+export interface SystemUser {
+    id: string;
+    uid: string;              // Firebase Auth UID
+    email: string;
+    displayName: string;
+    role: UserRole;
+    isActive: boolean;
+    avatarUrl?: string;
+    phone?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+    lastLoginAt?: Date;
+}
+
+// ============================================
+// COMMUNICATION TYPES
+// ============================================
+export type CommunicationType = 'call' | 'email' | 'sms' | 'meeting' | 'note' | 'whatsapp';
+
+export interface Communication {
+    id: string;
+    type: CommunicationType;
+    subject?: string;
+    content: string;
+    direction: 'inbound' | 'outbound';
+    status?: 'sent' | 'delivered' | 'read' | 'failed';
+    createdAt: Date;
+    createdBy: string;
+    createdByName?: string;
+    duration?: number; // For calls, in seconds
+    attachments?: string[];
+}
+
+// ============================================
+// CLIENT TASK REFERENCE
+// ============================================
+export interface ClientTaskRef {
+    id: string;
+    title: string;
+    status: string;
+    dueDate?: string;
+    priority?: string;
+}
+
+// ============================================
+// CONTACT REQUEST
+// ============================================
+export interface ContactRequest {
+    id?: string;
+    // Original fields
+    name?: string;
+    email?: string;
+    phone?: string;
+    subject?: string;
+    message?: string;
+    // Client portal fields
+    topic?: string;
+    scheduledTime?: string;
+    contactName?: string;
+    description?: string;
+    source?: string;
+    // Common
+    status?: 'new' | 'in_progress' | 'resolved' | 'closed';
+    createdAt?: Date;
+    assignedTo?: string;
+}
+
+// ============================================
+// FINANCIAL PRODUCT
+// ============================================
+export interface FinancialProduct {
+    id?: string;
+    clientId?: string;
+    name: string;
+    type: string;
+    company?: string;
+    description?: string;
+    commissionRate?: number;
+    isActive?: boolean;
+    // Additional fields used in savings page
+    accountNumber?: string;
+    balance?: string;
+    monthlyDeposit?: string;
+    employerContribution?: string;
+    returns?: string;
+    riskLevel?: string;
+    icon?: string;
+    color?: string;
+    details?: Record<string, unknown>;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+// ============================================
+// COLLABORATION
+// ============================================
+export type CollaborationType = 'סוכן' | 'נציג' | 'שיתוף פעולה';
+export type CollaborationStatus = 'טיוטה' | 'נשלח חוזה' | 'חתום' | 'פעיל' | 'מבוטל';
+
+export interface Collaboration {
+    id?: string;
+    name: string;
+    email: string;
+    phone?: string;
+    idNumber?: string;
+    type: CollaborationType;
+    terms?: string;
+    status: CollaborationStatus;
+    createdAt?: Date;
+    contractSentAt?: Date;
+    referralCode?: string;
+}
+
+// ============================================
+// ACTIVITY LOG
+// ============================================
+export interface ActivityLogEntry {
+    id?: string;
+    entityType: 'client' | 'lead' | 'task' | 'deal' | 'workflow' | 'user';
+    entityId: string;
+    userId: string;
+    userName?: string;
+    action: string;
+    details?: Record<string, unknown>;
+    createdAt?: Date;
+}
+
+// ============================================
+// USER PREFERENCES
+// ============================================
+export interface UserPreferences {
+    id?: string;
+    userId: string;
+    theme?: 'light' | 'dark' | 'system';
+    language?: string;
+    notifications?: {
+        email: boolean;
+        push: boolean;
+        sms: boolean;
+    };
+    dashboardLayout?: string[];
+    defaultView?: string;
+    timezone?: string;
+    fcmTokens?: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
+    // Allow additional properties
+    [key: string]: unknown;
+}
+
 export type SalesStatus =
     | 'new_lead'
     | 'contacted'
@@ -85,12 +238,14 @@ export interface Client {
     familyConnections: FamilyConnection[];
     policies: Policy[];
     documents: ClientDocument[];
-    communications: any[]; // To be defined
-    tasks: any[]; // To be defined
+    communications: Communication[];
+    tasks: ClientTaskRef[];
     notes: string[];
     tags: string[];
     aiRecommendations: string[];
     dataQualityScore: number;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export interface Employee {
@@ -237,6 +392,52 @@ export interface Task {
 
     // Backward compatibility
     completed: boolean;              // Mapped to status === 'completed'
+}
+
+// ============================================
+// LEAD TYPES
+// ============================================
+
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'won' | 'lost';
+
+export interface Lead {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    source?: string;
+    status: LeadStatus;
+    score?: number;
+    assignedTo?: string;
+    assignedToName?: string;
+    notes?: string;
+    lastContact?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+// ============================================
+// DEAL TYPES
+// ============================================
+
+export type DealStage = 'discovery' | 'proposal' | 'negotiation' | 'contract' | 'closed_won' | 'closed_lost';
+
+export interface Deal {
+    id: string;
+    title: string;
+    clientId?: string;
+    clientName?: string;
+    leadId?: string;
+    value: number;
+    stage: DealStage;
+    probability: number;
+    expectedCloseDate?: string;
+    assignedTo?: string;
+    assignedToName?: string;
+    notes?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 // View preferences

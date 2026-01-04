@@ -56,14 +56,14 @@ export default function SalesPage() {
         const client = prompt("שם הלקוח:");
         if (!client) return;
         const newDeal = {
-            client,
-            product: "מוצר כללי",
-            value: "5000",
+            title: `עסקה - ${client}`,
+            clientName: client,
+            value: 5000,
             probability: 50,
-            stage: "lead",
-            createdAt: new Date().toISOString()
+            stage: "discovery" as const,
+            createdAt: new Date()
         };
-        const id = await firestoreService.addDeal(newDeal);
+        const id = await firestoreService.addDeal(newDeal as any);
         setDeals(prev => [...prev, { ...newDeal, id }]);
     };
 
@@ -78,7 +78,7 @@ export default function SalesPage() {
 
         // Optimistic
         setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: newStage } : d));
-        await firestoreService.updateDeal(deal.id, { stage: newStage });
+        await firestoreService.updateDeal(deal.id, { stage: newStage } as any);
     };
 
     const totalValue = deals.reduce((sum, deal) => sum + Number(deal.value || 0), 0);

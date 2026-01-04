@@ -1,11 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import IntegrationCard from "@/components/admin/integrations/IntegrationCard";
-import { Zap, Plug, ShieldCheck, Share2, Phone, Mail, Calendar as CalendarIcon, MessageCircle } from "lucide-react";
+import { Zap, Plug, ShieldCheck, Share2, Phone, Mail, Calendar as CalendarIcon, MessageCircle, CheckCircle } from "lucide-react";
+import { useGoogleCalendar } from "@/lib/hooks/useGoogleCalendar";
+import { toast } from "sonner";
 
 export default function IntegrationsPage() {
+    const searchParams = useSearchParams();
+    const { isConnected: calendarConnected, syncStatus, connect: connectCalendar, disconnect: disconnectCalendar, syncNow } = useGoogleCalendar();
+    const [showCalendarSuccess, setShowCalendarSuccess] = useState(false);
+
+    // Check for calendar connection callback
+    useEffect(() => {
+        if (searchParams.get('calendar') === 'connected') {
+            setShowCalendarSuccess(true);
+            toast.success('היומן חובר בהצלחה! הסנכרון יבוצע אוטומטית בכל התחברות.');
+            setTimeout(() => setShowCalendarSuccess(false), 5000);
+        }
+        if (searchParams.get('error')) {
+            toast.error(searchParams.get('error') || 'שגיאה בחיבור');
+        }
+    }, [searchParams]);
+
+    const handleCalendarAction = () => {
+        if (calendarConnected) {
+            if (confirm('האם אתה בטוח שברצונך לנתק את היומן?')) {
+                disconnectCalendar();
+                toast.success('היומן נותק בהצלחה');
+            }
+        } else {
+            connectCalendar();
+        }
+    };
+
     const integrations = [
         {
             id: "whatsapp",
@@ -27,11 +58,20 @@ export default function IntegrationsPage() {
         {
             id: "calendar",
             name: "Google Calendar",
-            description: "ניהול פגישות, תזמון אוטומטי ומניעת התנגשויות ביומן הסוכן.",
+            description: "ניהול פגישות, תזמון אוטומטי ומניעת התנגשויות ביומן הסוכן. מסתנכרן אוטומטית בכל כניסה למערכת.",
             icon: <CalendarIcon />,
-            status: "connected" as const,
-            lastSync: "היום, 09:45",
+            status: calendarConnected ? "connected" as const : "disconnected" as const,
+            lastSync: syncStatus?.lastSync ? new Date(syncStatus.lastSync).toLocaleString('he-IL', { 
+                day: 'numeric', 
+                month: 'short', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) : undefined,
             color: "bg-blue-500",
+            onAction: handleCalendarAction,
+            actionLabel: calendarConnected ? "נתק" : "חבר עכשיו",
+            onSync: calendarConnected ? syncNow : undefined,
+            eventsCount: syncStatus?.eventsCount
         },
         {
             id: "voip",
@@ -59,6 +99,8 @@ export default function IntegrationsPage() {
         },
     ];
 
+    const activeCount = integrations.filter(i => i.status === 'connected' || i.status === 'syncing').length;
+
     return (
         <DashboardShell role="אדמין" navItems={ADMIN_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
@@ -74,9 +116,20 @@ export default function IntegrationsPage() {
                     </div>
                     <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
                         <Zap size={16} />
-                        <span>3 אינטגרציות פעילות</span>
+                        <span>{activeCount} אינטגרציות פעילות</span>
                     </div>
                 </div>
+
+                {/* Calendar Success Banner */}
+                {showCalendarSuccess && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 animate-in slide-in-from-top duration-300">
+                        <CheckCircle className="text-emerald-600" size={24} />
+                        <div>
+                            <p className="font-bold text-emerald-800">היומן חובר בהצלחה!</p>
+                            <p className="text-sm text-emerald-600">הסנכרון יתבצע אוטומטית בכל פעם שתתחבר למערכת.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
