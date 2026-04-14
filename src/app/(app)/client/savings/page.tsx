@@ -5,12 +5,14 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState, useEffect } from "react";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { PENSION_OPERATIONS_STATUSES } from "@/lib/pension-statuses";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function SavingsPage() {
     const [selectedPension, setSelectedPension] = useState<number | null>(null);
     const { user } = useAuth(); // Assuming AuthContext provides 'user'
     const [pensionAccounts, setPensionAccounts] = useState<any[]>([]);
+    const [statusLoading, setStatusLoading] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -242,6 +244,34 @@ export default function SavingsPage() {
                                                             </div>
                                                         ))}
                                                     </div>
+                                                </div>
+                                            </div>
+
+                                            {/* סטטוסי תפעול פנסיוניים */}
+                                            <div className="mt-8">
+                                                <h4 className="text-sm font-black text-primary mb-2 flex items-center gap-2">
+                                                    <span className="text-accent">⚙️</span> סטטוס תפעול פנסיוני
+                                                </h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {PENSION_OPERATIONS_STATUSES.map((status) => (
+                                                        <button
+                                                            key={status.value}
+                                                            className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all ${account.operationsStatus === status.value ? 'bg-primary text-white border-primary' : 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-primary/10'}`}
+                                                            disabled={statusLoading === account.id + status.value}
+                                                            onClick={async () => {
+                                                                setStatusLoading(account.id + status.value);
+                                                                try {
+                                                                    await firestoreService.updateFinancialProduct(account.id, { operationsStatus: status.value });
+                                                                    setPensionAccounts((prev: any[]) => prev.map((a) => a.id === account.id ? { ...a, operationsStatus: status.value } : a));
+                                                                } finally {
+                                                                    setStatusLoading(null);
+                                                                }
+                                                            }}
+                                                        >
+                                                            {status.label}
+                                                            {account.operationsStatus === status.value && ' ✓'}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>

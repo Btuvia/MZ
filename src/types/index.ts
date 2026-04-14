@@ -92,6 +92,7 @@ export interface FinancialProduct {
     icon?: string;
     color?: string;
     details?: Record<string, unknown>;
+    operationsStatus?: OperationsStatus; // סטטוס תפעול פנסיוני ייחודי לכל מוצר
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -162,8 +163,16 @@ export type SalesStatus =
     | 'closed_won'
     | 'closed_lost';
 
+// סטטוסי תפעול פנסיוניים
 export type OperationsStatus =
-    | 'sent_to_company'
+    | 'sent_to_company'                // נשלח לחברה
+    | 'missing_documents'              // חוסרים
+    | 'awaiting_first_premium'         // ממתין לפרמיה ראשונה
+    | 'archived'                       // גניזה
+    | 'stopped_by_client'              // תהליך הופסק מצד לקוח
+    | 'stopped_by_company'             // תהליך הופסק מצד חברה
+    | 'active_pension'                 // פנסיה פעילה
+    // סטטוסים כלליים נוספים
     | 'needs_signatures'
     | 'needs_medical_info'
     | 'pending_approval'

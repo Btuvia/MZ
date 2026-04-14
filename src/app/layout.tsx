@@ -1,12 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
-import { LogoLoader } from "@/components/LogoLoader";
-import { PWAProvider } from "@/components/pwa/PWAProvider";
-import { ConfirmationProvider } from "@/components/ui/ConfirmationDialog";
-import { AuthProvider } from "@/lib/contexts/AuthContext";
-import { QueryProvider } from "@/lib/contexts/QueryProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,17 +52,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="מגן זהב" />
       </head>
       <body className="font-sans antialiased text-slate-900 selection:bg-accent/10 selection:text-accent overflow-x-hidden">
-        <QueryProvider>
-          <AuthProvider>
-            <PWAProvider>
-              <ConfirmationProvider>
-                <LogoLoader />
-                {children}
-                <Toaster richColors position="top-center" closeButton dir="rtl" />
-              </ConfirmationProvider>
-            </PWAProvider>
-          </AuthProvider>
-        </QueryProvider>
+        {children}
       </body>
     </html>
   );
