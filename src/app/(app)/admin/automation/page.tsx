@@ -228,7 +228,7 @@ export default function AutomationHubPage() {
                         </Card>
 
                         {/* Quick Tips */}
-                        <Card className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-none shadow-lg p-6 relative overflow-hidden">
+                        <Card className="bg-linear-to-br from-indigo-600 to-purple-700 text-white border-none shadow-lg p-6 relative overflow-hidden">
                             <div className="relative z-10">
                                 <h4 className="font-black text-lg mb-2">💡 טיפ אוטומציה</h4>
                                 <p className="text-indigo-100 text-sm mb-4">

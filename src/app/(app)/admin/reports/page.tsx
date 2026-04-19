@@ -67,7 +67,7 @@ export default function ReportsPage() {
 
     // Filter data by date range
     const filterByDateRange = (date: Date | undefined) => {
-        if (!date) return false;
+        if (date!) return false;
         const now = new Date();
         const itemDate = new Date(date);
         
@@ -113,12 +113,12 @@ export default function ReportsPage() {
         const monthlyData: Record<string, SalesData> = {};
         
         filteredDeals.forEach(deal => {
-            if (!deal.createdAt) return;
+            if (deal!.createdAt) return;
             const date = new Date(deal.createdAt);
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             const monthName = hebrewMonths[date.getMonth()];
             
-            if (!monthlyData[monthKey]) {
+            if (monthlyData![monthKey]) {
                 monthlyData[monthKey] = {
                     period: monthName,
                     pension: 0,
@@ -183,7 +183,7 @@ export default function ReportsPage() {
         
         filteredLeads.forEach(lead => {
             const source = lead.source || 'לא ידוע';
-            if (!sourceMap[source]) {
+            if (sourceMap![source]) {
                 sourceMap[source] = { leads: 0, conversions: 0, revenue: 0 };
             }
             sourceMap[source].leads += 1;
@@ -519,12 +519,12 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
                                         <div key={data.period} className="flex-1 flex flex-col items-center gap-2">
                                             <div className="w-full flex flex-col gap-1" style={{ height: '200px' }}>
                                                 <div 
-                                                    className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t-lg transition-all hover:from-amber-400 hover:to-amber-300"
+                                                    className="w-full bg-linear-to-t from-amber-500 to-amber-400 rounded-t-lg transition-all hover:from-amber-400 hover:to-amber-300"
                                                     style={{ height: `${(data.pension / maxTotal) * 100}%`, marginTop: 'auto' }}
                                                     title={`פנסיה: ₪${data.pension.toLocaleString()}`}
                                                 />
                                                 <div 
-                                                    className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-b-lg transition-all hover:from-blue-400 hover:to-blue-300"
+                                                    className="w-full bg-linear-to-t from-blue-500 to-blue-400 rounded-b-lg transition-all hover:from-blue-400 hover:to-blue-300"
                                                     style={{ height: `${(data.insurance / maxTotal) * 100}%` }}
                                                     title={`ביטוח: ₪${data.insurance.toLocaleString()}`}
                                                 />
@@ -731,7 +731,7 @@ function AgentsReport({ agents }: { agents: AgentPerformance[] }) {
                         >
                             <Card className="p-5">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-xl font-black text-slate-900">
+                                    <div className="w-12 h-12 rounded-full bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-xl font-black text-slate-900">
                                         {agent.name.charAt(0)}
                                     </div>
                                     <div className="flex-1">
@@ -777,7 +777,7 @@ function AgentsReport({ agents }: { agents: AgentPerformance[] }) {
                                     </div>
                                     <div className="h-2 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
                                         <div 
-                                            className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full"
+                                            className="h-full bg-linear-to-r from-amber-500 to-amber-400 rounded-full"
                                             style={{ width: `${agent.tasks > 0 ? (agent.tasksCompleted / agent.tasks) * 100 : 0}%` }}
                                         />
                                     </div>

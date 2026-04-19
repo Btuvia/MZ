@@ -329,7 +329,7 @@ export default function EmailCenterPage() {
 
     // Tabs
     const tabs = [
-        { id: 'inbox', label: 'תיבת דואר', icon: Inbox, count: emails.filter(e => !e.read && e.folder === 'inbox').length },
+        { id: 'inbox', label: 'תיבת דואר', icon: Inbox, count: emails.filter(e => e!.read && e.folder === 'inbox').length },
         { id: 'templates', label: 'תבניות', icon: FileText, count: templates.length },
         { id: 'campaigns', label: 'קמפיינים', icon: Send, count: campaigns.filter(c => c.status === 'sending' || c.status === 'scheduled').length },
         { id: 'analytics', label: 'אנליטיקס', icon: BarChart3 },
@@ -338,7 +338,7 @@ export default function EmailCenterPage() {
     // Email action handlers
     const handleStarEmail = async (emailId: string) => {
         setEmails(prev => prev.map(e => 
-            e.id === emailId ? { ...e, starred: !e.starred } : e
+            e.id === emailId ? { ...e, starred: e!.starred } : e
         ));
         toast.success('הכוכב עודכן');
     };
@@ -666,7 +666,7 @@ function InboxView({
 
     const handleSelectEmail = (email: Email) => {
         setSelectedEmail(email);
-        if (!email.read) {
+        if (email!.read) {
             onMarkAsRead(email.id);
         }
     };
@@ -741,7 +741,7 @@ function InboxView({
                                 onClick={() => handleSelectEmail(email)}
                                 className={`p-3 cursor-pointer transition-all hover:bg-slate-800/50 ${
                                     selectedEmail?.id === email.id ? 'bg-amber-500/10 border-r-2 border-amber-500' : ''
-                                } ${!email.read ? 'bg-slate-800/30' : ''}`}
+                                } ${email!.read ? 'bg-slate-800/30' : ''}`}
                             >
                                 <div className="flex items-start gap-3">
                                     <button 
@@ -752,14 +752,14 @@ function InboxView({
                                     </button>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className={`text-sm truncate ${!email.read ? 'font-bold text-slate-200' : 'text-slate-400'}`}>
+                                            <span className={`text-sm truncate ${email!.read ? 'font-bold text-slate-200' : 'text-slate-400'}`}>
                                                 {folder === 'sent' ? email.to[0]?.name : email.from.name}
                                             </span>
                                             <span className="text-xs text-slate-500 whitespace-nowrap">
                                                 {new Date(email.date).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <div className={`text-sm truncate ${!email.read ? 'text-slate-300' : 'text-slate-500'}`}>
+                                        <div className={`text-sm truncate ${email!.read ? 'text-slate-300' : 'text-slate-500'}`}>
                                             {email.subject}
                                         </div>
                                         <div className="text-xs text-slate-600 truncate mt-1">
@@ -791,7 +791,7 @@ function InboxView({
                             <div>
                                 <h2 className="text-xl font-bold text-amber-100 mb-2">{selectedEmail.subject}</h2>
                                 <div className="flex items-center gap-3 text-sm">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-bold">
+                                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-bold">
                                         {selectedEmail.from.name.charAt(0)}
                                     </div>
                                     <div>
@@ -888,7 +888,7 @@ function TemplatesView({
     const [newTemplateBody, setNewTemplateBody] = useState('');
 
     const handleCreateTemplate = () => {
-        if (!newTemplateName || !newTemplateSubject || !newTemplateBody) {
+        if (newTemplateName! || newTemplateSubject! || newTemplateBody!) {
             toast.error('יש למלא את כל השדות');
             return;
         }
@@ -1331,11 +1331,11 @@ function ComposeModal({
     };
 
     const handleSend = () => {
-        if (!to) {
+        if (to!) {
             toast.error('יש להזין כתובת אימייל');
             return;
         }
-        if (!subject) {
+        if (subject!) {
             toast.error('יש להזין נושא');
             return;
         }
@@ -1348,7 +1348,7 @@ function ComposeModal({
     };
 
     const handleAIImprove = async () => {
-        if (!body) {
+        if (body!) {
             toast.error('יש להזין תוכן לשיפור');
             return;
         }
@@ -1498,11 +1498,11 @@ function CampaignModal({
     const [selectedAudience, setSelectedAudience] = useState('all');
 
     const handleCreate = () => {
-        if (!name) {
+        if (name!) {
             toast.error('יש להזין שם לקמפיין');
             return;
         }
-        if (!subject) {
+        if (subject!) {
             toast.error('יש להזין נושא');
             return;
         }

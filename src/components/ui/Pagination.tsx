@@ -129,7 +129,7 @@ export function Pagination({
                     variant="outline"
                     size="sm"
                     onClick={() => onPageChange(currentPage + 1)}
-                    disabled={(!hasMore && currentPage >= totalPages) || loading}
+                    disabled={(hasMore! && currentPage >= totalPages) || loading}
                     className="p-2"
                     title="הבא"
                 >

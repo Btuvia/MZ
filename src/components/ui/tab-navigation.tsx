@@ -37,7 +37,7 @@ export function TabNavigation({
         switch (variant) {
             case 'pills':
                 return `${baseClasses} rounded-full ${isActive
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900'
+                        ? 'bg-linear-to-r from-amber-500 to-amber-400 text-slate-900'
                         : 'glass-card text-slate-300 hover:text-amber-200 hover:border-amber-500/30'
                     }`;
 
@@ -64,7 +64,7 @@ export function TabNavigation({
             {tabs.map((tab) => (
                 <button
                     key={tab.id}
-                    onClick={() => !tab.disabled && onTabChange(tab.id)}
+                    onClick={() => tab!.disabled && onTabChange(tab.id)}
                     disabled={tab.disabled}
                     className={getTabClasses(tab)}
                 >

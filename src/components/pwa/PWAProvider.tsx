@@ -26,7 +26,7 @@ export function PWAProvider({ children }: PWAProviderProps) {
 
     // Show notification prompt after login for admin/agent
     useEffect(() => {
-        if (!user || !role) return;
+        if (user! || role!) return;
         if (role !== 'admin' && role !== 'agent') return;
 
         // Check if already dismissed

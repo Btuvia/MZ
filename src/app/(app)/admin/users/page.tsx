@@ -118,7 +118,7 @@ export default function UserManagementPage() {
     };
 
     const handleSaveUser = () => {
-        if (!formData.firstName || !formData.lastName || !formData.email) return;
+        if (formData!.firstName || formData!.lastName || formData!.email) return;
 
         if (editingUser) {
             // Edit existing (Not implemented fully on backend yet)
@@ -226,7 +226,7 @@ export default function UserManagementPage() {
     };
 
     const handleSaveCollab = async () => {
-        if (!collabFormData.name || !collabFormData.email) {
+        if (collabFormData!.name || collabFormData!.email) {
             toast.error("שם ואימייל הם שדות חובה");
             return;
         }
@@ -281,7 +281,7 @@ export default function UserManagementPage() {
 
     const generateAndSendContract = async (collab: Collaboration) => {
         // Validate required fields for contract
-        if (!collab.phone || !collab.idNumber || !collab.terms) {
+        if (collab!.phone || collab!.idNumber || collab!.terms) {
             toast.error("יש למלא טלפון, תעודת זהות ותנאים לפני שליחת החוזה");
             openCollabModal(collab);
             return;
@@ -294,7 +294,7 @@ export default function UserManagementPage() {
             const dateStr = today.toLocaleDateString('he-IL');
             
             const contractHtml = `
-                <!DOCTYPE html>
+                <DOCTYPE! html>
                 <html dir="rtl" lang="he">
                 <head>
                     <meta charset="UTF-8">
@@ -413,7 +413,7 @@ export default function UserManagementPage() {
     // Generate referral code and URL
     const generateReferralCode = async (collab: Collaboration) => {
         // Generate unique code if not exists
-        if (!collab.referralCode) {
+        if (collab!.referralCode) {
             const code = `REF-${collab.id.substring(0, 6).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
             await firestoreService.updateCollaboration(collab.id, { referralCode: code });
             collab.referralCode = code;
@@ -465,7 +465,7 @@ export default function UserManagementPage() {
         const byMonth: { [key: string]: { count: number; premium: number } } = {};
         leads.forEach(lead => {
             const month = new Date(lead.createdAt).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
-            if (!byMonth[month]) byMonth[month] = { count: 0, premium: 0 };
+            if (byMonth![month]) byMonth[month] = { count: 0, premium: 0 };
             byMonth[month].count++;
             if (lead.closedPremium) byMonth[month].premium += lead.closedPremium;
         });
@@ -474,7 +474,7 @@ export default function UserManagementPage() {
         const byCompany: { [key: string]: { count: number; premium: number } } = {};
         closedLeads.forEach(lead => {
             const company = lead.company || 'לא ידוע';
-            if (!byCompany[company]) byCompany[company] = { count: 0, premium: 0 };
+            if (byCompany![company]) byCompany[company] = { count: 0, premium: 0 };
             byCompany[company].count++;
             byCompany[company].premium += lead.closedPremium || 0;
         });
@@ -510,7 +510,7 @@ export default function UserManagementPage() {
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
@@ -547,7 +547,7 @@ export default function UserManagementPage() {
                         onClick={() => setActiveTab('agents')}
                         className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
                             activeTab === 'agents'
-                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
+                                ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
                                 : 'text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -558,7 +558,7 @@ export default function UserManagementPage() {
                         onClick={() => setActiveTab('collaborations')}
                         className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
                             activeTab === 'collaborations'
-                                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
+                                ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
                                 : 'text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -577,7 +577,7 @@ export default function UserManagementPage() {
                                 { label: "סוכנים", value: stats.agents, icon: "💼", color: "from-emerald-600 to-teal-700" },
                                 { label: "לקוחות", value: stats.clients, icon: "🤝", color: "from-amber-500 to-orange-600" }
                             ].map((stat, i) => (
-                                <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform`}>
+                                <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform`}>
                                     <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                                     <div className="relative z-10">
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -636,7 +636,7 @@ export default function UserManagementPage() {
                                     <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-md group-hover:scale-110 transition-transform">
+                                                <div className="h-10 w-10 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-md group-hover:scale-110 transition-transform">
                                                     {(user.firstName?.[0] || "") + (user.lastName?.[0] || "")}
                                                 </div>
                                                 <div>
@@ -712,7 +712,7 @@ export default function UserManagementPage() {
                                 { label: "חוזים שנשלחו", value: collaborations.filter(c => c.status === 'נשלח חוזה').length, icon: "📧", color: "from-amber-500 to-orange-600" },
                                 { label: "פעילים", value: collaborations.filter(c => c.status === 'פעיל').length, icon: "✅", color: "from-emerald-500 to-teal-600" }
                             ].map((stat, i) => (
-                                <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform`}>
+                                <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform`}>
                                     <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                                     <div className="relative z-10">
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -728,7 +728,7 @@ export default function UserManagementPage() {
                                 <Card key={collab.id} className="border-none shadow-lg bg-white p-6 group hover:-translate-y-1 transition-all">
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md">
+                                            <div className="h-12 w-12 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md">
                                                 <Handshake size={24} />
                                             </div>
                                             <div>
@@ -828,7 +828,7 @@ export default function UserManagementPage() {
                                     <h3 className="text-xl font-black text-slate-900 mb-2">אין שיתופי פעולה עדיין</h3>
                                     <p className="text-slate-500 mb-6">התחל להוסיף שיתופי פעולה חדשים</p>
                                     <Button 
-                                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg gap-2"
+                                        className="bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-lg gap-2"
                                         onClick={() => openCollabModal()}
                                     >
                                         <Handshake size={18} />
@@ -844,7 +844,7 @@ export default function UserManagementPage() {
             {/* Add/Edit Modal */}
             {isModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-purple-500 to-indigo-500" />
+                        <div className="absolute top-0 right-0 w-full h-2 bg-linear-to-r from-purple-500 to-indigo-500" />
                         <h3 className="text-2xl font-black font-display text-slate-900 mb-6">
                             {editingUser ? "עריכת משתמש" : "הוספת משתמש חדש"}
                         </h3>
@@ -932,7 +932,7 @@ export default function UserManagementPage() {
             {/* Collaboration Modal */}
             {isCollabModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
+                        <div className="absolute top-0 right-0 w-full h-2 bg-linear-to-r from-indigo-500 to-purple-500" />
                         
                         <button 
                             onClick={closeCollabModal}
@@ -942,7 +942,7 @@ export default function UserManagementPage() {
                         </button>
 
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                            <div className="h-12 w-12 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
                                 <Handshake size={24} />
                             </div>
                             <div>
@@ -1088,7 +1088,7 @@ export default function UserManagementPage() {
                         </button>
 
                         <div className="text-center">
-                            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white mx-auto mb-4">
+                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white mx-auto mb-4">
                                 <QrCode size={32} />
                             </div>
                             <h3 className="text-2xl font-black text-slate-900 mb-2">קוד הפניה</h3>
@@ -1152,7 +1152,7 @@ export default function UserManagementPage() {
                         </button>
 
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg">
+                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg">
                                 <Users size={32} />
                             </div>
                             <div>
@@ -1167,15 +1167,15 @@ export default function UserManagementPage() {
                                 <>
                                     {/* Stats Cards */}
                                     <div className="grid grid-cols-3 gap-4 mb-8">
-                                        <Card className="border-none bg-gradient-to-br from-blue-500 to-indigo-600 p-5 text-white">
+                                        <Card className="border-none bg-linear-to-br from-blue-500 to-indigo-600 p-5 text-white">
                                             <p className="text-xs font-bold text-white/70 mb-1">סה״כ לידים</p>
                                             <p className="text-3xl font-black">{stats.totalLeads}</p>
                                         </Card>
-                                        <Card className="border-none bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white">
+                                        <Card className="border-none bg-linear-to-br from-emerald-500 to-teal-600 p-5 text-white">
                                             <p className="text-xs font-bold text-white/70 mb-1">נסגרו בהצלחה</p>
                                             <p className="text-3xl font-black">{stats.closedLeads}</p>
                                         </Card>
-                                        <Card className="border-none bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white">
+                                        <Card className="border-none bg-linear-to-br from-amber-500 to-orange-600 p-5 text-white">
                                             <p className="text-xs font-bold text-white/70 mb-1">סה״כ פרמיה</p>
                                             <p className="text-3xl font-black">₪{stats.totalPremium.toLocaleString()}</p>
                                         </Card>

@@ -451,6 +451,49 @@ export const firestoreService = {
         await deleteDoc(doc(db, "tasks", id));
     },
 
+    /**
+     * Get tasks with pagination support
+     */
+    async getTasksPaginated(options: PaginationOptions = {}): Promise<PaginatedResult<Task>> {
+        const {
+            pageSize = DEFAULT_PAGE_SIZE,
+            lastDoc = null,
+            orderByField = 'createdAt',
+            orderDirection = 'desc'
+        } = options;
+
+        try {
+            let q = query(
+                collection(db, "tasks"),
+                orderBy(orderByField, orderDirection),
+                limit(pageSize + 1)
+            );
+
+            if (lastDoc) {
+                q = query(
+                    collection(db, "tasks"),
+                    orderBy(orderByField, orderDirection),
+                    startAfter(lastDoc),
+                    limit(pageSize + 1)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+            const docs = querySnapshot.docs;
+            const hasMore = docs.length > pageSize;
+            const resultDocs = hasMore ? docs.slice(0, pageSize) : docs;
+
+            return {
+                data: resultDocs.map(doc => ({ id: doc.id, ...doc.data() } as Task)),
+                lastDoc: resultDocs.length > 0 ? resultDocs[resultDocs.length - 1] : null,
+                hasMore
+            };
+        } catch (error) {
+            console.error("Error fetching paginated tasks:", error);
+            return { data: [], lastDoc: null, hasMore: false };
+        }
+    },
+
     // --- Leads ---
 
     async getLeads(): Promise<Lead[]> {
@@ -537,6 +580,49 @@ export const firestoreService = {
         await deleteDoc(doc(db, "leads", id));
     },
 
+    /**
+     * Get leads with pagination support
+     */
+    async getLeadsPaginated(options: PaginationOptions = {}): Promise<PaginatedResult<Lead>> {
+        const {
+            pageSize = DEFAULT_PAGE_SIZE,
+            lastDoc = null,
+            orderByField = 'createdAt',
+            orderDirection = 'desc'
+        } = options;
+
+        try {
+            let q = query(
+                collection(db, "leads"),
+                orderBy(orderByField, orderDirection),
+                limit(pageSize + 1)
+            );
+
+            if (lastDoc) {
+                q = query(
+                    collection(db, "leads"),
+                    orderBy(orderByField, orderDirection),
+                    startAfter(lastDoc),
+                    limit(pageSize + 1)
+                );
+            }
+
+            const querySnapshot = await getDocs(q);
+            const docs = querySnapshot.docs;
+            const hasMore = docs.length > pageSize;
+            const resultDocs = hasMore ? docs.slice(0, pageSize) : docs;
+
+            return {
+                data: resultDocs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)),
+                lastDoc: resultDocs.length > 0 ? resultDocs[resultDocs.length - 1] : null,
+                hasMore
+            };
+        } catch (error) {
+            console.error("Error fetching paginated leads:", error);
+            return { data: [], lastDoc: null, hasMore: false };
+        }
+    },
+
     // --- Create Sales/Deals ---
 
     async getDeals(): Promise<Deal[]> {
@@ -594,6 +680,14 @@ export const firestoreService = {
             updatedAt: Timestamp.now()
         });
         return docRef.id;
+    },
+
+    async updateFinancialProduct(id: string, data: Partial<FinancialProduct>) {
+        const docRef = doc(db, "financial_products", id);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: Timestamp.now()
+        });
     },
 
     // --- Lead Statuses ---
@@ -1429,4 +1523,81 @@ export const firestoreService = {
     async deleteCampaign(id: string): Promise<void> {
         await deleteDoc(doc(db, "campaigns", id));
     },
+
+    // --- Agency Management ---
+
+    async getAgencies(): Promise<import('@/types').AgencyRecord[]> {
+        const querySnapshot = await getDocs(collection(db, "agencies"));
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as import('@/types').AgencyRecord));
+    },
+
+    async getAgencyRequests(status?: 'pending' | 'approved' | 'rejected'): Promise<import('@/types').AgencyRequest[]> {
+        let q = query(collection(db, "agency_requests"));
+        if (status) {
+            q = query(q, where("status", "==", status));
+        }
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as import('@/types').AgencyRequest));
+    },
+
+    async createAgency(data: { name: string; seatCount: number }): Promise<string> {
+        const docRef = await addDoc(collection(db, "agencies"), {
+            ...data,
+            status: 'provisioning',
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    /**
+     * Get count of clients filtered by status
+     */
+    async getClientsCountByStatus(status: string): Promise<number> {
+        try {
+            const q = query(collection(db, CLIENTS_COLLECTION), where("status", "==", status));
+            const snapshot = await getCountFromServer(q);
+            return snapshot.data().count;
+        } catch (error) {
+            console.error(`Error getting clients count for status ${status}:`, error);
+            return 0;
+        }
+    },
+
+    /**
+     * Add a new agency request
+     */
+    async addAgencyRequest(data: any): Promise<string> {
+        const docRef = await addDoc(collection(db, "agency_requests"), {
+            ...data,
+            status: 'pending',
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    /**
+     * Add a new agency record
+     */
+    async addAgency(data: any): Promise<string> {
+        const docRef = await addDoc(collection(db, "agencies"), {
+            ...data,
+            status: 'active',
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    /**
+     * Get recent activity logs
+     */
+    async getActivityLog(): Promise<ActivityLogEntry[]> {
+        try {
+            const q = query(collection(db, "activity_logs"), orderBy("createdAt", "desc"), limit(50));
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLogEntry));
+        } catch (error) {
+            console.error("Error fetching activity logs:", error);
+            return [];
+        }
+    }
 };

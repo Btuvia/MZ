@@ -8,6 +8,7 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { ReminderPicker } from "@/components/ui/ReminderPicker";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { ClientQuickActions } from "@/components/clients/ClientQuickActions";
 
 export interface FocusItem {
     id: string;
@@ -16,6 +17,9 @@ export interface FocusItem {
     title: string;
     description: string;
     clientName: string;
+    clientId: string;
+    clientPhone: string;
+    clientEmail: string;
     timeAgo: string;
     context?: string;
 }
@@ -30,6 +34,9 @@ export default function FocusFeed() {
             title: 'סיכון נטישה גבוה',
             description: 'פוליסת ביטוח רכב מסתיימת בעוד 3 ימים ללא חידוש.',
             clientName: 'ישראל ישראלי',
+            clientId: 'client-1',
+            clientPhone: '0501234567',
+            clientEmail: 'israel@example.com',
             timeAgo: 'לפני 10 דקות',
             context: 'הלקוח צפה בטופס ביטול פעמיים היום.'
         },
@@ -40,6 +47,9 @@ export default function FocusFeed() {
             title: 'שיחה חוזרת - ליד חם',
             description: 'השאיר פרטים בקמפיין פייסבוק "ביטוח בריאות".',
             clientName: 'דנה כהן',
+            clientId: 'client-2',
+            clientPhone: '0529876543',
+            clientEmail: 'dana@example.com',
             timeAgo: 'לפני שעה',
         },
         {
@@ -49,6 +59,9 @@ export default function FocusFeed() {
             title: 'אישור מסמכים',
             description: 'התקבלו מסמכי בקרת זיהוי (KYC). נדרש אישור סופי.',
             clientName: 'רון לוי',
+            clientId: 'client-3',
+            clientPhone: '0545554433',
+            clientEmail: 'ron@example.com',
             timeAgo: 'לפני שעתיים',
         }
     ]);
@@ -68,7 +81,7 @@ export default function FocusFeed() {
     };
 
     const handleSetReminder = async (reminderTime: Date) => {
-        if (!selectedItem || !user) return;
+        if (selectedItem! || user!) return;
 
         try {
             await firestoreService.addReminder({
@@ -125,7 +138,7 @@ export default function FocusFeed() {
     return (
         <div className="space-y-4">
             <h3 className="text-xl font-black text-white flex items-center gap-2">
-                <span className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2 py-0.5 rounded-md text-sm">FOCUS MODE</span>
+                <span className="bg-linear-to-r from-amber-400 to-orange-500 text-white px-2 py-0.5 rounded-md text-sm">FOCUS MODE</span>
                 הדברים החשובים להיום
             </h3>
 
@@ -151,7 +164,7 @@ export default function FocusFeed() {
                                 <Card className="border-none shadow-xl bg-slate-800/50 backdrop-blur-sm hover:bg-slate-800 transition-all group relative overflow-hidden">
                                     {/* Progress Bar based on score */}
                                     <div
-                                        className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-blue-500"
+                                        className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-emerald-400 to-blue-500"
                                         style={{ opacity: item.priorityScore / 100 }}
                                      />
 
@@ -180,7 +193,17 @@ export default function FocusFeed() {
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-2 w-full md:w-auto">
+                                        <div className="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-700/50">
+                                            <div className="flex items-center gap-2">
+                                                <ClientQuickActions 
+                                                    clientId={item.clientId}
+                                                    clientName={item.clientName}
+                                                    phone={item.clientPhone}
+                                                    email={item.clientEmail}
+                                                    variant="grid"
+                                                />
+                                            </div>
+                                            <div className="flex gap-2 w-full md:w-auto">
                                             <Button
                                                 variant="outline"
                                                 className="flex-1 md:w-auto text-slate-300 border-slate-600 hover:bg-slate-700 hover:border-amber-500/50 font-bold"
@@ -196,6 +219,7 @@ export default function FocusFeed() {
                                                 <CheckCircle2 size={18} className="ml-2" />
                                                 טפל וסיים
                                             </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </Card>

@@ -31,12 +31,12 @@ export function WorkflowSelector({
         <div className="relative">
             <label className="block text-sm font-bold text-slate-700 mb-2">
                 תהליך
-                {!value && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
+                {value! && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
             </label>
 
             <button
                 type="button"
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => disabled! && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={`w-full px-4 py-3 rounded-xl border-2 text-right flex items-center justify-between transition-all
           ${disabled
@@ -75,7 +75,7 @@ export function WorkflowSelector({
                 </svg>
             </button>
 
-            {isOpen && !disabled && (
+            {isOpen && disabled! && (
                 <>
                     {/* Backdrop */}
                     <div

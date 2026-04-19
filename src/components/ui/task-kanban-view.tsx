@@ -27,7 +27,7 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                 return (
                     <div
                         key={status.value}
-                        className="flex-shrink-0 w-80"
+                        className="shrink-0 w-80"
                     >
                         {/* Column Header */}
                         <div

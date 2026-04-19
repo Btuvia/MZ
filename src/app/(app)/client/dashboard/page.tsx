@@ -34,7 +34,7 @@ export default function ClientDashboard() {
             let clientId = storedId;
 
             // Demo fallback if no ID or phone number
-            if (!clientId) {
+            if (clientId!) {
                 // Try to find 'active' client or mock
                 clientId = "active";
             }
@@ -44,7 +44,7 @@ export default function ClientDashboard() {
                 // simpler for now: try direct get, if not found, use mock
                 let data = await firestoreService.getClient(clientId);
 
-                if (!data && clientId.length > 5) {
+                if (data! && clientId.length > 5) {
                     // It's likely a phone number, try to find client with this phone
                     // This is a client-side search simulation for the demo
                     const allClients = await firestoreService.getClients();
@@ -75,7 +75,7 @@ export default function ClientDashboard() {
 
     // Policy mapping helpers
     const getPolicyStatus = (type: string) => {
-        if (!client || !client.policies) return { exists: false };
+        if (client! || client!.policies) return { exists: false };
         const policy = client.policies.find((p: any) => p.type.includes(type) || p.productType?.includes(type));
         return policy ? { exists: true, label: policy.type || policy.productType } : { exists: false };
     };
@@ -113,7 +113,7 @@ export default function ClientDashboard() {
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="glass-card bg-gradient-to-r from-slate-900/80 via-blue-900/50 to-amber-900/30 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold"
+                    className="glass-card bg-linear-to-r from-slate-900/80 via-blue-900/50 to-amber-900/30 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-amber-500/20 neon-gold"
                 >
                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -209,7 +209,7 @@ export default function ClientDashboard() {
                                         </span>
                                     </div>
 
-                                    {!status.exists && (
+                                    {status!.exists && (
                                         <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-4 opacity-0 hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm border border-amber-500/30 rounded-3xl">
                                             <p className="text-slate-300 text-[10px] mb-2 leading-tight">{info.reason}</p>
                                             <Button size="sm" variant="gold" className="h-7 text-[10px] w-full font-bold">אני מעוניין</Button>

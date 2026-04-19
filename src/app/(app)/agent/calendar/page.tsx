@@ -59,7 +59,7 @@ export default function CalendarPage() {
 
     // Helper to safely parse dates (handling Firestore Timestamps)
     const parseDate = (dateVal: any): Date => {
-        if (!dateVal) return new Date();
+        if (dateVal!) return new Date();
         if (dateVal.toDate && typeof dateVal.toDate === 'function') {
             return dateVal.toDate();
         }
@@ -85,7 +85,7 @@ export default function CalendarPage() {
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-purple-600 via-pink-600 to-rose-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2"></div>
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
@@ -108,7 +108,7 @@ export default function CalendarPage() {
                         { label: "פתוחות", value: tasks.filter(t => t.status === "pending" || t.status === "ממתינה").length, icon: "⚡", color: "from-amber-500 to-orange-600" },
                         { label: "הושלמו", value: tasks.filter(t => t.status === "completed" || t.status === "הושלמה").length, icon: "✅", color: "from-emerald-500 to-emerald-600" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -173,7 +173,7 @@ export default function CalendarPage() {
                                     </div>
                                 </div>
                             ))}
-                            {!loading && tasks.length === 0 && <p className="text-center text-slate-400 italic py-8">אין משימות להצגה</p>}
+                            {loading! && tasks.length === 0 && <p className="text-center text-slate-400 italic py-8">אין משימות להצגה</p>}
                         </div>
                     </Card>
 
@@ -225,7 +225,7 @@ export default function CalendarPage() {
                         </Card>
 
                         {/* Quick Actions */}
-                        <Card className="border-none shadow-xl bg-gradient-to-br from-accent to-blue-700 text-white p-6">
+                        <Card className="border-none shadow-xl bg-linear-to-br from-accent to-blue-700 text-white p-6">
                             <h3 className="text-lg font-black mb-4">פעולות מהירות</h3>
                             <div className="space-y-2">
                                 <Button variant="glass" className="w-full bg-white/10 hover:bg-white/20 border-white/20 text-white justify-start">

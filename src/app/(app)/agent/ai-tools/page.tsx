@@ -23,7 +23,7 @@ export default function AIToolsPage() {
     ];
 
     const handleGenerate = async () => {
-        if (!inputText.trim()) return;
+        if (inputText!.trim()) return;
 
         setLoading(true);
         setOutputText("");
@@ -53,7 +53,7 @@ export default function AIToolsPage() {
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">כלי AI</h1>
@@ -78,7 +78,7 @@ export default function AIToolsPage() {
                             className={`text-right transition-all ${activeTab === tool.id ? 'scale-105' : 'hover:scale-105'
                                 }`}
                         >
-                            <Card className={`border-none p-6 text-white bg-gradient-to-br ${tool.color} shadow-xl h-full ${activeTab === tool.id ? 'ring-4 ring-accent/50' : ''
+                            <Card className={`border-none p-6 text-white bg-linear-to-br ${tool.color} shadow-xl h-full ${activeTab === tool.id ? 'ring-4 ring-accent/50' : ''
                                 }`}>
                                 <div className="text-4xl mb-4">{tool.icon}</div>
                                 <h3 className="text-base font-black mb-2">{tool.id}</h3>
@@ -114,7 +114,7 @@ export default function AIToolsPage() {
                                 variant="secondary"
                                 className="w-full py-4 shadow-xl shadow-accent/20"
                                 onClick={handleGenerate}
-                                disabled={loading || !inputText.trim()}
+                                disabled={loading || inputText!.trim()}
                             >
                                 {loading ? "מעבד..." : "🤖 צור עם AI"}
                             </Button>
@@ -146,7 +146,7 @@ export default function AIToolsPage() {
                                 </div>
                             )}
                         </div>
-                        {outputText && !loading && (
+                        {outputText && loading! && (
                             <div className="flex gap-3 mt-4">
                                 <Button
                                     variant="outline"

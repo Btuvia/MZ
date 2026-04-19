@@ -100,7 +100,7 @@ export default function TrainingPage() {
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">מרכז הדרכה</h1>
@@ -118,7 +118,7 @@ export default function TrainingPage() {
                         { label: "בתהליך", value: stats.inProgress, icon: "⚡", color: "from-amber-500 to-orange-600" },
                         { label: "שעות למידה", value: Math.round(stats.totalHours), icon: "⏱️", color: "from-purple-600 to-indigo-700" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -150,10 +150,10 @@ export default function TrainingPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                     {filteredCourses.map((course) => (
                         <Card key={course.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all group">
-                            <div className={`h-2 w-full bg-gradient-to-r ${course.color}`}></div>
+                            <div className={`h-2 w-full bg-linear-to-r ${course.color}`}></div>
                             <div className="p-6">
                                 <div className="flex items-start gap-4 mb-4">
-                                    <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${course.color} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform`}>
+                                    <div className={`h-14 w-14 rounded-2xl bg-linear-to-br ${course.color} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform`}>
                                         {course.icon}
                                     </div>
                                     <div className="flex-1">
@@ -178,7 +178,7 @@ export default function TrainingPage() {
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                                         <div
-                                            className={`h-full bg-gradient-to-r ${course.color} rounded-full transition-all duration-500`}
+                                            className={`h-full bg-linear-to-r ${course.color} rounded-full transition-all duration-500`}
                                             style={{ width: `${course.progress}%` }}
                                         ></div>
                                     </div>

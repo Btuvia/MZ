@@ -466,7 +466,7 @@ export default function ClaimsPage() {
                                         <Button 
                                             onClick={() => setNewClaimStep(3)}
                                             className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900"
-                                            disabled={!claimForm.description || !claimForm.date}
+                                            disabled={claimForm!.description || claimForm!.date}
                                         >
                                             המשך להעלאת מסמכים
                                             <ChevronRight size={18} className="mr-2" />

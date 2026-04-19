@@ -58,12 +58,12 @@ export default function DocumentAnalysisPage() {
     };
 
     const handleCreateLeadClick = () => {
-        if (!results) return;
+        if (results!) return;
         setShowLeadModal(true);
     };
 
     const handleConfirmLead = async (clientData: ClientProfile) => {
-        if (!results) return;
+        if (results!) return;
         setCreatingLead(true);
         setShowLeadModal(false); // Close modal while saving
 
@@ -95,7 +95,7 @@ export default function DocumentAnalysisPage() {
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-rose-500 via-pink-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
@@ -258,7 +258,7 @@ export default function DocumentAnalysisPage() {
                                         <Button
                                             onClick={handleCreateLeadClick}
                                             disabled={creatingLead}
-                                            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-xl shadow-emerald-500/20 py-6 text-lg"
+                                            className="w-full bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-xl shadow-emerald-500/20 py-6 text-lg"
                                         >
                                             {creatingLead ? "יוצר ליד..." : "צור ליד חדש במערכת ➜"}
                                         </Button>
@@ -266,7 +266,7 @@ export default function DocumentAnalysisPage() {
                                 </div>
                             </div>
                         ) : (
-                            !analyzing && (
+                            analyzing! && (
                                 <div className="h-full flex items-center justify-center p-12 text-center opacity-30 mt-12 lg:mt-0">
                                     <div>
                                         <div className="text-8xl mb-6 grayscale">📄</div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Card, Button } from "@/components/ui/base";
+import { NeonCard, NeonButton, NeonInput, NeonSelect } from "@/components/ui/neon-form";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
@@ -21,6 +22,9 @@ export default function NewClientPage() {
         phone: "",
         email: "",
         status: "פעיל" as const,
+        isSmoker: false,
+        idIssueDate: "",
+        birthDate: "",
         address: { city: "תל אביב", street: "הירקון", num: "1" },
         employment: { status: "שכיר", occupation: "עצמאי" },
         family: [],
@@ -37,15 +41,12 @@ export default function NewClientPage() {
         setLoading(true);
         setShowFallback(false);
 
-        // Timer to show a "Skip" button if Firebase is hanging
         const timer = setTimeout(() => {
             setShowFallback(true);
             setLastError("הפעולה לוקחת יותר מדי זמן (Timeout). בדוק את החיבור לאינטרנט.");
-            console.log("Creation taking longer than expected... showing fallback.");
         }, 10000);
 
         try {
-            console.log("Attempting to save client to Firestore...");
             const fullName = `${formData.firstName} ${formData.lastName}`.trim();
             const clientData = {
                 ...formData,
@@ -53,11 +54,9 @@ export default function NewClientPage() {
                 createdAt: new Date().toISOString()
             };
 
-            // Use client-side Firestore SDK (Firebase Admin not configured)
             const newId = await firestoreService.addClient(clientData as any);
 
             clearTimeout(timer);
-            console.log("Success! New ID:", newId);
             toast.success("לקוח נוצר בהצלחה!");
             router.push(`/admin/clients/${newId}`);
         } catch (error: any) {
@@ -72,140 +71,139 @@ export default function NewClientPage() {
 
     return (
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
-            <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700" dir="rtl">
+            <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000" dir="rtl">
 
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <button
-                            onClick={() => router.push('/admin/dashboard')}
-                            className="flex items-center gap-2 text-slate-400 hover:text-primary transition-colors mb-2 text-sm font-bold"
-                        >
-                            <ArrowRight size={16} /> חזרה ללוח הבקרה
-                        </button>
-                        <h1 className="text-4xl font-black text-primary italic font-display leading-tight">
-                            הוספת לקוח חדש
-                        </h1>
+                {/* Header - Neon Premium */}
+                <div className="relative group p-10 rounded-[3rem] overflow-hidden border border-slate-800 bg-[#0d1326] shadow-2xl">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
+                    <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <button
+                                onClick={() => router.push('/admin/clients')}
+                                className="flex items-center gap-2 text-amber-500/60 hover:text-amber-500 transition-colors mb-4 text-[10px] font-black uppercase tracking-widest"
+                            >
+                                <ArrowRight size={14} className="rotate-180" /> חזרה לרשימת הלקוחות
+                            </button>
+                            <h1 className="text-5xl font-black text-white italic tracking-tighter flex items-center gap-4">
+                                <span className="text-amber-500">✨</span> יצירת לקוח חדש
+                            </h1>
+                            <p className="text-slate-500 font-bold mt-3 text-lg">הוספת פרופיל מבוטח חדש למערכת המגדל</p>
+                        </div>
+                        <div className="h-20 w-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-4xl shadow-2xl shadow-amber-500/5 pulse-amber">👤</div>
                     </div>
                 </div>
 
-                <form onSubmit={handleSave} className="space-y-6">
-                    <Card className="p-10 border-none shadow-2xl bg-white overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 w-2.5 h-full bg-accent group-hover:bg-blue-600 transition-colors" />
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">שם פרטי</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={formData.firstName}
-                                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                    placeholder="שם פרטי"
-                                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">שם משפחה</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={formData.lastName}
-                                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                    placeholder="שם משפחה"
-                                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תעודת זהות</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={formData.idNumber}
-                                    onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
-                                    placeholder="מספר ת.ז"
-                                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">טלפון נייד</label>
-                                <input
-                                    required
-                                    type="tel"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    placeholder="טלפון ליצירת קשר"
-                                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold"
-                                />
-                            </div>
-
-                            <div className="col-span-1 md:col-span-2 space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">דואר אלקטרוני</label>
-                                <input
-                                    required
+                <form onSubmit={handleSave} className="space-y-10">
+                    <NeonCard title="📋 פרטי זיהוי והתקשרות">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10">
+                            <NeonInput 
+                                label="שם פרטי *" 
+                                value={formData.firstName} 
+                                onChange={e => setFormData({ ...formData, firstName: e.target.value })} 
+                                placeholder="לדוגמא: ישראל"
+                                required
+                            />
+                            <NeonInput 
+                                label="שם משפחה *" 
+                                value={formData.lastName} 
+                                onChange={e => setFormData({ ...formData, lastName: e.target.value })} 
+                                placeholder="לדוגמא: ישראלי"
+                                required
+                            />
+                            <NeonInput 
+                                label="תעודת זהות *" 
+                                value={formData.idNumber} 
+                                onChange={e => setFormData({ ...formData, idNumber: e.target.value })} 
+                                placeholder="9 ספרות כולל ספרת ביקורת"
+                                required
+                            />
+                            <NeonInput 
+                                label="מספר טלפון *" 
+                                value={formData.phone} 
+                                onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+                                placeholder="05XXXXXXXX"
+                                required
+                                dir="ltr"
+                            />
+                            <div className="md:col-span-2">
+                                <NeonInput 
+                                    label="כתובת דואר אלקטרוני *" 
                                     type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    placeholder="email@example.com"
-                                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold"
+                                    value={formData.email} 
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                                    placeholder="your@email.com"
+                                    required
+                                    dir="ltr"
                                 />
                             </div>
+                            <NeonInput 
+                                label="תאריך לידה" 
+                                type="date"
+                                value={formData.birthDate} 
+                                onChange={e => setFormData({ ...formData, birthDate: e.target.value })} 
+                            />
+                            <NeonInput 
+                                label="תאריך הנפקת ת.ז" 
+                                type="date"
+                                value={formData.idIssueDate} 
+                                onChange={e => setFormData({ ...formData, idIssueDate: e.target.value })} 
+                            />
+                            <NeonSelect 
+                                label="האם מעשן" 
+                                value={formData.isSmoker ? 'כן' : 'לא'} 
+                                onChange={e => setFormData({ ...formData, isSmoker: e.target.value === 'כן' })}
+                            >
+                                <option value="לא">לא</option>
+                                <option value="כן">כן</option>
+                            </NeonSelect>
                         </div>
-                    </Card>
+                    </NeonCard>
 
-                    <div className="flex flex-col gap-6 pt-4">
-                        <Button
+                    <div className="flex flex-col gap-8 pt-4">
+                        <NeonButton
                             type="submit"
-                            disabled={loading ? !Boolean(showFallback) : undefined}
-                            className="w-full py-6 shadow-2xl shadow-accent/20 text-xl font-black rounded-[1.5rem]"
-                            variant="secondary"
+                            disabled={loading}
+                            size="lg"
+                            className="w-full py-8 text-2xl shadow-[0_20px_50px_rgba(245,158,11,0.2)] hover:shadow-[0_0_70px_rgba(245,158,11,0.4)]"
                         >
-                            {loading && !showFallback ? (
-                                <span className="flex items-center gap-3">
-                                    <div className="w-5 h-5 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-                                    מעבד נתונים ב-Firebase...
+                            {loading ? (
+                                <span className="flex items-center gap-4 italic animate-pulse">
+                                    <div className="w-6 h-6 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+                                    מעבד נתונים...
                                 </span>
                             ) : (
-                                <span className="flex items-center gap-3">
-                                    <CheckCircle2 size={24} />
-                                    צור לקוח והמשך לכרטיסייה
+                                <span className="flex items-center gap-4 italic uppercase">
+                                    <CheckCircle2 size={28} />
+                                    צור לקוח ופתח תיק מבוטח
                                 </span>
                             )}
-                        </Button>
+                        </NeonButton>
 
-                        {showFallback ? <div className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 animate-in fade-in zoom-in duration-500 shadow-3xl text-right">
-                                <div className="flex items-start gap-4 text-white mb-6">
-                                    <AlertTriangle size={28} className="text-amber-400 shrink-0 mt-1" />
-                                    <div>
-                                        <p className="text-lg font-black italic mb-2">משהו עוצר את השמירה...</p>
-                                        <p className="text-sm text-slate-400 font-bold leading-relaxed">
-                                            ייתכן שישנה בעיית הרשאות, תקשורת או שה-FIrebase טרם הוגדר כראוי לחלוטין.
-                                            כדי לא לעכב אותך, תוכל לעקוף את השמירה ולהיכנס לממשק הלקוח במצב דמו.
-                                        </p>
-                                        {lastError ? <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-200 font-mono" dir="ltr">
-                                                Error: {lastError}
-                                            </div> : null}
-                                    </div>
+                        {showFallback && (
+                            <NeonCard title="⚠️ התראה מהמערכת" className="bg-red-500/5! border-red-500/20!">
+                                <div className="space-y-6">
+                                    <p className="text-slate-400 font-bold leading-relaxed text-right">
+                                        זיהינו עיכוב בתקשורת. בדוק את חיבור האינטרנט או הרשאות Firebase.
+                                    </p>
+                                    <NeonButton
+                                        type="button"
+                                        onClick={() => router.push('/admin/clients')}
+                                        variant="blue"
+                                        className="w-full py-6 text-lg shadow-xl shadow-blue-500/10 group"
+                                    >
+                                        <ArrowRight size={20} className="ml-2 rotate-180 group-hover:-translate-x-2 transition-transform" />
+                                        חזרה לרשימת הלקוחות
+                                    </NeonButton>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => router.push('/admin/clients/active')}
-                                    className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 rounded-2xl font-black transition-all shadow-xl text-md flex items-center justify-center gap-3"
-                                >
-                                    <span>🚀</span>
-                                    מעקף מהיר: המשך לכרטיסיית דמו
-                                </button>
-                            </div> : null}
+                            </NeonCard>
+                        )}
 
                         <button
                             type="button"
-                            onClick={() => router.push('/admin/dashboard')}
-                            className="text-xs font-black text-slate-400 hover:text-primary uppercase tracking-[0.2em] transition-colors"
+                            onClick={() => router.push('/admin/clients')}
+                            className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-[0.4em] transition-colors"
                         >
-                            ביטול וחזרה
+                            ביטול וחזרה לרשימה
                         </button>
                     </div>
                 </form>

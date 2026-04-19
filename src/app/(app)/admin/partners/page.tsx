@@ -109,7 +109,7 @@ export default function PartnersPage() {
     };
 
     const handleSavePartner = () => {
-        if (!editingPartner?.name) return;
+        if (editingPartner!?.name) return;
 
         if (editingPartner.id) {
             // Update
@@ -140,7 +140,7 @@ export default function PartnersPage() {
             <div className="space-y-8 animate-in fade-in duration-700 pb-20" dir="rtl">
 
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div>
@@ -171,7 +171,7 @@ export default function PartnersPage() {
                         { label: "סוכנויות", value: stats.agencies, icon: "💼", color: "from-purple-600 to-indigo-700" },
                         { label: "הכנסות שנתיות", value: `₪${stats.totalRevenue.toFixed(1)}M`, icon: "💰", color: "from-amber-500 to-orange-600" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -235,7 +235,7 @@ export default function PartnersPage() {
                                     <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8">
                                         {/* Logo & Name */}
                                         <div className="flex items-center gap-6 w-full lg:w-auto">
-                                            <div className="h-20 w-20 shrink-0 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center text-white text-4xl shadow-lg group-hover:scale-110 transition-transform">
+                                            <div className="h-20 w-20 shrink-0 rounded-2xl bg-linear-to-br from-blue-500 to-indigo-700 flex items-center justify-center text-white text-4xl shadow-lg group-hover:scale-110 transition-transform">
                                                 {partner.logo}
                                             </div>
                                             <div>

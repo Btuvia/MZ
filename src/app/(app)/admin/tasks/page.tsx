@@ -15,6 +15,7 @@ import DashboardShell from "@/components/ui/dashboard-shell";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useUsers } from "@/lib/hooks/useQueryHooks";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import type { Task, TaskStatus, TaskPriority, TaskType } from "@/types";
+import { SmartTaskModal } from "@/components/SmartTaskModal";
 
 // View modes
 type ViewMode = 'kanban' | 'list';
@@ -95,11 +96,11 @@ export default function TaskCenterPage() {
     // Priority config
     const getPriorityConfig = (priority: TaskPriority) => {
         switch (priority) {
-            case 'urgent': return { color: 'red', label: 'דחוף', icon: <AlertTriangle size={12} /> };
+            case 'urgent': return { color: 'red', label: 'קריטי', icon: <AlertTriangle size={12} /> };
             case 'high': return { color: 'orange', label: 'גבוה', icon: <Flag size={12} /> };
             case 'medium': return { color: 'amber', label: 'בינוני', icon: <Flag size={12} /> };
             case 'low': return { color: 'slate', label: 'נמוך', icon: <Flag size={12} /> };
-            default: return { color: 'slate', label: 'רגיל', icon: <Flag size={12} /> };
+            default: return { color: 'slate', label: 'נמוך', icon: <Flag size={12} /> };
         }
     };
 
@@ -112,71 +113,41 @@ export default function TaskCenterPage() {
         highPriority: tasks.filter(t => t.priority === 'urgent' || t.priority === 'high').length,
     }), [tasks]);
 
-    const handleAddTask = async () => {
-        if (!newTask.title) {
-            toast.error("אנא הזן כותרת למשימה");
-            return;
-        }
-
+    const handleSaveTask = async (taskData: any) => {
         try {
-            await createTask.mutateAsync({
-                title: newTask.title,
-                description: newTask.description || "",
-                status: newTask.status,
-                priority: newTask.priority,
-                type: newTask.type,
-                assignedTo: newTask.assignedTo || "",
-                assignedToName: newTask.assignedToName || "",
-                date: newTask.date,
-                time: newTask.time,
-                clientName: newTask.clientName || "",
-                notes: newTask.notes || "",
-                completed: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                createdBy: "admin",
-                createdByName: "מנהל"
-            } as Omit<Task, 'id'>);
-
-            setShowNewTaskModal(false);
-            resetForm();
-        } catch (error) {
-            console.error("Error adding task:", error);
-        }
-    };
-
-    const handleUpdateTask = async () => {
-        if (!editingTask) return;
-
-        try {
-            await updateTask.mutateAsync({
-                id: editingTask.id,
-                data: {
-                    title: newTask.title,
-                    description: newTask.description,
-                    status: newTask.status,
-                    priority: newTask.priority,
-                    type: newTask.type,
-                    assignedTo: newTask.assignedTo,
-                    assignedToName: newTask.assignedToName,
-                    date: newTask.date,
-                    time: newTask.time,
-                    clientName: newTask.clientName,
-                    notes: newTask.notes,
-                    completed: newTask.status === 'completed'
-                }
-            });
+            if (editingTask) {
+                const { id, ...data } = taskData;
+                await updateTask.mutateAsync({
+                    id: editingTask.id,
+                    data: {
+                        ...data,
+                        completed: taskData.status === 'completed'
+                    }
+                });
+                toast.success("המשימה עודכנה בהצלחה");
+            } else {
+                const { id, ...data } = taskData;
+                await createTask.mutateAsync({
+                    ...data,
+                    completed: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    createdBy: "admin",
+                    createdByName: "מנהל"
+                } as Omit<Task, 'id'>);
+                toast.success("המשימה נוצרה בהצלחה");
+            }
 
             setEditingTask(null);
             setShowNewTaskModal(false);
-            resetForm();
         } catch (error) {
-            console.error("Error updating task:", error);
+            console.error("Error saving task:", error);
+            toast.error("שגיאה בשמירת המשימה");
         }
     };
 
     const handleDeleteTask = async (id: string) => {
-        if (!confirm("האם למחוק משימה זו?")) return;
+        if (confirm!("האם למחוק משימה זו?")) return;
 
         try {
             await deleteTask.mutateAsync(id);
@@ -203,19 +174,6 @@ export default function TaskCenterPage() {
 
     const openEditModal = (task: Task) => {
         setEditingTask(task);
-        setNewTask({
-            title: task.title || "",
-            description: task.description || "",
-            status: task.status || "pending",
-            priority: task.priority || "medium",
-            type: task.type || "task",
-            assignedTo: task.assignedTo || "",
-            assignedToName: task.assignedToName || "",
-            date: task.date || new Date().toISOString().split('T')[0],
-            time: task.time || "09:00",
-            clientName: task.clientName || "",
-            notes: task.notes || ""
-        });
         setShowNewTaskModal(true);
     };
 
@@ -279,10 +237,15 @@ export default function TaskCenterPage() {
                         </span> : null}
                 </div>
 
-                {/* Client */}
-                {task.clientName ? <div className="mt-2 pt-2 border-t border-slate-700/50">
-                        <span className="text-[10px] text-amber-400/70">לקוח: {task.clientName}</span>
-                    </div> : null}
+                {/* Client & Location */}
+                <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-1">
+                    {task.clientName ? <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-amber-400/70 font-bold">לקוח: {task.clientName}</span>
+                        </div> : null}
+                    {task.location ? <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-500 font-bold">מיקום: {task.location}</span>
+                        </div> : null}
+                </div>
             </motion.div>
         );
     };
@@ -440,7 +403,7 @@ export default function TaskCenterPage() {
                                     return (
                                         <div
                                             key={column.id}
-                                            className="flex-shrink-0 w-80"
+                                            className="shrink-0 w-80"
                                             onDragOver={(e) => e.preventDefault()}
                                             onDrop={(e) => {
                                                 const taskId = e.dataTransfer.getData('taskId');
@@ -561,160 +524,16 @@ export default function TaskCenterPage() {
                 )}
 
                 {/* Add/Edit Task Modal */}
-                {showNewTaskModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
-                        <Card className="w-full max-w-lg bg-slate-900 border-amber-500/20 p-6 shadow-2xl rounded-3xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-black text-amber-400">
-                                    {editingTask ? "✏️ עריכת משימה" : "➕ משימה חדשה"}
-                                </h3>
-                                <button
-                                    onClick={() => {
-                                        setShowNewTaskModal(false);
-                                        setEditingTask(null);
-                                        resetForm();
-                                    }}
-                                    className="p-2 rounded-lg hover:bg-slate-800 text-slate-400"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">כותרת המשימה *</label>
-                                    <input
-                                        type="text"
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                        value={newTask.title}
-                                        onChange={e => setNewTask({ ...newTask, title: e.target.value })}
-                                        placeholder="מה צריך לעשות?"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">תיאור</label>
-                                    <textarea
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none resize-none"
-                                        rows={3}
-                                        value={newTask.description}
-                                        onChange={e => setNewTask({ ...newTask, description: e.target.value })}
-                                        placeholder="פרטים נוספים..."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">עדיפות</label>
-                                        <select
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newTask.priority}
-                                            onChange={e => setNewTask({ ...newTask, priority: e.target.value as TaskPriority })}
-                                        >
-                                            <option value="low">נמוך</option>
-                                            <option value="medium">בינוני</option>
-                                            <option value="high">גבוה</option>
-                                            <option value="urgent">דחוף</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">סטטוס</label>
-                                        <select
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newTask.status}
-                                            onChange={e => setNewTask({ ...newTask, status: e.target.value as TaskStatus })}
-                                        >
-                                            <option value="pending">ממתין</option>
-                                            <option value="in_progress">בעבודה</option>
-                                            <option value="completed">הושלם</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">תאריך</label>
-                                        <input
-                                            type="date"
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newTask.date}
-                                            onChange={e => setNewTask({ ...newTask, date: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">שעה</label>
-                                        <input
-                                            type="time"
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newTask.time}
-                                            onChange={e => setNewTask({ ...newTask, time: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">משויך לסוכן</label>
-                                    <select
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                        value={newTask.assignedTo}
-                                        onChange={e => {
-                                            const user = users.find(u => u.id === e.target.value);
-                                            setNewTask({ 
-                                                ...newTask, 
-                                                assignedTo: e.target.value,
-                                                assignedToName: user?.displayName || ""
-                                            });
-                                        }}
-                                    >
-                                        <option value="">בחר סוכן</option>
-                                        {users.map(user => (
-                                            <option key={user.id} value={user.id}>{user.displayName}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">שם לקוח (אופציונלי)</label>
-                                    <input
-                                        type="text"
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                        value={newTask.clientName}
-                                        onChange={e => setNewTask({ ...newTask, clientName: e.target.value })}
-                                        placeholder="שם הלקוח הקשור למשימה"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">הערות</label>
-                                    <textarea
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none resize-none"
-                                        rows={2}
-                                        value={newTask.notes}
-                                        onChange={e => setNewTask({ ...newTask, notes: e.target.value })}
-                                        placeholder="הערות נוספות..."
-                                    />
-                                </div>
-
-                                <div className="pt-4 flex gap-3">
-                                    <Button 
-                                        onClick={editingTask ? handleUpdateTask : handleAddTask} 
-                                        disabled={createTask.isPending || updateTask.isPending}
-                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black rounded-xl">
-                                        {(createTask.isPending || updateTask.isPending) ? "שומר..." : (editingTask ? "עדכן משימה" : "צור משימה")}
-                                    </Button>
-                                    <Button 
-                                        onClick={() => {
-                                            setShowNewTaskModal(false);
-                                            setEditingTask(null);
-                                            resetForm();
-                                        }} 
-                                        variant="outline" 
-                                        className="flex-1 rounded-xl border-slate-600 text-slate-300">
-                                        ביטול
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    </div> : null}
+                <SmartTaskModal 
+                    isOpen={showNewTaskModal}
+                    onClose={() => {
+                        setShowNewTaskModal(false);
+                        setEditingTask(null);
+                    }}
+                    onSave={handleSaveTask}
+                    initialDate={new Date()}
+                    existingTask={editingTask || undefined}
+                />
             </div>
         </DashboardShell>
     );

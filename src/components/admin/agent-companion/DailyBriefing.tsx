@@ -11,7 +11,7 @@ export default function DailyBriefing() {
 
     useEffect(() => {
         if (isListening) return;
-        if (!sendOnStop) return;
+        if (sendOnStop!) return;
 
         setSendOnStop(false);
         const text = transcript.trim();
@@ -22,7 +22,7 @@ export default function DailyBriefing() {
     }, [isListening, reset, sendOnStop, transcript]);
 
     const handleVoiceClick = () => {
-        if (!isSupported) return;
+        if (isSupported!) return;
         if (isListening) {
             setSendOnStop(true);
             stop();
@@ -34,7 +34,7 @@ export default function DailyBriefing() {
     };
 
     return (
-        <Card className="bg-gradient-to-r from-indigo-900/90 to-slate-900/90 backdrop-blur-xl text-white border-none shadow-2xl p-6 relative overflow-hidden group">
+        <Card className="bg-linear-to-r from-indigo-900/90 to-slate-900/90 backdrop-blur-xl text-white border-none shadow-2xl p-6 relative overflow-hidden group">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
 
@@ -56,7 +56,7 @@ export default function DailyBriefing() {
                     <button
                         type="button"
                         onClick={handleVoiceClick}
-                        disabled={!isSupported}
+                        disabled={isSupported!}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:pointer-events-none text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105 text-xs font-bold"
                     >
                         <Mic size={16} />

@@ -180,7 +180,72 @@ export type OperationsStatus =
     | 'policy_rejected'
     | 'clearing_ordered';
 
-export type ClientStatus = 'lead' | 'prospect' | 'active' | 'inactive' | 'churned';
+export type ClientStatus = (string & {}) | 'lead' | 'prospect' | 'active' | 'inactive' | 'churned' | 'פעיל' | 'לא פעיל' | 'נמכר';
+
+export interface Interaction {
+    id: string;
+    type: string;
+    date: string;
+    summary: string;
+    description?: string;
+    agent: string;
+    status?: string;
+    outcome?: string;
+    nextStep?: string;
+}
+
+export interface FamilyMember {
+    id: string;
+    name: string;
+    relation: string;
+    birthDate?: string;
+    idNumber?: string;
+}
+
+export interface PensionProduct {
+    id: string;
+    type: string;
+    company: string;
+    balance: string | number;
+    managementFeeDeposit: string | number;
+    managementFeeBalance: string | number;
+    lastUpdate?: string;
+    status?: string;
+}
+
+export interface InsuranceProduct {
+    id: string;
+    productType: string;
+    company: string;
+    premium: string | number;
+    lastUpdate?: string;
+    status?: string;
+}
+
+export interface PlatinumSale {
+    id: string;
+    date: string;
+    amount: number;
+    status: string;
+    products: string[];
+}
+
+export interface PlatinumPaymentDetails {
+    method: string;
+    lastFour?: string;
+    expiry?: string;
+    nextPaymentDate?: string;
+    totalPaid: number;
+}
+
+export interface AIInsight {
+    type: string;
+    title: string;
+    description: string;
+    severity: string;
+    actionLabel?: string;
+}
+
 
 export type PolicyType =
     | 'Pension'
@@ -231,7 +296,12 @@ export interface Client {
     email: string;
     phone: string;
     nationalId: string;
-    address?: string;
+    idNumber?: string;
+    idType?: string;
+    isSmoker?: boolean;
+    idIssueDate?: string;
+    paymentTerms?: string;
+    address?: any;
     birthDate?: string;
     status: ClientStatus;
     salesStatus: SalesStatus;
@@ -240,12 +310,25 @@ export interface Client {
     dealValue?: number;
     churnProbability?: number;
     source?: string;
+    referralSource?: string;
+    referralName?: string;
+    referralPhone?: string;
     campaign?: string;
     occupation?: string;
     familyStatus?: string;
     childrenCount?: number;
+    healthFund?: string;
+    passportCountry?: string;
+    employment?: { status: string; occupation?: string; };
+    family: FamilyMember[];
     familyConnections: FamilyConnection[];
+    interactions: Interaction[];
     policies: Policy[];
+    pensionSales: PensionProduct[];
+    insuranceSales: InsuranceProduct[];
+    platinumSales?: PlatinumSale[];
+    platinumPayment?: PlatinumPaymentDetails;
+    aiInsights?: AIInsight;
     documents: ClientDocument[];
     communications: Communication[];
     tasks: ClientTaskRef[];
@@ -354,6 +437,9 @@ export interface Task {
     // Dates and Times
     date: string;                    // ISO date YYYY-MM-DD
     time: string;                    // HH:mm
+    endDate?: string;                // ISO date YYYY-MM-DD
+    endTime?: string;                // HH:mm
+    location?: string;               // מיקום
     createdAt: Date;
     updatedAt: Date;
     completedAt?: Date;
@@ -483,3 +569,27 @@ export interface TaskViewPreferences {
 
 // Export all status-related types
 export * from './statuses';
+
+// ============================================
+// AGENCY MANAGEMENT
+// ============================================
+
+export interface AgencyRecord {
+    id: string;
+    name: string;
+    seatCount: number;
+    status: 'active' | 'suspended' | 'provisioning';
+    createdAt: Date;
+    adminEmail: string;
+}
+
+export interface AgencyRequest {
+    id: string;
+    agencyName: string;
+    contactName: string;
+    contactPhone: string;
+    requestedByEmail: string;
+    requestedAt: Date;
+    status: 'pending' | 'approved' | 'rejected';
+    note?: string;
+}

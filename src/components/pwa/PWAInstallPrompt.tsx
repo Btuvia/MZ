@@ -55,7 +55,7 @@ export function PWAInstallPrompt() {
         window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
         // For iOS, show after delay since there's no event
-        if (ios && !standalone) {
+        if (ios && standalone!) {
             setTimeout(() => setShowPrompt(true), 5000);
         }
 
@@ -65,7 +65,7 @@ export function PWAInstallPrompt() {
     }, []);
 
     const handleInstall = async () => {
-        if (!deferredPrompt) {
+        if (deferredPrompt!) {
             // For iOS, we can only show instructions
             return;
         }
@@ -102,7 +102,7 @@ export function PWAInstallPrompt() {
                 >
                     <div className="glass-card border border-amber-500/20 rounded-2xl shadow-2xl overflow-hidden" dir="rtl">
                         {/* Header */}
-                        <div className="bg-gradient-to-l from-amber-500 to-amber-600 p-4 text-white flex items-center justify-between">
+                        <div className="bg-linear-to-l from-amber-500 to-amber-600 p-4 text-white flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="bg-white/20 p-2 rounded-xl backdrop-blur">
                                     <Smartphone size={20} />

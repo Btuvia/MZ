@@ -8,6 +8,7 @@ import IntegrationCard from "@/components/admin/integrations/IntegrationCard";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { useGoogleCalendar } from "@/lib/hooks/useGoogleCalendar";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { Wallet } from "lucide-react";
 
 export default function IntegrationsPage() {
     const searchParams = useSearchParams();
@@ -96,6 +97,15 @@ export default function IntegrationsPage() {
             icon: <ShieldCheck />,
             status: "disconnected" as const,
             color: "bg-amber-500",
+        },
+        {
+            id: "gemel",
+            name: "מיי גמל נט",
+            description: "סנכרון נתוני תשואה, דמי ניהול וביצועי קופות גמל ופנסיה בזמן אמת.",
+            icon: <Wallet />,
+            status: "connected" as const,
+            lastSync: "אתמול, 14:20",
+            color: "bg-blue-600",
         },
     ];
 

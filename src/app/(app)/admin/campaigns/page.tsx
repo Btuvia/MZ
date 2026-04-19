@@ -68,7 +68,7 @@ export default function CampaignsPage() {
     };
 
     const handleAnalyzeAndSave = async () => {
-        if (!formData.company || !formData.target || !formData.productType) {
+        if (formData!.company || formData!.target || formData!.productType) {
             alert("אנא מלא את כל שדות החובה");
             return;
         }
@@ -109,7 +109,7 @@ export default function CampaignsPage() {
     };
 
     const handleDeleteCampaign = async (id: string) => {
-        if (!confirm("האם למחוק קמפיין זה?")) return;
+        if (confirm!("האם למחוק קמפיין זה?")) return;
         try {
             await deleteCampaign.mutateAsync(id);
         } catch (error) {
@@ -118,7 +118,7 @@ export default function CampaignsPage() {
     };
 
     const getDaysLeft = (endDate: string) => {
-        if (!endDate) return 0;
+        if (endDate!) return 0;
         const diff = new Date(endDate).getTime() - new Date().getTime();
         const days = Math.ceil(diff / (1000 * 3600 * 24));
         return days > 0 ? days : 0;
@@ -130,8 +130,8 @@ export default function CampaignsPage() {
 
                 {/* Header */}
                 <div className="relative overflow-hidden rounded-[2.5rem] bg-indigo-900 p-12 text-white shadow-2xl">
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-fuchsia-600/30 via-transparent to-transparent rounded-full blur-3xl -mr-32 -mt-32" />
-                    <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-indigo-500/20 via-transparent to-transparent rounded-full blur-3xl -ml-20 -mb-20" />
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-linear-to-bl from-fuchsia-600/30 via-transparent to-transparent rounded-full blur-3xl -mr-32 -mt-32" />
+                    <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-linear-to-tr from-indigo-500/20 via-transparent to-transparent rounded-full blur-3xl -ml-20 -mb-20" />
 
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
                         <div className="text-center md:text-right">
@@ -154,7 +154,7 @@ export default function CampaignsPage() {
                                 onClick={() => setShowModal(true)}
                                 className="bg-white text-indigo-900 border-none hover:bg-indigo-50 px-8 py-6 rounded-2xl text-lg font-black shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
                             >
-                                <Plus size={24} className="stroke-[3]" />
+                                <Plus size={24} className="stroke-3" />
                                 הוספת מבצע חדש
                             </Button>
                         </div>
@@ -194,7 +194,7 @@ export default function CampaignsPage() {
                             return (
                                 <Card key={campaign.id} className="border-none shadow-xl bg-white overflow-hidden group hover:shadow-2xl transition-all duration-500 rounded-[2rem]">
                                     {/* Card Header with Company & Gradient */}
-                                    <div className="h-2 bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500" />
+                                    <div className="h-2 bg-linear-to-r from-fuchsia-500 via-purple-500 to-indigo-500" />
                                     <div className="p-8 relative">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-4">
@@ -241,14 +241,14 @@ export default function CampaignsPage() {
                                             </div>
                                             <div className="h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-1000 ${percent >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-fuchsia-500'}`}
+                                                    className={`h-full rounded-full transition-all duration-1000 ${percent >= 100 ? 'bg-emerald-500' : 'bg-linear-to-r from-indigo-500 to-fuchsia-500'}`}
                                                     style={{ width: `${percent}%` }}
                                                  />
                                             </div>
                                         </div>
 
                                         {/* Campaign Details Card */}
-                                        <div className="bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-2xl p-6 border border-slate-100/50 relative overflow-hidden">
+                                        <div className="bg-linear-to-br from-slate-50 to-indigo-50/50 rounded-2xl p-6 border border-slate-100/50 relative overflow-hidden">
                                             <div className="mb-4">
                                                 <h4 className="flex items-center gap-2 text-indigo-900 font-black mb-1">
                                                     <Brain size={16} className="text-indigo-500" />
@@ -368,7 +368,7 @@ export default function CampaignsPage() {
                                         <Button
                                             onClick={handleAnalyzeAndSave}
                                             disabled={loadingAi || createCampaign.isPending}
-                                            className="w-full py-5 text-lg font-black bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700 text-white shadow-xl rounded-2xl flex items-center justify-center gap-2"
+                                            className="w-full py-5 text-lg font-black bg-linear-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700 text-white shadow-xl rounded-2xl flex items-center justify-center gap-2"
                                         >
                                             {loadingAi || createCampaign.isPending ? (
                                                 <>

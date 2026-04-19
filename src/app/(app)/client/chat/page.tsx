@@ -88,7 +88,7 @@ export default function ChatPage() {
     };
 
     const handleSendMessage = async () => {
-        if (!inputMessage.trim()) return;
+        if (inputMessage!.trim()) return;
 
         const newMessage: Message = {
             id: Date.now().toString(),
@@ -191,7 +191,7 @@ export default function ChatPage() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="relative">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-2xl">
+                                <div className="w-12 h-12 rounded-full bg-linear-to-br from-amber-400 to-amber-600 flex items-center justify-center text-2xl">
                                     {agentInfo.avatar}
                                 </div>
                                 <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-slate-800 ${
@@ -306,7 +306,7 @@ export default function ChatPage() {
                         {/* Attachment Button */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                                onClick={() => setShowAttachMenu(showAttachMenu!)}
                                 className="p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-slate-400 hover:text-amber-400 transition-all"
                             >
                                 <Paperclip size={20} />
@@ -358,7 +358,7 @@ export default function ChatPage() {
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                    if (e.key === 'Enter' && e!.shiftKey) {
                                         e.preventDefault();
                                         handleSendMessage();
                                     }
@@ -372,7 +372,7 @@ export default function ChatPage() {
                         {/* Send Button */}
                         <button
                             onClick={handleSendMessage}
-                            disabled={!inputMessage.trim()}
+                            disabled={inputMessage!.trim()}
                             className={`p-3 rounded-xl transition-all ${
                                 inputMessage.trim()
                                     ? 'bg-amber-500 hover:bg-amber-600 text-slate-900'

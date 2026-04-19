@@ -104,7 +104,7 @@ export default function DocumentsPage() {
         <DashboardShell role="לקוח" navItems={CLIENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">המסמכים שלי</h1>
@@ -122,7 +122,7 @@ export default function DocumentsPage() {
                         { label: "אישורים", value: documents.filter(d => d.category === "אישורים").length, icon: "✅", color: "from-purple-600 to-indigo-700" },
                         { label: "דוחות", value: documents.filter(d => d.category === "דוחות").length, icon: "📊", color: "from-amber-500 to-orange-600" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>

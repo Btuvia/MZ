@@ -2,20 +2,25 @@
 
 import { RefreshCw, Plus, Upload, Megaphone, Trash2, UserCheck, Edit3 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ImportLeadsModal from "@/components/leads/ImportLeadsModal";
+import CampaignAutomationModal from "@/components/leads/CampaignAutomationModal";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { NeonCard, NeonButton, NeonInput, NeonModal, NeonSelect, NeonTextarea } from "@/components/ui/neon-form";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead, useLeadStatuses } from "@/lib/hooks/useQueryHooks";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import type { Lead, LeadStatus as LeadStatusType } from "@/types";
 import type { LeadStatus } from "@/types/statuses";
 
 export default function LeadsPage() {
+    const router = useRouter();
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
+    const [showAutomationModal, setShowAutomationModal] = useState(false);
 
     // Firebase Hooks
     const { data: leads = [], isLoading, refetch } = useLeads();
@@ -39,7 +44,7 @@ export default function LeadsPage() {
     });
 
     const handleAddLead = async () => {
-        if (!newLead.firstName || !newLead.phone) {
+        if (newLead!.firstName || newLead!.phone) {
             toast.error("אנא מלא שם וטלפון");
             return;
         }
@@ -65,7 +70,7 @@ export default function LeadsPage() {
     };
 
     const handleUpdateLead = async () => {
-        if (!editingLead) return;
+        if (editingLead!) return;
 
         try {
             await updateLead.mutateAsync({
@@ -117,7 +122,7 @@ export default function LeadsPage() {
 
     const convertToClient = async (lead: Lead) => {
         const fullName = `${lead.firstName} ${lead.lastName}`.trim();
-        if (!confirm(`האם להפוך את הליד ${fullName} ללקוח פעיל?`)) return;
+        if (confirm!(`האם להפוך את הליד ${fullName} ללקוח פעיל?`)) return;
 
         try {
             await updateLead.mutateAsync({
@@ -133,7 +138,7 @@ export default function LeadsPage() {
     };
 
     const handleDeleteLead = async (id: string) => {
-        if (!confirm("האם למחוק ליד זה?")) return;
+        if (confirm!("האם למחוק ליד זה?")) return;
 
         try {
             await deleteLead.mutateAsync(id);
@@ -175,94 +180,76 @@ export default function LeadsPage() {
 
     return (
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
-            <div className="space-y-6 animate-in fade-in duration-700" dir="rtl">
-                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-3xl font-black text-gradient-gold font-display tracking-tight italic neon-text-gold">ניהול לידים</h2>
-                        <p className="text-slate-500 font-medium">נהל את הלידים הנכנסים ויבא נתונים ממקורות חיצוניים</p>
+            <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
+                {/* Header - Neon Premium */}
+                <div className="relative group p-8 rounded-[2rem] overflow-hidden border border-slate-800 bg-[#0d1326] shadow-2xl">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
+                    <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h2 className="text-4xl font-black text-white italic font-display tracking-tight flex items-center gap-3">
+                                <span className="text-amber-500">⚡</span> ניהול לידים
+                            </h2>
+                            <p className="text-slate-500 font-bold mt-2">מעקב אחר לידים נכנסים וסנכרון קמפיינים גלובליים</p>
+                        </div>
+                        <div className="flex flex-wrap gap-4">
+                            <NeonButton variant="secondary" onClick={() => refetch()} className="px-6!">
+                                <RefreshCw size={16} className={`ml-2 ${isLoading ? 'animate-spin' : ''}`} />
+                                רענן
+                            </NeonButton>
+                            <NeonButton variant="secondary" onClick={() => setShowImportModal(true)} className="px-6!">
+                                <Upload size={16} className="ml-2" />
+                                יבוא מ-Excel
+                            </NeonButton>
+                            <NeonButton variant="primary" onClick={() => { setEditingLead(null); resetForm(); setShowModal(true); }} className="px-8!">
+                                <Plus size={16} className="ml-2" />
+                                הוסף ליד
+                            </NeonButton>
+                            <NeonButton onClick={() => setShowAutomationModal(true)} variant="secondary" className="px-8! border-blue-500/50! bg-blue-500/10! text-blue-400! hover:bg-blue-500/20!">
+                                <Megaphone size={16} className="ml-2" />
+                                ניהול קמפיינים
+                            </NeonButton>
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => refetch()}
-                            className="text-[11px] font-black px-4 rounded-xl">
-                            <RefreshCw size={14} className={`ml-2 ${isLoading ? 'animate-spin' : ''}`} />
-                            רענן
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="text-[11px] font-black px-4 rounded-xl"
-                            onClick={() => setShowImportModal(true)}>
-                            <Upload size={14} className="ml-2" />
-                            יבוא מ-Excel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                setEditingLead(null);
-                                resetForm();
-                                setShowModal(true);
-                            }}
-                            variant="primary"
-                            className="text-[11px] font-black px-4 rounded-xl">
-                            <Plus size={14} className="ml-2" />
-                            הוסף ליד
-                        </Button>
-                        <Button
-                            onClick={() => toast.info("מערכת ניהול הקמפיינים בבנייה")}
-                            variant="blue"
-                            className="text-[11px] font-black px-4 rounded-xl">
-                            <Megaphone size={14} className="ml-2" />
-                            ניהול קמפיינים
-                        </Button>
-                    </div>
-                </header>
+                </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="p-4 border-amber-500/20">
+                {/* Stats Cards - Neon Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <NeonCard className="p-6! border-slate-800/50 hover:border-amber-500/30 transition-all group">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs text-slate-400 font-medium">סה"כ לידים</p>
-                                <p className="text-2xl font-black text-amber-400">{stats.total}</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">סה"כ לידים</p>
+                                <p className="text-3xl font-black text-white italic">{stats.total}</p>
                             </div>
-                            <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                                📋
-                            </div>
+                            <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">📋</div>
                         </div>
-                    </Card>
-                    <Card className="p-4 border-blue-500/20">
+                    </NeonCard>
+                    <NeonCard className="p-6! border-slate-800/50 hover:border-blue-500/30 transition-all group">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs text-slate-400 font-medium">חדשים</p>
-                                <p className="text-2xl font-black text-blue-400">{stats.newLeads}</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">חדשים</p>
+                                <p className="text-3xl font-black text-blue-400 italic">{stats.newLeads}</p>
                             </div>
-                            <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                                ✨
-                            </div>
+                            <div className="h-14 w-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">✨</div>
                         </div>
-                    </Card>
-                    <Card className="p-4 border-purple-500/20">
+                    </NeonCard>
+                    <NeonCard className="p-6! border-slate-800/50 hover:border-purple-500/30 transition-all group">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs text-slate-400 font-medium">נוצר קשר</p>
-                                <p className="text-2xl font-black text-purple-400">{stats.contacted}</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">נוצר קשר</p>
+                                <p className="text-3xl font-black text-purple-400 italic">{stats.contacted}</p>
                             </div>
-                            <div className="h-12 w-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                                📞
-                            </div>
+                            <div className="h-14 w-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">📞</div>
                         </div>
-                    </Card>
-                    <Card className="p-4 border-emerald-500/20">
+                    </NeonCard>
+                    <NeonCard className="p-6! border-slate-800/50 hover:border-emerald-500/30 transition-all group">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-xs text-slate-400 font-medium">מוכשרים</p>
-                                <p className="text-2xl font-black text-emerald-400">{stats.qualified}</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">מוכשרים</p>
+                                <p className="text-3xl font-black text-emerald-400 italic">{stats.qualified}</p>
                             </div>
-                            <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                                🎯
-                            </div>
+                            <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🎯</div>
                         </div>
-                    </Card>
+                    </NeonCard>
                 </div>
 
                 {/* Search & Filter */}
@@ -289,89 +276,98 @@ export default function LeadsPage() {
                     </div>
                 </div>
 
-                {/* Leads Table */}
-                <Card className="p-0 border-amber-500/20 overflow-hidden rounded-[2rem] min-h-[400px]">
+                {/* Leads Table - Neon Style */}
+                <NeonCard className="p-0! border-slate-800/50 overflow-hidden">
                     {isLoading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <RefreshCw size={40} className="animate-spin text-amber-400" />
+                        <div className="p-20 flex flex-col items-center justify-center space-y-4">
+                            <RefreshCw className="animate-spin text-amber-500" size={40} />
+                            <p className="text-slate-500 font-black italic">טוען לידים מהמערכת...</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-right text-sm">
+                        <div className="overflow-x-auto no-scrollbar">
+                            <table className="w-full text-right border-collapse">
                                 <thead>
-                                    <tr className="border-b border-slate-700/50 bg-slate-800/50 text-amber-400/70 text-[10px] font-black uppercase tracking-[0.15em]">
-                                        <th className="px-8 py-6">שם הליד</th>
-                                        <th className="px-6 py-6">מקור</th>
-                                        <th className="px-6 py-6">פרטי קשר</th>
-                                        <th className="px-6 py-6">סטטוס</th>
-                                        <th className="px-6 py-6 text-center">פעולות</th>
+                                    <tr className="border-b border-slate-800 bg-slate-900/50">
+                                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">שם מלא</th>
+                                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">פרטי התקשרות</th>
+                                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">מקור</th>
+                                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">תאריך יצירה</th>
+                                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">סטטוס</th>
+                                        <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">פעולות</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-700/50">
+                                <tbody className="divide-y divide-slate-800/50">
                                     {filteredLeads.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="text-center p-10 text-slate-500">
-                                                {leads.length === 0 ? "אין לידים במערכת. הוסף ליד חדש!" : "לא נמצאו לידים תואמים"}
+                                            <td colSpan={6} className="px-8 py-20 text-center">
+                                                <div className="flex flex-col items-center opacity-30">
+                                                    <Megaphone size={48} className="mb-4" />
+                                                    <p className="font-black italic text-lg text-slate-400">לא נמצאו לידים תואמים</p>
+                                                </div>
                                             </td>
                                         </tr>
                                     ) : (
                                         filteredLeads.map((lead) => {
-                                            const fullName = `${lead.firstName} ${lead.lastName}`.trim();
-                                            const statusStyle = getStatusStyle(lead.status);
+                                            const statusStyle = getStatusStyle(lead.status as LeadStatusType);
                                             return (
-                                                <tr key={lead.id} className="hover:bg-amber-500/5 group transition-all">
+                                                <tr key={lead.id} className="hover:bg-slate-800/30 transition-colors group">
                                                     <td className="px-8 py-5">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500/20 to-blue-500/20 border border-amber-500/30 shadow-lg flex items-center justify-center font-black text-amber-300 text-xs">
+                                                            <div className="h-10 w-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center font-black text-amber-500 shadow-lg group-hover:scale-110 transition-transform italic">
                                                                 {lead.firstName?.[0]}{lead.lastName?.[0]}
                                                             </div>
-                                                            <div className="font-bold text-slate-200 group-hover:text-amber-200 transition-colors">
-                                                                {fullName || 'לא ידוע'}
-                                                            </div>
+                                                            <span className="font-black text-white group-hover:text-amber-500 transition-colors italic">{lead.firstName} {lead.lastName}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5">
-                                                        <Badge variant="blue" className="text-[10px] font-black px-3 py-1 rounded-lg">
-                                                            {lead.source || "לא ידוע"}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-6 py-5">
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="text-xs font-display font-bold text-slate-300 tracking-tight text-right" dir="ltr">{lead.phone}</span>
-                                                            <span className="text-[10px] text-slate-500 font-medium">{lead.email}</span>
+                                                    <td className="px-8 py-5">
+                                                        <div className="space-y-1">
+                                                            <p className="text-xs font-bold text-slate-300">{lead.phone}</p>
+                                                            <p className="text-[10px] font-black text-slate-500">{lead.email}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5">
-                                                        <span
-                                                            className="inline-flex items-center whitespace-nowrap px-3 py-1.5 rounded-xl text-[10px] font-black shadow-lg"
-                                                            style={{
-                                                                backgroundColor: statusStyle.bg,
-                                                                color: statusStyle.text
+                                                    <td className="px-8 py-5">
+                                                        <span className="bg-slate-900 border border-slate-800 text-slate-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter italic">
+                                                            {lead.source}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <span className="text-xs font-bold text-slate-500">
+                                                            {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('he-IL') : '—'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-8 py-5 text-center">
+                                                        <span 
+                                                            className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border"
+                                                            style={{ 
+                                                                backgroundColor: `${statusStyle.bg}`, 
+                                                                color: statusStyle.text,
+                                                                borderColor: `${statusStyle.text}30`
                                                             }}
                                                         >
                                                             {statusStyle.label}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-5">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button
+                                                    <td className="px-8 py-5">
+                                                        <div className="flex items-center justify-center gap-3">
+                                                            <button 
                                                                 onClick={() => openEditModal(lead)}
-                                                                className="h-8 w-8 flex items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 border border-blue-500/30 transition-all"
-                                                                title="עריכה">
-                                                                <Edit3 size={14} />
+                                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-amber-500 hover:border-amber-500 transition-all"
+                                                            >
+                                                                <Edit3 size={16} />
                                                             </button>
-                                                            <button
+                                                            <NeonButton 
                                                                 onClick={() => convertToClient(lead)}
-                                                                className="h-8 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] font-black hover:from-emerald-500 hover:to-emerald-400 transition-colors shadow-lg shadow-emerald-500/30 flex items-center gap-1"
-                                                                title="המר ללקוח">
-                                                                <UserCheck size={12} />
-                                                                המר
-                                                            </button>
-                                                            <button
+                                                                variant="primary" 
+                                                                className="py-2! px-4! text-[10px]! rounded-xl!"
+                                                            >
+                                                                <UserCheck size={14} className="ml-1" />
+                                                                המר ללקוח
+                                                            </NeonButton>
+                                                            <button 
                                                                 onClick={() => handleDeleteLead(lead.id)}
-                                                                className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 hover:text-red-300 hover:bg-red-500/20 border border-red-500/30 transition-all"
-                                                                title="מחק">
-                                                                <Trash2 size={14} />
+                                                                className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-red-500 hover:border-red-500 transition-all"
+                                                            >
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -383,130 +379,48 @@ export default function LeadsPage() {
                             </table>
                         </div>
                     )}
-                </Card>
+                </NeonCard>
 
-                {/* Add/Edit Lead Modal */}
-                {showModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
-                        <Card className="w-full max-w-md bg-slate-900 border-amber-500/20 p-6 shadow-2xl rounded-3xl animate-in zoom-in-95">
-                            <h3 className="text-xl font-black text-amber-400 mb-6">
-                                {editingLead ? "✏️ עריכת ליד" : "➕ הוספת ליד חדש"}
-                            </h3>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">שם פרטי *</label>
-                                        <input
-                                            type="text"
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newLead.firstName}
-                                            onChange={e => setNewLead({ ...newLead, firstName: e.target.value })}
-                                            placeholder="שם פרטי"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">שם משפחה</label>
-                                        <input
-                                            type="text"
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newLead.lastName}
-                                            onChange={e => setNewLead({ ...newLead, lastName: e.target.value })}
-                                            placeholder="שם משפחה"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">טלפון *</label>
-                                    <input
-                                        type="text"
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                        value={newLead.phone}
-                                        onChange={e => setNewLead({ ...newLead, phone: e.target.value })}
-                                        placeholder="050-0000000"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">אימייל</label>
-                                    <input
-                                        type="email"
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                        value={newLead.email}
-                                        onChange={e => setNewLead({ ...newLead, email: e.target.value })}
-                                        placeholder="email@example.com"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">סטטוס</label>
-                                        <select
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newLead.status}
-                                            onChange={e => setNewLead({ ...newLead, status: e.target.value as LeadStatusType })}
-                                        >
-                                            <option value="new">חדש</option>
-                                            <option value="contacted">נוצר קשר</option>
-                                            <option value="qualified">מוכשר</option>
-                                            <option value="proposal">הצעה</option>
-                                            <option value="negotiation">משא ומתן</option>
-                                            <option value="won">נסגר</option>
-                                            <option value="lost">אבוד</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400">מקור</label>
-                                        <select
-                                            className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none"
-                                            value={newLead.source}
-                                            onChange={e => setNewLead({ ...newLead, source: e.target.value })}
-                                        >
-                                            <option>פייסבוק</option>
-                                            <option>גוגל</option>
-                                            <option>המלצה</option>
-                                            <option>אתר</option>
-                                            <option>אחר</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400">הערות</label>
-                                    <textarea
-                                        className="w-full rounded-xl bg-slate-800/50 border border-slate-700 px-4 py-2.5 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none resize-none"
-                                        rows={3}
-                                        value={newLead.notes}
-                                        onChange={e => setNewLead({ ...newLead, notes: e.target.value })}
-                                        placeholder="הערות נוספות..."
-                                    />
-                                </div>
-                                <div className="pt-4 flex gap-3">
-                                    <Button 
-                                        onClick={editingLead ? handleUpdateLead : handleAddLead} 
-                                        disabled={createLead.isPending || updateLead.isPending}
-                                        className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-black rounded-xl">
-                                        {(createLead.isPending || updateLead.isPending) ? "שומר..." : (editingLead ? "עדכן ליד" : "שמור ליד")}
-                                    </Button>
-                                    <Button 
-                                        onClick={() => {
-                                            setShowModal(false);
-                                            setEditingLead(null);
-                                            resetForm();
-                                        }} 
-                                        variant="outline" 
-                                        className="flex-1 rounded-xl border-slate-600 text-slate-300">
-                                        ביטול
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    </div> : null}
+                {/* Modals */}
+                <NeonModal
+                    isOpen={showModal}
+                    onClose={() => { setShowModal(false); setEditingLead(null); resetForm(); }}
+                    title={editingLead ? "עריכת ליד" : "הוספת ליד חדש"}
+                    onSave={editingLead ? handleUpdateLead : handleAddLead}
+                    isSaving={createLead.isPending || updateLead.isPending}
+                >
+                    <div className="grid grid-cols-2 gap-6">
+                        <NeonInput label="שם פרטי *" value={newLead.firstName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewLead({ ...newLead, firstName: e.target.value })} />
+                        <NeonInput label="שם משפחה" value={newLead.lastName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewLead({ ...newLead, lastName: e.target.value })} />
+                    </div>
+                    <NeonInput label="מספר טלפון *" value={newLead.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewLead({ ...newLead, phone: e.target.value })} dir="ltr" />
+                    <NeonInput label="אימייל" value={newLead.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewLead({ ...newLead, email: e.target.value })} dir="ltr" />
+                    <div className="grid grid-cols-2 gap-6">
+                        <NeonSelect label="סטטוס" value={newLead.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewLead({ ...newLead, status: e.target.value as LeadStatusType })}>
+                            <option value="new">🆕 חדש</option>
+                            <option value="contacted">📞 נוצר קשר</option>
+                            <option value="qualified">🎯 מוכשר</option>
+                            <option value="won">✅ נסגר</option>
+                            <option value="lost">❌ אבוד</option>
+                        </NeonSelect>
+                        <NeonSelect label="מקור הליד" value={newLead.source} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewLead({ ...newLead, source: e.target.value })}>
+                            <option value="פייסבוק">🔵 פייסבוק</option>
+                            <option value="גוגל">🔴 גוגל Ads</option>
+                            <option value="אינסטגרם">🟣 אינסטגרם</option>
+                            <option value="טיקטוק">🎵 טיקטוק</option>
+                            <option value="לינקדאין">💼 לינקדאין</option>
+                            <option value="אתר">🌐 אתר אינטרנט</option>
+                            <option value="ישיר">📱 שיחה ישירה</option>
+                            <option value="הפנייה">🤝 הפנייה</option>
+                            <option value="אחר">❓ אחר</option>
+                        </NeonSelect>
+                    </div>
+                    <NeonTextarea label="הערות" value={newLead.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewLead({ ...newLead, notes: e.target.value })} rows={4} />
+                </NeonModal>
 
-                {/* Import Modal */}
-                {showImportModal ? <ImportLeadsModal
-                        isOpen={showImportModal}
-                        onClose={() => setShowImportModal(false)}
-                        onSuccess={() => {
-                            refetch();
-                            setShowImportModal(false);
-                        }}
-                    /> : null}
+                {showImportModal && <ImportLeadsModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onSuccess={() => { refetch(); setShowImportModal(false); }} />}
+                
+                {showAutomationModal && <CampaignAutomationModal isOpen={showAutomationModal} onClose={() => setShowAutomationModal(false)} />}
             </div>
         </DashboardShell>
     );

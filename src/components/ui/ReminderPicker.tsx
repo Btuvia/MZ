@@ -54,7 +54,7 @@ export function ReminderPicker({ isOpen, onClose, onSelect, itemTitle }: Reminde
     };
 
     const handleCustomSubmit = () => {
-        if (!customDate || !customTime) return;
+        if (customDate! || customTime!) return;
         
         const [hours, minutes] = customTime.split(":").map(Number);
         const reminderTime = new Date(customDate);
@@ -90,7 +90,7 @@ export function ReminderPicker({ isOpen, onClose, onSelect, itemTitle }: Reminde
                     >
                         <div className="glass-card border border-amber-500/20 rounded-2xl shadow-2xl overflow-hidden mx-4">
                             {/* Header */}
-                            <div className="bg-gradient-to-l from-amber-500 to-amber-600 p-4 flex items-center justify-between">
+                            <div className="bg-linear-to-l from-amber-500 to-amber-600 p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-white/20 p-2 rounded-xl backdrop-blur">
                                         <BellRing size={20} className="text-white" />
@@ -110,7 +110,7 @@ export function ReminderPicker({ isOpen, onClose, onSelect, itemTitle }: Reminde
 
                             {/* Content */}
                             <div className="p-4 space-y-4">
-                                {!showCustom ? (
+                                {showCustom! ? (
                                     <>
                                         {/* Quick Options */}
                                         <div className="grid grid-cols-2 gap-2">
@@ -171,7 +171,7 @@ export function ReminderPicker({ isOpen, onClose, onSelect, itemTitle }: Reminde
                                             </Button>
                                             <Button
                                                 onClick={handleCustomSubmit}
-                                                disabled={!customDate || !customTime}
+                                                disabled={customDate! || customTime!}
                                                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold disabled:opacity-50"
                                             >
                                                 <Bell size={16} className="ml-2" />

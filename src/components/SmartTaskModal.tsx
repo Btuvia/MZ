@@ -25,6 +25,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
     const [time, setTime] = useState("10:00");
     const [priority, setPriority] = useState<TaskPriority>("medium");
     const [taskType, setTaskType] = useState<TaskType>("task");
+    const [location, setLocation] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [endTime, setEndTime] = useState("11:00");
 
     // Client linking
     const [isLinkedToClient, setIsLinkedToClient] = useState(false);
@@ -83,7 +86,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 setTime(existingTask.time);
                 setPriority(existingTask.priority || "medium");
                 setTaskType(existingTask.type || "task");
-                setIsLinkedToClient(!!existingTask.client);
+                setIsLinkedToClient(!existingTask!.client);
                 setSelectedClient(existingTask.client ? { id: existingTask.clientId, name: existingTask.client } : null);
                 setAssignee(existingTask.assignedTo || existingTask.assignee || "admin");
                 setSubtasks(existingTask.subtasks || []);
@@ -93,6 +96,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 setEmployerName(existingTask.employerName || "");
                 setAgentName(existingTask.agentName || "");
                 setNotes(existingTask.notes || "");
+                setLocation(existingTask.location || "");
+                setEndDate(existingTask.endDate || existingTask.date || "");
+                setEndTime(existingTask.endTime || "11:00");
             } else {
                 // Reset form for new task
                 setTitle("");
@@ -111,6 +117,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 setEmployerName("");
                 setAgentName("");
                 setNotes("");
+                setLocation("");
+                setEndDate(initialDate.toISOString().split('T')[0]);
+                setEndTime("11:00");
             }
         }
     }, [isOpen, existingTask, initialDate]);
@@ -136,7 +145,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
     }, [clientSearchTerm]);
 
     const handleGenerateSubtasks = () => {
-        if (!title) return;
+        if (title!) return;
         setIsGeneratingAI(true);
 
         // Simulation of AI generation based on title keywords
@@ -175,7 +184,24 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
         }, 1500);
     };
 
+    const applyTemplate = (template: string) => {
+        setTitle(template);
+        if (template === "שיחת מעקב") setTaskType("call");
+        if (template === "אין מענה טלפוני") {
+            setTaskType("call");
+            setDescription("ניסיון התקשרות - לא היה מענה. יש לחזור ללקוח.");
+        }
+        if (template === "הגשת מסמכים") setTaskType("documentation");
+        if (template === "קבלת חתימות") setTaskType("documentation");
+        if (template === "תזכורת") setTaskType("task");
+    };
+
     const handleSave = () => {
+        if (title! || date! || time! || endDate! || endTime! || location! || description!) {
+            toast.error("אנא מלא את כל שדות החובה: כותרת, מועדי התחלה וסיום, מיקום ותיאור");
+            return;
+        }
+
         const selectedSubject = subjects.find(s => s.id === subjectId);
         const selectedWorkflow = workflows.find(w => w.id === workflowId);
 
@@ -185,6 +211,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
             description,
             date,
             time,
+            endDate,
+            endTime,
+            location,
             priority,
             type: taskType,
             status: existingTask?.status || "new",
@@ -233,21 +262,49 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 {/* Scrollable Body */}
                 <div className="flex-1 overflow-y-auto p-8 space-y-6">
 
+                    {/* Quick Templates */}
+                    <div>
+                        <label className="block text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3">תבניות מהירות</label>
+                        <div className="flex flex-wrap gap-2">
+                            {["שיחת מעקב", "אין מענה טלפוני", "הגשת מסמכים", "קבלת חתימות", "תזכורת"].map(template => (
+                                <button
+                                    key={template}
+                                    onClick={() => applyTemplate(template)}
+                                    className="px-4 py-1.5 rounded-full text-xs font-bold glass-card border border-amber-500/20 text-slate-300 hover:border-amber-500 hover:text-amber-200 transition-all"
+                                >
+                                    {template}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Title & Description */}
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">נושא המשימה</label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                placeholder="לדוגמה: הכנת תיק לקוח לפגישה..."
-                                className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-lg text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none transition-all"
-                            />
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">נושא המשימה (חובה)</label>
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    placeholder="לדוגמה: הכנת תיק לקוח לפגישה..."
+                                    className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-lg text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">מיקום (חובה)</label>
+                                <input
+                                    type="text"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    placeholder="משרד / טלפוני / כתובת..."
+                                    className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-lg text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none transition-all"
+                                />
+                            </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">פירוט (תיאור)</label>
+                            <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">פירוט (תיאור) (חובה)</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -293,7 +350,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                 size="sm"
                                 className="glass-card text-amber-400 hover:bg-slate-700/50 border border-amber-500/30 text-xs gap-2"
                                 onClick={handleGenerateSubtasks}
-                                disabled={isGeneratingAI || !title}
+                                disabled={isGeneratingAI || title!}
                             >
                                 {isGeneratingAI ? <span className="animate-spin">✨</span> : <Sparkles size={12} />}
                                 {isGeneratingAI ? "מנתח..." : "פרק למשימות משנה"}
@@ -319,7 +376,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                         {/* Time & Date */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">מועד לביצוע</label>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">מועד התחלה (חובה)</label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <input
@@ -334,6 +391,28 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                             type="time"
                                             value={time}
                                             onChange={(e) => setTime(e.target.value)}
+                                            className="w-full glass-card border-amber-500/20 rounded-xl px-2 py-3 font-bold text-sm text-slate-200 text-center focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">מועד סיום (חובה)</label>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                            className="w-full glass-card border-amber-500/20 rounded-xl px-4 py-3 font-bold text-sm text-slate-200 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
+                                        />
+                                    </div>
+                                    <div className="relative w-24">
+                                        <input
+                                            type="time"
+                                            value={endTime}
+                                            onChange={(e) => setEndTime(e.target.value)}
                                             className="w-full glass-card border-amber-500/20 rounded-xl px-2 py-3 font-bold text-sm text-slate-200 text-center focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/40 outline-none"
                                         />
                                     </div>
@@ -365,7 +444,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                     >כן</button>
                                     <button
                                         onClick={() => { setIsLinkedToClient(false); setSelectedClient(null); }}
-                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${!isLinkedToClient ? 'bg-slate-700 text-slate-200 border-slate-600' : 'glass-card text-slate-400 border-amber-500/20 hover:bg-slate-700/50'}`}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${isLinkedToClient! ? 'bg-slate-700 text-slate-200 border-slate-600' : 'glass-card text-slate-400 border-amber-500/20 hover:bg-slate-700/50'}`}
                                     >לא</button>
                                 </div>
 
@@ -384,7 +463,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                             className="w-full glass-card border-2 border-amber-500/30 rounded-xl pl-4 pr-10 py-3 font-bold text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 outline-none text-slate-200 placeholder:text-slate-500"
                                         />
 
-                                        {showClientResults && !selectedClient ? <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
+                                        {showClientResults && selectedClient! ? <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
                                                 {searchResults.length > 0 ? searchResults.map(client => (
                                                     <div
                                                         key={client.id}
@@ -417,7 +496,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                                 : 'text-slate-400 hover:bg-slate-700/50'
                                                 }`}
                                         >
-                                            {p === 'urgent' ? 'קריטי' : p === 'high' ? 'דחוף' : p === 'medium' ? 'רגיל' : 'נמוך'}
+                                            {p === 'urgent' ? 'קריטי' : p === 'high' ? 'גבוה' : p === 'medium' ? 'בינוני' : 'נמוך'}
                                         </button>
                                     ))}
                                 </div>

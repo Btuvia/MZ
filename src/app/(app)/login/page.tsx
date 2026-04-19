@@ -1,14 +1,15 @@
-﻿'use client';
+'use client';
 
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { motion } from 'framer-motion';
-import { Shield, Users, User, ArrowRight, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, User, ArrowRight, Sparkles, Lock, Mail, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { auth, db } from '@/lib/firebase/firebase';
+import { NeonCard, NeonButton, NeonInput } from '@/components/ui/neon-form';
 
 type UserRole = 'admin' | 'agent' | 'client';
 
@@ -21,47 +22,53 @@ export default function LoginPage() {
     const { demoLogin } = useAuth();
 
     const handleDemoLogin = () => {
-        if (!selectedRole) {
+        if (selectedRole!) {
             toast.error('אנא בחר סוג משתמש');
             return;
         }
-        toast.success('מתחבר במצב Demo...');
-        demoLogin(selectedRole);
+        toast.promise(new Promise(resolve => setTimeout(resolve, 1000)), {
+            loading: 'מתחבר למערכת ה-Demo...',
+            success: () => {
+                demoLogin(selectedRole!);
+                return 'התחברת בהצלחה!';
+            },
+            error: 'שגיאה בהתחברות'
+        });
     };
 
     const roles = [
         {
             id: 'admin' as UserRole,
-            title: 'כניסת מנהלים',
-            description: 'גישה מלאה לכל המערכת',
+            title: 'ניהול מערכת',
+            description: 'גישה מלאה למנהלי הסוכנות',
             icon: Shield,
-            color: 'from-amber-500 to-orange-500',
+            color: 'amber',
         },
         {
             id: 'agent' as UserRole,
-            title: 'כניסת סוכנים',
-            description: 'ניהול לקוחות ומכירות',
+            title: 'אזור סוכנים',
+            description: 'ניהול תיקי לקוחות ומכירות',
             icon: Users,
-            color: 'from-blue-500 to-cyan-500',
+            color: 'blue',
         },
         {
             id: 'client' as UserRole,
-            title: 'כניסת לקוחות',
-            description: 'צפייה בפוליסות ומסמכים',
+            title: 'אזור לקוחות',
+            description: 'צפייה בתיק הביטוח האישי',
             icon: User,
-            color: 'from-green-500 to-emerald-500',
+            color: 'purple',
         },
     ];
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedRole) { toast.error('אנא בחר סוג משתמש'); return; }
+        if (selectedRole!) { toast.error('אנא בחר סוג משתמש'); return; }
         setLoading(true);
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const userDocRef = doc(db, 'users', userCredential.user.uid);
             const userDoc = await getDoc(userDocRef);
-            if (!userDoc.exists()) throw new Error('משתמש לא נמצא במערכת');
+            if (userDoc!.exists()) throw new Error('משתמש לא נמצא במערכת');
             const userData = userDoc.data();
             if (userData.role !== selectedRole) { await auth.signOut(); throw new Error('תפקיד לא תואם'); }
             localStorage.setItem('userRole', userData.role);
@@ -76,63 +83,123 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
-            <div className="max-w-6xl w-full">
-                <div className="text-center mb-8">
-                    <div className="text-6xl mb-4" />
-                    <h1 className="text-4xl font-bold text-white mb-2">מגן זהב CRM</h1>
-                    <p className="text-gray-400">מערכת ניהול לסוכנויות ביטוח</p>
-                </div>
-                {!selectedRole ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {roles.map((role, index) => (
-                            <motion.button key={role.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} onClick={() => setSelectedRole(role.id)} className="group relative bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-8 hover:border-white/30 transition-all text-right overflow-hidden">
-                                <div className={`absolute inset-0 bg-gradient-to-br ${role.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
-                                <div className="relative z-10">
-                                    <div className={`inline-flex p-4 rounded-xl bg-gradient-to-br ${role.color} mb-4`}><role.icon className="w-8 h-8 text-white" /></div>
-                                    <h3 className="text-2xl font-bold text-white mb-2">{role.title}</h3>
-                                    <p className="text-gray-400 mb-6">{role.description}</p>
-                                    <div className="flex items-center justify-end text-amber-500 font-medium"><span>המשך</span><ArrowRight className="w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform" /></div>
-                                </div>
-                            </motion.button>
-                        ))}
+        <div className="min-h-screen bg-[#050810] flex items-center justify-center p-6 selection:bg-amber-500/30 overflow-hidden relative" dir="rtl">
+            {/* Background Effects */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-amber-500/5 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[20%] left-[-10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="max-w-6xl w-full relative z-10">
+                <div className="text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <div className="flex items-center justify-center gap-4 mb-6">
+                        <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-amber-600 via-orange-500 to-amber-600 flex items-center justify-center text-white font-black text-3xl shadow-[0_0_30px_rgba(245,158,11,0.4)] italic">Z</div>
+                        <h1 className="text-4xl font-black text-white italic tracking-tighter">
+                            מגדל <span className="text-amber-500">זהב</span>
+                        </h1>
                     </div>
-                ) : (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md mx-auto">
-                        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-8 shadow-2xl">
-                            <div className="text-center mb-6">
-                                {roles.find((r) => r.id === selectedRole) && (() => {
-                                    const role = roles.find((r) => r.id === selectedRole)!;
-                                    return (<><div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${role.color} mb-3`}><role.icon className="w-6 h-6 text-white" /></div><h2 className="text-2xl font-bold text-white mb-1">{role.title}</h2><p className="text-gray-400 text-sm">{role.description}</p></>);
-                                })()}
-                            </div>
-                            <button onClick={() => { setSelectedRole(null); setEmail(''); setPassword(''); }} className="text-gray-400 hover:text-white text-sm mb-6 flex items-center gap-2"><ArrowRight className="w-4 h-4 rotate-180" />חזור</button>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <div><label className="block text-sm font-medium text-gray-300 mb-2">אימייל</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="your@email.com" required /></div>
-                                <div><label className="block text-sm font-medium text-gray-300 mb-2">סיסמה</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="" required /></div>
-                                <button type="submit" disabled={loading} className="w-full bg-amber-500 text-black font-bold py-3 rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">{loading ? 'מתחבר...' : 'התחבר'}</button>
-                            </form>
-                            
-                            <div className="relative my-6">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-white/10" />
+                    <p className="text-slate-500 font-bold tracking-[0.2em] uppercase text-xs">Premium CRM Interface</p>
+                </div>
+
+                <AnimatePresence mode="wait">
+                    {selectedRole! ? (
+                        <motion.div 
+                            key="role-selection"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+                        >
+                            {roles.map((role, index) => (
+                                <button 
+                                    key={role.id} 
+                                    onClick={() => setSelectedRole(role.id)}
+                                    className="group relative"
+                                >
+                                    <NeonCard className="p-10! text-right h-full border-slate-800/80 group-hover:border-amber-500/50 transition-all duration-500 hover:-translate-y-2">
+                                        <div className={`h-16 w-16 rounded-2xl bg-${role.color}-500/10 border border-${role.color}-500/20 flex items-center justify-center mb-10 group-hover:scale-110 transition-transform`}>
+                                            <role.icon className={`w-8 h-8 text-${role.color === 'amber' ? 'amber-500' : role.color === 'blue' ? 'blue-400' : 'purple-400'}`} />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-white mb-3 italic tracking-tight">{role.title}</h3>
+                                        <p className="text-slate-500 font-bold leading-relaxed mb-8">{role.description}</p>
+                                        <div className="flex items-center gap-2 text-amber-500 font-black italic text-xs uppercase tracking-widest group-hover:gap-4 transition-all">
+                                            <span>כניסה למערכת</span>
+                                            <ArrowRight size={16} className="rotate-180" />
+                                        </div>
+                                    </NeonCard>
+                                </button>
+                            ))}
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="login-form"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.05 }}
+                            className="max-w-md mx-auto"
+                        >
+                            <NeonCard className="p-12! border-slate-800 shadow-[0_40px_100px_rgba(0,0,0,0.8)]">
+                                <div className="flex items-center justify-between mb-10">
+                                    <button 
+                                        onClick={() => { setSelectedRole(null); setEmail(''); setPassword(''); }} 
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-all"
+                                    >
+                                        <ArrowRight size={18} />
+                                    </button>
+                                    <div className="text-right">
+                                        <h2 className="text-2xl font-black text-white italic tracking-tighter">
+                                            {roles.find(r => r.id === selectedRole)?.title}
+                                        </h2>
+                                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none mt-1">Authentication Required</p>
+                                    </div>
                                 </div>
-                                <div className="relative flex justify-center text-sm">
-                                    <span className="px-2 bg-transparent text-gray-500">או</span>
+
+                                <form onSubmit={handleLogin} className="space-y-8">
+                                    <NeonInput 
+                                        label="אימייל" 
+                                        type="email" 
+                                        value={email} 
+                                        onChange={(e) => setEmail(e.target.value)} 
+                                        placeholder="your@email.com" 
+                                        required 
+                                        autoFocus
+                                    />
+                                    <NeonInput 
+                                        label="סיסמה" 
+                                        type="password" 
+                                        value={password} 
+                                        onChange={(e) => setPassword(e.target.value)} 
+                                        placeholder="••••••••" 
+                                        required 
+                                    />
+                                    
+                                    <NeonButton 
+                                        type="submit" 
+                                        disabled={loading} 
+                                        className="w-full py-6! text-lg! shadow-xl shadow-amber-500/20"
+                                    >
+                                        {loading ? 'מתחבר...' : 'התחבר למערכת'}
+                                    </NeonButton>
+                                </form>
+                                
+                                <div className="relative my-10">
+                                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800" /></div>
+                                    <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest"><span className="px-4 bg-[#0a0e1a] text-slate-600">Access Mode</span></div>
                                 </div>
-                            </div>
-                            
-                            <button
-                                type="button"
-                                onClick={handleDemoLogin}
-                                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Sparkles className="w-5 h-5" />
-                                כניסה מהירה (Demo)
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
+                                
+                                <NeonButton
+                                    type="button"
+                                    onClick={handleDemoLogin}
+                                    variant="secondary"
+                                    className="w-full py-6! text-lg! border-blue-500!/30 text-blue-400! hover:border-blue-500! shadow-xl shadow-blue-500/10 group"
+                                >
+                                    <Sparkles className="w-5 h-5 ml-2 group-hover:scale-125 transition-transform" />
+                                    כניסה מהירה (Demo)
+                                </NeonButton>
+                            </NeonCard>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

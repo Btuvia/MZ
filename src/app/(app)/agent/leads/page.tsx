@@ -46,7 +46,7 @@ export default function LeadsPage() {
 
     const handleCreateTestLead = async () => {
         const name = prompt("שם הליד:");
-        if (!name) return;
+        if (name!) return;
         const newLead = {
             name,
             phone: "050-0000000",
@@ -98,7 +98,7 @@ export default function LeadsPage() {
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
@@ -121,7 +121,7 @@ export default function LeadsPage() {
                         { label: "בטיפול", value: stats.inProgress, icon: "⚡", color: "from-amber-500 to-orange-600" },
                         { label: "פגישות קבועות", value: stats.scheduled, icon: "📅", color: "from-purple-600 to-indigo-700" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -156,7 +156,7 @@ export default function LeadsPage() {
                             <div className="p-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-110 transition-transform">
+                                        <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-110 transition-transform">
                                             {lead.name ? lead.name.charAt(0) : '?'}
                                         </div>
                                         <div>
@@ -235,7 +235,7 @@ export default function LeadsPage() {
                             </div>
                         </Card>
                     ))}
-                    {!loading && filteredLeads.length === 0 && <div className="text-center py-10 opacity-50 font-black italic">אין לידים להצגה</div>}
+                    {loading! && filteredLeads.length === 0 && <div className="text-center py-10 opacity-50 font-black italic">אין לידים להצגה</div>}
                 </div>
 
                 {/* AI Insights */}
@@ -262,7 +262,7 @@ export default function LeadsPage() {
                                 className="shadow-xl shadow-accent/20"
                                 disabled={loading}
                             >
-                                {loading && !aiInsights ? "מעבד..." : "צור המלצות"}
+                                {loading && aiInsights! ? "מעבד..." : "צור המלצות"}
                             </Button>
                         </div>
                     </div>

@@ -25,7 +25,7 @@ export function TaskTypeSelector({ value, onChange, disabled }: TaskTypeSelector
 
             <button
                 type="button"
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => disabled! && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={`w-full px-4 py-3 rounded-xl border-2 text-right flex items-center justify-between transition-all
           ${disabled
@@ -64,7 +64,7 @@ export function TaskTypeSelector({ value, onChange, disabled }: TaskTypeSelector
                 </svg>
             </button>
 
-            {isOpen && !disabled && (
+            {isOpen && disabled! && (
                 <>
                     {/* Backdrop */}
                     <div

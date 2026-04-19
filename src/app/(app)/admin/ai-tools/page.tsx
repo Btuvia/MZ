@@ -168,7 +168,7 @@ export default function AIToolsPage() {
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
             <div className="space-y-12 animate-in fade-in duration-1000 relative" dir="rtl">
                 <header className="text-center space-y-4">
-                    <h1 className="text-4xl font-black text-primary font-display tracking-tight italic bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-indigo-600">Generative AI Studio</h1>
+                    <h1 className="text-4xl font-black font-display tracking-tight italic bg-clip-text text-transparent bg-linear-to-r from-slate-900 to-indigo-600">Generative AI Studio</h1>
                     <p className="text-slate-500 font-medium">חליפת כלי ה-AI המתקדמת לסוכן העתיד</p>
                 </header>
 
@@ -372,7 +372,7 @@ export default function AIToolsPage() {
                                         </select>
                                     </div>
 
-                                    <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm cursor-pointer" onClick={() => setCalculatorInputs(p => ({ ...p, hasSpouse: !p.hasSpouse }))}>
+                                    <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm cursor-pointer" onClick={() => setCalculatorInputs(p => ({ ...p, hasSpouse: p!.hasSpouse }))}>
                                         <div className={`h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all ${calculatorInputs.hasSpouse ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300'}`}>
                                             {calculatorInputs.hasSpouse && <span className="text-xs font-black">✓</span>}
                                         </div>

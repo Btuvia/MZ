@@ -14,7 +14,7 @@ import { useServiceWorker } from '@/lib/hooks/useServiceWorker';
 export function UpdateBanner() {
     const { isUpdateAvailable, skipWaiting } = useServiceWorker();
 
-    if (!isUpdateAvailable) return null;
+    if (isUpdateAvailable!) return null;
 
     return (
         <AnimatePresence>
@@ -22,7 +22,7 @@ export function UpdateBanner() {
                 initial={{ opacity: 0, y: -50 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -50 }}
-                className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-l from-indigo-600 to-indigo-700 text-white shadow-lg"
+                className="fixed top-0 left-0 right-0 z-50 bg-linear-to-l from-indigo-600 to-indigo-700 text-white shadow-lg"
                 dir="rtl"
             >
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">

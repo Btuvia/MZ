@@ -1,8 +1,8 @@
 "use client";
 
-import { Edit2, Copy, Save, Trash2, Plus, X, Upload, Share2, Send, FileText, Download } from "lucide-react";
+import { Edit2, Copy, Save, Trash2, Plus, X, Upload, Share2, Send, FileText, Download, Mail, Link2, ArrowLeft, ArrowRight } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { createClientAndSendCredentials } from "@/app/actions/client-credentials";
 import { sendEmail } from "@/app/actions/email";
@@ -11,11 +11,19 @@ import LifecycleTracker from "@/components/client/LifecycleTracker";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { FileUpload } from "@/components/ui/file-upload";
+import { 
+    NeonModal, 
+    NeonInput, 
+    NeonSelect, 
+    NeonCard,
+    NeonButton
+} from "@/components/ui/neon-form";
 import { analyzeInsuranceDocument } from "@/lib/ai/ai-service";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { ClientQuickActions } from "@/components/clients/ClientQuickActions";
 
 // --- Types & Interfaces ---
 
@@ -111,6 +119,18 @@ type InsuranceProduct = {
     numInsured: number;
 };
 
+type ElementaryInsurance = {
+    id: string;
+    category: 'רכב' | 'דירה';
+    type: string; // צד ג', מקיף וכו' או מבנה, תכולה וכו'
+    manufacturer?: string; // ליצרן רכב
+    insurer: string;
+    effectiveDate: string;
+    endDate: string;
+    premium: number;
+    status: 'פעיל' | 'לא פעיל';
+};
+
 // ===== Platinum Products Pricing & Types =====
 type PlatinumSale = {
     id: string;
@@ -138,6 +158,12 @@ type PlatinumPaymentDetails = {
     accountType?: 'עו"ש' | 'חיסכון';
     // יום גבייה
     billingDay?: 2 | 10 | 15 | 20;
+};
+
+type AiInsight = {
+    riskScore: number;
+    analysis: string;
+    opportunities: { text: string; impact: string }[];
 };
 
 // טבלת מחירי פלטינום לפי גיל
@@ -222,7 +248,7 @@ type ClientData = {
     documents: ClientDocument[];
     interactions: Interaction[];
     externalPolicies?: ExternalPolicy[];
-    aiInsights?: any;
+    aiInsights?: AiInsight;
     // שדות חדשים - פרטי לקוח
     birthDate?: string;           // תאריך לידה
     hasInsuranceReport?: boolean; // האם קיים העתק הר ביטוח
@@ -242,6 +268,7 @@ type ClientData = {
     // פרמיה שנסגרה (לחישוב עמלות שיתוף פעולה)
     closedPremium?: number;
     closedCompany?: string;
+    elementaryInsurances: ElementaryInsurance[];
 };
 
 // --- Initial Data (Mock) ---
@@ -279,7 +306,8 @@ const INITIAL_CLIENT: ClientData = {
         { id: "1", type: "call", direction: "inbound", date: "2024-02-15 10:30", summary: "הלקוחה התקשרה לשאול לגבי כיסוי ניתוחים בחו״ל בפוליסת הבריאות", sentiment: "neutral" },
         { id: "2", type: "whatsapp", direction: "outbound", date: "2024-02-14 14:00", summary: "נשלחה תזכורת לחידוש ביטוח רכב", sentiment: "positive" }
     ],
-    externalPolicies: []
+    externalPolicies: [],
+    elementaryInsurances: []
 };
 
 export default function ClientDetailsPage() {
@@ -290,15 +318,14 @@ export default function ClientDetailsPage() {
 
     // Main Persisted State
     const [client, setClient] = useState<ClientData>(INITIAL_CLIENT);
-    const [clientTasks, setClientTasks] = useState<any[]>([]); // New state for global tasks
-    const [loading, setLoading] = useState(true);
-    const [allClients, setAllClients] = useState<any[]>([]); // לחיפוש לקוח מקושר
+    const [clientTasks, setClientTasks] = useState<Task[]>([]); // New state for global tasks
+    const [allClients, setAllClients] = useState<ClientData[]>([]); // לחיפוש לקוח מקושר
     const [clientSearchQuery, setClientSearchQuery] = useState('');
 
     // AI State
-    const [aiInsight, setAiInsight] = useState<any>(null);
-    const [loadingAi, setLoadingAi] = useState(false);
+    const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [loadingAi, setLoadingAi] = useState(false);
 
     // Modals & Forms
     const [editMode, setEditMode] = useState<{ type: string; item?: any } | null>(null);
@@ -318,6 +345,17 @@ export default function ClientDetailsPage() {
     const [showPlatinumSelect, setShowPlatinumSelect] = useState(false);
     const [showReferralModal, setShowReferralModal] = useState(false);
     const [showMarketModal, setShowMarketModal] = useState(false);
+    
+    // Elementary Form State
+    const [elementaryForm, setElementaryForm] = useState<Partial<ElementaryInsurance>>({
+        category: 'רכב',
+        type: 'חובה ומקיף',
+        insurer: 'כלל',
+        effectiveDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        premium: 0,
+        status: 'פעיל'
+    });
 
     // --- Persistence ---
     useEffect(() => {
@@ -534,7 +572,7 @@ export default function ClientDetailsPage() {
         if (!editMode) return;
 
         const { type } = editMode;
-        console.log(`Saving modal data for ${type}...`, formData);
+        // console.log(`Saving modal data for ${type}...`, formData);
 
         try {
             if (type === "family") {
@@ -616,7 +654,8 @@ export default function ClientDetailsPage() {
                 const updatedData = {
                     idNumber: formData.idNumber,
                     birthDate: formData.birthDate,
-                    idIssueDate: formData.idIssueDate
+                    idIssueDate: formData.idIssueDate,
+                    isSmoker: formData.isSmoker
                 };
                 const updatedClient = { ...client, ...updatedData };
                 setClient(updatedClient);
@@ -630,7 +669,6 @@ export default function ClientDetailsPage() {
                 // עדכון פרטים נוספים על הלקוח
                 const updatedData = {
                     healthFund: formData.healthFund,
-                    isSmoker: formData.isSmoker,
                     paymentTerms: formData.paymentTerms,
                     email: formData.email,
                     linkedClientId: formData.linkedClientId,
@@ -688,7 +726,7 @@ export default function ClientDetailsPage() {
         }
     };
 
-    const deleteItem = async (key: "family" | "policies" | "tasks" | "pensionSales" | "insuranceSales" | "platinumSales", id: string) => {
+    const deleteItem = async (key: "family" | "policies" | "tasks" | "pensionSales" | "insuranceSales" | "platinumSales" | "elementaryInsurances", id: string) => {
         if (confirm("האם למחוק פריט זה?")) {
             if (key === "tasks") {
                 await firestoreService.deleteTask(id);
@@ -824,7 +862,7 @@ export default function ClientDetailsPage() {
         try {
             // חישוב סה"כ
             const totalMonthly = pendingProducts.reduce((sum, p) => sum + p.monthlyPremium, 0);
-            const totalOneTime = pendingProducts.reduce((sum, p) => sum + (p.monthlyPremium * 3), 0);
+            // const totalOneTime = pendingProducts.reduce((sum, p) => sum + (p.monthlyPremium * 3), 0);
 
             // הכנת תוכן המייל
             const productsHtml = pendingProducts.map(p => `
@@ -963,7 +1001,7 @@ export default function ClientDetailsPage() {
         const isElementary = type === "ביטוח אלמנטרי";
         const recipient = isElementary ? "office@tlp-ins.co.il" : "hafnayot@tlp-ins.co.il";
         const cc = "btuvia6580@gmail.com";
-        const subject = `הפניית לקוח - ${client.name} - ${type}`;
+        // const subject = `הפניית לקוח - ${client.name} - ${type}`;
         const body = `
 פרטי לקוח:
 שם: ${client.name}
@@ -982,21 +1020,20 @@ export default function ClientDetailsPage() {
     };
 
     // --- AI Logic ---
-    const fetchAiInsights = async () => {
+    const fetchAiInsights = useCallback(async () => {
         setLoadingAi(true);
         try {
-            // Simulating context for AI
             const prompt = `Analyze insurance client: ${JSON.stringify(client)}. Return JSON: { "riskScore": 15, "analysis": "...", "opportunities": [{"text": "...", "impact": "..."}] }`;
             const res = await generateWithGemini(prompt);
             if (!res.error) {
                 setAiInsight(JSON.parse(res.text.replace(/```json/g, '').replace(/```/g, '').trim()));
             }
         } catch (e) { console.error(e); } finally { setLoadingAi(false); }
-    };
+    }, [client]);
 
     useEffect(() => {
         if (activeTab === "תובנות AI" && !aiInsight) fetchAiInsights();
-    }, [activeTab]);
+    }, [activeTab, aiInsight, fetchAiInsights]);
 
 
     const handleUploadDocument = async (file: File, metadata?: { documentType?: string; producer?: string; documentName?: string }) => {
@@ -1213,301 +1250,351 @@ ${clipped}`;
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
             <div className="space-y-8 animate-fade-in-up" dir="rtl">
 
-                {/* Header - Premium Glass Design with Gold Accents */}
-                <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-500 rounded-[2rem] blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
-                    <div className="relative bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 rounded-[2rem] p-8 md:p-10 text-white shadow-2xl overflow-hidden border border-amber-500/20">
-                        {/* Animated Background Elements */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse-slow" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 blur-2xl rounded-full translate-y-1/2 -translate-x-1/2 animate-float" />
-                        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-amber-400/10 rounded-full -translate-x-1/2 -translate-y-1/2" />
-
+                {/* Header - Neon Premium Design */}
+                <div className="relative group animate-in fade-in zoom-in duration-700">
+                    <div className="absolute inset-0 bg-linear-to-r from-blue-600/30 via-indigo-600/30 to-amber-500/30 rounded-[2.5rem] blur-3xl opacity-50 group-hover:opacity-75 transition-opacity duration-700" />
+                    <div className="relative bg-[#0d1326] rounded-[2.5rem] p-10 text-white shadow-2xl overflow-hidden border border-slate-800">
+                        {/* Glowing Decorative Orbs */}
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse" />
+                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/10 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/2 animate-float" />
+                        
                         {/* Edit Button */}
                         <button 
                             onClick={() => handleEdit("personal", { name: client.name, phone: client.phone, email: client.email, status: client.status, idNumber: client.idNumber })} 
-                            className="absolute top-6 left-6 p-3 bg-white/10 hover:bg-amber-500/30 rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-110 hover:rotate-3 border border-white/20"
+                            className="absolute top-8 left-8 p-3 bg-slate-800/50 hover:bg-amber-500/20 rounded-2xl backdrop-blur-md transition-all duration-300 hover:scale-110 hover:rotate-3 border border-slate-700 hover:border-amber-500/50"
                         >
-                            <Edit2 size={16} />
+                            <Edit2 size={18} className="text-amber-400" />
                         </button>
 
-                        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="flex items-center gap-6 text-right w-full md:w-auto">
-                                <div className="relative group/avatar">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full blur-md group-hover/avatar:blur-lg transition-all duration-300" />
-                                    <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 backdrop-blur-xl flex items-center justify-center text-4xl font-black text-slate-900 border-2 border-amber-300/50 shadow-2xl group-hover/avatar:scale-105 transition-transform duration-300">
-                                        {client.name.substring(0, 2)}
+                        <div className="relative z-10">
+                            {/* Top Row: Name and Main Actions */}
+                            <div className="flex flex-col lg:flex-row justify-between items-center gap-10 mb-10">
+                                <div className="flex items-center gap-8 text-right w-full lg:w-auto">
+                                    <div className="relative group/avatar">
+                                        <div className="absolute inset-0 bg-linear-to-br from-amber-400 to-amber-600 rounded-[2.5rem] blur-md group-hover/avatar:blur-xl transition-all duration-500" />
+                                        <div className="relative h-32 w-32 rounded-[2.5rem] bg-linear-to-br from-slate-900 to-[#1e293b] flex items-center justify-center text-5xl font-black text-amber-400 border-2 border-amber-500/30 shadow-2xl transition-transform duration-500 group-hover/avatar:scale-105">
+                                            {client.name.substring(0, 2)}
+                                        </div>
+                                        <div className="absolute -bottom-2 -right-2 bg-emerald-500 h-6 w-6 rounded-full border-4 border-[#0d1326] shadow-lg" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-4 flex-wrap">
+                                            <h1 className="text-4xl md:text-6xl font-black font-display leading-none tracking-tight text-white italic drop-shadow-2xl">
+                                                {client.name.split(" ")[0]} <span className="text-amber-500">{client.name.split(" ").slice(1).join(" ")}</span>
+                                            </h1>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {client.salesStatus === 'closed_won' ? (
+                                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 px-4 py-1 rounded-full text-[10px] font-black uppercase">✓ פעיל</Badge>
+                                            ) : (
+                                                <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-4 py-1 rounded-full text-[10px] font-black uppercase">◉ ליד</Badge>
+                                            )}
+                                            {!!client.opsUnlocked && (
+                                                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/30 px-4 py-1 rounded-full text-[10px] font-black uppercase animate-pulse">⚡ תפעול פתוח</Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <h1 className="text-3xl md:text-4xl font-black font-display leading-none mb-3 drop-shadow-lg text-white">{client.name}</h1>
-                                    <p className="text-sm font-medium text-slate-300 tracking-wide font-display flex items-center gap-2 flex-wrap">
-                                        <span className="bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm text-white">{client.idNumber}</span>
-                                        <span className="bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm text-white">{client.phone}</span>
-                                        <span className="bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm text-white">{client.email}</span>
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-4 flex-wrap">
-                                        <span className={`px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider backdrop-blur-sm border transition-all duration-300 hover:scale-105 ${client.salesStatus === 'closed_won' ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400/50' : 'bg-amber-500/30 text-amber-200 border-amber-400/50'}`}>
-                                            {client.salesStatus === 'closed_won' ? '✓ פעיל' : '◉ ליד'}
-                                        </span>
-                                        {client.opsUnlocked ? <span className="px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider bg-blue-500/30 text-blue-200 border border-blue-400/50 backdrop-blur-sm animate-pulse-slow">
-                                                ⚡ תפעול פתוח
-                                            </span> : null}
-                                        {client.referralName ? <span className="px-4 py-1.5 text-[11px] font-bold rounded-full uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/50 backdrop-blur-sm flex items-center gap-1.5 hover:scale-105 transition-transform">
-                                                🤝 הגיע מ: {client.referralName}
-                                            </span> : null}
-                                    </div>
+
+                                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                                    <ClientQuickActions 
+                                        clientId={client.id}
+                                        clientName={client.name}
+                                        phone={client.phone}
+                                        email={client.email}
+                                        variant="horizontal"
+                                    />
+                                    <button
+                                        onClick={() => setShowReferralModal(true)}
+                                        className="bg-linear-to-r from-indigo-500 to-indigo-600 text-white px-8 py-4 rounded-2xl shadow-xl font-black flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105 active:scale-95 group/btn italic text-sm"
+                                    >
+                                        <Share2 size={18} />
+                                        הפנייה מהירה
+                                    </button>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => setShowReferralModal(true)}
-                                className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 hover:from-amber-300 hover:to-amber-400 px-8 py-4 rounded-2xl shadow-xl shadow-amber-500/30 font-black flex items-center gap-3 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 group/btn"
-                            >
-                                <Share2 size={20} className="group-hover/btn:rotate-12 transition-transform duration-300" />
-                                הפניית לקוח
-                            </button>
+                            {/* Middle Row: Identity 3-Column Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                                <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 hover:border-amber-500/30 transition-all group/info">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> מספר זהות
+                                    </p>
+                                    <p className="text-xl font-black text-white group-hover/info:text-amber-500 transition-colors">{client.idNumber}</p>
+                                </div>
+                                <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 hover:border-amber-500/30 transition-all group/info">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> דואר אלקטרוני
+                                    </p>
+                                    <p className="text-xl font-black text-white group-hover/info:text-indigo-400 transition-colors truncate">{client.email}</p>
+                                </div>
+                                <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 hover:border-amber-500/30 transition-all group/info">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> טלפון נייד
+                                    </p>
+                                    <p className="text-xl font-black text-white group-hover/info:text-emerald-400 transition-colors">{client.phone}</p>
+                                </div>
+                            </div>
+
+                            {/* Bottom Row: Status Bar */}
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-white/5">
+                                <div className="flex items-center gap-8">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-xs font-bold text-slate-400">עדכון אחרון: {client.interactions?.[0]?.date || "היום"}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-bold text-slate-400">סטטוס:</span>
+                                        <Badge variant="outline" className="border-amber-500/30 text-amber-500 text-[10px] font-black px-3 py-0.5 rounded-full">
+                                            {client.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                
+                                {!!client.referralName && (
+                                    <div className="bg-white/5 px-6 py-2 rounded-2xl border border-white/10 text-indigo-300 text-xs font-black">
+                                        🤝 שותף: {client.referralName}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Tabs - Premium Pill Design */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none px-1">
+                {/* Tabs - Neon Pill Design */}
+                <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-none px-2 no-scrollbar">
                     {tabs.map((tab, index) => (
                         <button 
                             key={tab} 
                             onClick={() => setActiveTab(tab)} 
-                            className={`px-6 py-3 rounded-2xl text-xs font-bold whitespace-nowrap transition-all duration-300 ${
+                            className={`px-8 py-3.5 rounded-2xl text-[11px] font-black whitespace-nowrap transition-all duration-300 relative overflow-hidden group/tab ${
                                 activeTab === tab 
-                                    ? 'bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-xl shadow-slate-400/20 scale-105' 
-                                    : 'bg-white/80 backdrop-blur-sm text-slate-500 hover:bg-white hover:text-slate-700 hover:shadow-lg hover:scale-102 border border-slate-100'
+                                    ? 'bg-amber-500 text-black shadow-[0_0_20px_rgba(245,158,11,0.2)] scale-105 italic' 
+                                    : 'bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-slate-800'
                             }`}
                             style={{ animationDelay: `${index * 30}ms` }}
                         >
+                            {activeTab === tab && (
+                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/tab:translate-x-full transition-transform duration-1000" />
+                            )}
                             {tab}
                         </button>
                     ))}
                 </div>
 
-                {/* --- Tab Content: Summary (Main Page) --- */}
+                {/* --- Tab Content: Summary --- */}
                 {activeTab === "סיכום" && (
-                    <div className="space-y-8 stagger-children">
-                        {/* Financial Overview Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Premium Card 1 - Gold Theme */}
-                            <div className="group relative">
-                                <div className="absolute inset-0 bg-gradient-to-br from-amber-600 to-amber-800 rounded-3xl blur-lg opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
-                                <Card className="relative border-none shadow-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900 text-white p-8 rounded-3xl overflow-hidden hover-lift border border-amber-500/20">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/30 rounded-full blur-2xl" />
-                                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/20 rounded-full blur-xl" />
-                                    <div className="relative">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="h-14 w-14 rounded-2xl bg-amber-500/20 backdrop-blur-sm flex items-center justify-center text-3xl border border-amber-400/30 group-hover:scale-110 transition-transform duration-300">💰</div>
-                                            <span className="bg-emerald-500/30 text-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-400/40 animate-pulse-slow">+2.5%</span>
-                                        </div>
-                                        <p className="text-xs text-slate-300 font-bold uppercase tracking-widest mb-2">סך פרמיות חודשי</p>
-                                        <h3 className="text-4xl font-black font-mono bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent drop-shadow-lg">
-                                            ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(curr.premium?.replace(/[^\d.-]/g, '')) || 0), 0) +
-                                                client.insuranceSales.reduce((acc, curr) => acc + (parseFloat(curr.premium?.replace(/[^\d.-]/g, '')) || 0), 0) +
-                                                client.pensionSales.reduce((acc, curr) => acc + (parseFloat(curr.managementFeeDeposit?.replace(/[^\d.-]/g, '')) || 0), 0)
-                                            }
-                                        </h3>
+                    <div className="space-y-10 stagger-children">
+                        {/* Key Financial Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Premiums Card */}
+                            <NeonCard className="p-0! overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="p-8">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-3xl border border-amber-500/20 group-hover:scale-110 transition-transform">💰</div>
+                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-none">+2.5%</Badge>
                                     </div>
-                                </Card>
-                            </div>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">סך פרמיות חודשי</p>
+                                    <h3 className="text-4xl font-black text-amber-500 italic font-display">
+                                        ₪{(client.policies.reduce((acc, curr) => acc + (parseFloat(String(curr.premium || '').replace(/[^\d.-]/g, '')) || 0), 0) +
+                                            client.insuranceSales.reduce((acc, curr) => acc + (parseFloat(String(curr.premium || '').replace(/[^\d.-]/g, '')) || 0), 0) +
+                                            client.pensionSales.reduce((acc, curr) => acc + (parseFloat(String(curr.managementFeeDeposit || '').replace(/[^\d.-]/g, '')) || 0), 0)
+                                        ).toLocaleString()}
+                                    </h3>
+                                </div>
+                            </NeonCard>
 
-                            {/* Premium Card 2 */}
-                            <Card className="border-none shadow-2xl bg-white p-8 rounded-3xl hover-lift hover-glow group border border-slate-200">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300 shadow-lg">🛡️</div>
-                                    <span className="text-slate-500 text-xs font-bold bg-slate-100 px-3 py-1 rounded-full">כיסוי כולל</span>
+                            {/* Portfolio Value */}
+                            <NeonCard className="!p-0 overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="p-8">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="h-14 w-14 rounded-2xl bg-blue-500/10 flex items-center justify-center text-3xl border border-blue-500/20 group-hover:scale-110 transition-transform">🛡️</div>
+                                        <Badge className="bg-blue-500/10 text-blue-400 border-none">כיסוי כולל</Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">שווי תיק ביטוחי</p>
+                                    <h3 className="text-4xl font-black text-white italic font-display">
+                                        ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(String(curr.coverage || '').replace(/[^\d.-]/g, '')) || 0), 0).toLocaleString()}
+                                    </h3>
                                 </div>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-2">שווי תיק ביטוחי</p>
-                                <h3 className="text-4xl font-black text-slate-800 font-mono">
-                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(curr.coverage?.replace(/[^\d.-]/g, '')) || 0), 0).toLocaleString()}
-                                </h3>
-                            </Card>
+                            </NeonCard>
 
-                            {/* Premium Card 3 */}
-                            <Card className="border-none shadow-2xl bg-white p-8 rounded-3xl hover-lift hover-glow group border border-slate-200">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-100 to-fuchsia-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300 shadow-lg">📊</div>
-                                    <span className="text-slate-500 text-xs font-bold bg-slate-100 px-3 py-1 rounded-full">{client.policies.length + client.pensionSales.length + client.insuranceSales.length} מוצרים</span>
+                            {/* Portfolio Split */}
+                            <NeonCard className="p-0! overflow-hidden group">
+                                <div className="p-8">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="h-14 w-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-3xl border border-purple-500/20 group-hover:scale-110 transition-transform">📊</div>
+                                        <Badge className="bg-purple-500/10 text-purple-400 border-none">{client.policies.length + client.pensionSales.length + client.insuranceSales.length} מוצרים</Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">חלוקת הון בסיכון</p>
+                                    <div className="flex h-3 rounded-full overflow-hidden gap-1.5 mt-4 bg-slate-800 p-0.5 shadow-inner">
+                                        <div className="bg-amber-500 rounded-full animate-pulse" style={{ width: '40%' }} />
+                                        <div className="bg-blue-500 rounded-full" style={{ width: '35%' }} />
+                                        <div className="bg-purple-500 rounded-full" style={{ width: '25%' }} />
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black text-slate-500 mt-4 uppercase tracking-tighter">
+                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />פנסיוני</span>
+                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />בריאות</span>
+                                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />סיכונים</span>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-2">חלוקת תיק</p>
-                                <div className="flex h-3 rounded-full overflow-hidden gap-1 mt-4 shadow-inner bg-slate-100 p-0.5">
-                                    <div className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full progress-animated" style={{ width: '40%' }} />
-                                    <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-full progress-animated" style={{ width: '35%' }} />
-                                    <div className="bg-gradient-to-r from-purple-400 to-purple-500 rounded-full progress-animated" style={{ width: '25%' }} />
-                                </div>
-                                <div className="flex justify-between text-[10px] font-bold text-slate-500 mt-3">
-                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />פנסיוני</span>
-                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" />בריאות</span>
-                                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" />סיכונים</span>
-                                </div>
-                            </Card>
+                            </NeonCard>
                         </div>
 
-                        {/* Client Details Section */}
+                        {/* Detailed Client Info Blocks */}
                         <div className="grid lg:grid-cols-2 gap-8">
-                            {/* פרטי לקוח */}
-                            <Card className="border border-slate-200 shadow-2xl bg-white p-8 rounded-3xl hover-lift group">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-xl font-black flex items-center gap-3">
-                                        <span className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">👤</span> 
-                                        <span className="text-slate-800">פרטי לקוח</span>
-                                    </h4>
-                                    <button onClick={() => handleEdit("clientDetails")} className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all duration-300 hover:scale-110">
-                                        <Edit2 size={18} />
-                                    </button>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all duration-300 group/item">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">מספר זהות</p>
-                                            <p className="font-bold text-slate-800 text-lg group-hover/item:text-amber-600 transition-colors">{client.idNumber || '—'}</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all duration-300 group/item">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">תאריך לידה</p>
-                                            <p className="font-bold text-slate-800 group-hover/item:text-amber-600 transition-colors">{client.birthDate ? new Date(client.birthDate).toLocaleDateString('he-IL') : '—'}</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all duration-300 group/item">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">גיל</p>
-                                            <p className="font-black text-3xl text-amber-600">{client.birthDate ? calculateAge(client.birthDate) : '—'}</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-amber-300 hover:shadow-md transition-all duration-300 group/item">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">תאריך הנפקת ת.ז</p>
-                                            <p className="font-bold text-slate-800 group-hover/item:text-amber-600 transition-colors">{client.idIssueDate ? new Date(client.idIssueDate).toLocaleDateString('he-IL') : '—'}</p>
-                                        </div>
+                            <NeonCard title="👤 פרטי זיהוי ומסמכים" action={<button onClick={() => handleEdit("clientDetails")} className="text-amber-500 hover:text-amber-400 transition-colors"><Edit2 size={16} /></button>}>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 group/item hover:border-amber-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">מספר זהות</p>
+                                        <p className="font-black text-white text-lg group-hover/item:text-amber-500 transition-colors">{client.idNumber || '—'}</p>
                                     </div>
-                                    <div className={`p-5 rounded-2xl flex items-center gap-4 transition-all duration-300 hover:scale-[1.02] ${client.hasInsuranceReport ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 shadow-emerald-100' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 shadow-amber-100'} shadow-lg`}>
-                                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-xl font-bold shadow-lg ${client.hasInsuranceReport ? 'bg-gradient-to-br from-emerald-500 to-green-500 text-white' : 'bg-gradient-to-br from-amber-500 to-orange-500 text-white'}`}>
-                                            {client.hasInsuranceReport ? '✓' : '!'}
-                                        </div>
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 group/item hover:border-amber-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">תאריך לידה</p>
+                                        <p className="font-black text-white group-hover/item:text-amber-500 transition-colors">{client.birthDate ? new Date(client.birthDate).toLocaleDateString('he-IL') : '—'}</p>
+                                    </div>
+                                    <div className="bg-[#0b1021] p-6 rounded-2xl border border-slate-800 flex items-end justify-between">
                                         <div>
-                                            <p className={`font-bold text-sm ${client.hasInsuranceReport ? 'text-emerald-800' : 'text-amber-800'}`}>
-                                                {client.hasInsuranceReport ? 'קיים דוח הר הביטוח ללקוח' : 'חסר דוח הר הביטוח'}
-                                            </p>
-                                            <p className={`text-xs ${client.hasInsuranceReport ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                                {client.hasInsuranceReport ? 'הועלה לטאב הר הביטוח' : 'יש להעלות את הדוח בטאב הר הביטוח'}
-                                            </p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">גיל נוכחי</p>
+                                            <p className="text-4xl font-black text-amber-500 italic leading-none">{client.birthDate ? calculateAge(client.birthDate) : '—'}</p>
                                         </div>
                                     </div>
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 group/item hover:border-amber-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">תאריך הנפקת ת.ז</p>
+                                        <p className="font-black text-white group-hover/item:text-amber-500 transition-colors">{client.idIssueDate ? new Date(client.idIssueDate).toLocaleDateString('he-IL') : '—'}</p>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 group/item hover:border-amber-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">האם מעשן</p>
+                                        <p className={`font-black flex items-center gap-3 ${client.isSmoker ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            <span className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${client.isSmoker ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                                            {client.isSmoker === undefined ? '—' : client.isSmoker ? 'כן' : 'לא'}
+                                        </p>
+                                    </div>
                                 </div>
-                            </Card>
+                                <div className={`mt-6 p-6 rounded-3xl flex items-center gap-6 border-2 transition-all ${client.hasInsuranceReport ? 'bg-emerald-500/5 border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.05)]' : 'bg-amber-500/5 border-amber-500/20 animate-pulse-slow'}`}>
+                                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center text-3xl font-black shadow-2xl ${client.hasInsuranceReport ? 'bg-emerald-500 text-black' : 'bg-amber-500 text-black'}`}>
+                                        {client.hasInsuranceReport ? '✓' : '!'}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className={`font-black text-lg italic ${client.hasInsuranceReport ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                            {client.hasInsuranceReport ? 'דוח הר הביטוח מאומת' : 'חסר דוח הר הביטוח'}
+                                        </p>
+                                        <p className="text-xs font-bold text-slate-500 mt-1">
+                                            {client.hasInsuranceReport ? 'הנתונים מעודכנים ומוזנים במערכת' : 'נדרש להעלות דוח עדכני כדי להפעיל תובנות AI'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </NeonCard>
 
-                            {/* פרטים על הלקוח */}
-                            <Card className="border border-slate-200 shadow-2xl bg-white p-8 rounded-3xl hover-lift group">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-xl font-black flex items-center gap-3">
-                                        <span className="bg-gradient-to-br from-purple-500 to-fuchsia-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">📋</span>
-                                        <span className="text-slate-800">פרטים נוספים</span>
-                                    </h4>
-                                    <button onClick={() => handleEdit("additionalDetails")} className="p-2 text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all duration-300 hover:scale-110">
-                                        <Edit2 size={18} />
-                                    </button>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-purple-200 hover:shadow-md transition-all duration-300">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">קופת חולים</p>
-                                            <p className="font-bold text-slate-800">{client.healthFund || '—'}</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-purple-200 hover:shadow-md transition-all duration-300">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">האם מעשן</p>
-                                            <p className={`font-bold flex items-center gap-2 ${client.isSmoker ? 'text-red-600' : 'text-emerald-600'}`}>
-                                                <span className={`w-3 h-3 rounded-full ${client.isSmoker ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                                                {client.isSmoker === undefined ? '—' : client.isSmoker ? 'כן' : 'לא'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-purple-200 hover:shadow-md transition-all duration-300">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">תנאי תשלום</p>
-                                            <p className="font-bold text-slate-800">{client.paymentTerms || '—'}</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 hover:border-purple-200 hover:shadow-md transition-all duration-300">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">דואר אלקטרוני</p>
-                                            <p className="font-bold text-slate-800 text-sm truncate">{client.email || '—'}</p>
-                                        </div>
+                            <NeonCard title="📋 מאפייני לקוח וקשרים" action={<button onClick={() => handleEdit("additionalDetails")} className="text-amber-500 hover:text-amber-400 transition-colors"><Edit2 size={16} /></button>}>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 hover:border-indigo-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">קופת חולים</p>
+                                        <p className="font-black text-white">{client.healthFund || '—'}</p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200">
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">נציג מכירה</p>
-                                        <p className="font-bold text-slate-800">{client.salesRepresentative || 'לא הוגדר'}</p>
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 hover:border-indigo-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">תנאי תשלום</p>
+                                        <p className="font-black text-white">{client.paymentTerms || '—'}</p>
                                     </div>
-                                    {client.linkedClientId ? <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-5 rounded-2xl border-2 border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300">
-                                            <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2">🔗 מקושר ללקוח</p>
-                                            <p className="font-bold text-indigo-700">{client.linkedClientName || client.linkedClientId}</p>
-                                        </div> : null}
-                                    {/* Referral Info */}
-                                    {client.referralName ? <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-5 rounded-2xl border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300">
-                                            <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-2">🤝 הגיע משיתוף פעולה</p>
-                                            <p className="font-bold text-purple-700 text-lg">{client.referralName}</p>
-                                            {client.referralNotes ? <p className="text-sm text-purple-600 mt-3 bg-purple-100/50 p-3 rounded-xl border border-purple-200/50">
-                                                    <span className="font-bold">הערת המפנה:</span> {client.referralNotes}
-                                                </p> : null}
-                                        </div> : null}
+                                    <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 hover:border-indigo-500/30 transition-all">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">נציג שירות</p>
+                                        <p className="font-black text-white">{client.salesRepresentative || 'מערכת'}</p>
+                                    </div>
                                 </div>
-                            </Card>
+
+                                {client.email && (
+                                    <div className="mt-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800 flex items-center gap-4">
+                                        <div className="p-2 bg-slate-800 rounded-xl text-slate-400"><Mail size={16} /></div>
+                                        <p className="font-bold text-slate-300 text-sm">{client.email}</p>
+                                    </div>
+                                )}
+
+                                {client.linkedClientId && (
+                                    <div className="mt-4 bg-indigo-500/10 p-5 rounded-3xl border border-indigo-500/30 shadow-[0_0_20px_rgba(79,70,229,0.1)] flex items-center justify-between group/link hover:bg-indigo-500/20 transition-all cursor-pointer">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-indigo-500 text-black rounded-2xl shadow-lg shadow-indigo-500/20 rotate-12 group-hover/link:rotate-0 transition-transform">
+                                                <Link2 size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">לקוח מקושר</p>
+                                                <p className="font-black text-indigo-200 text-lg">{client.linkedClientName || 'לקוח ללא שם'}</p>
+                                            </div>
+                                        </div>
+                                        <ArrowLeft size={20} className="text-indigo-400 -translate-x-2 opacity-0 group-hover/link:translate-x-0 group-hover/link:opacity-100 transition-all" />
+                                    </div>
+                                )}
+                            </NeonCard>
                         </div>
 
-                        {/* Opportunities Section */}
+                        {/* Summary Opportunities & Split */}
                         <div className="grid lg:grid-cols-2 gap-8">
-                            <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift">
-                                <h4 className="text-xl font-black text-gradient mb-6">התפלגות פרמיות</h4>
+                             <NeonCard title="💹 התפלגות פוליסות">
                                 <div className="space-y-4">
                                     {[...client.policies, ...client.insuranceSales].map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between group p-3 rounded-xl hover:bg-slate-50 transition-all duration-300">
+                                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/40 border border-slate-800/50 hover:bg-slate-800/60 transition-all group">
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-3 w-3 rounded-full shadow-lg ${i % 3 === 0 ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : i % 3 === 1 ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`} />
-                                                <span className="font-bold text-slate-600 text-sm group-hover:text-indigo-600 transition-colors">{(item as any).type || (item as any).productType} - {(item as any).company}</span>
+                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-xl shadow-lg ${i % 2 === 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                    {('icon' in item ? item.icon : '📄')}
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-white text-sm">{('type' in item ? item.type : item.productType)}</p>
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.company}</p>
+                                                </div>
                                             </div>
-                                            <span className="font-black text-primary font-mono text-lg group-hover:text-gradient group-hover:scale-110 transition-all">{item.premium}</span>
+                                            <div className="text-left">
+                                                <p className="font-black text-amber-500 italic text-lg">{item.premium}</p>
+                                            </div>
                                         </div>
                                     ))}
                                     {client.policies.length === 0 && client.insuranceSales.length === 0 && (
-                                        <div className="text-center py-8">
-                                            <div className="text-4xl mb-3 opacity-50">📊</div>
-                                            <p className="text-slate-400 text-sm">אין נתונים להצגה</p>
+                                        <div className="text-center py-12 opacity-30 italic font-bold text-slate-500">
+                                            אין פוליסות פעילות להצגה
                                         </div>
                                     )}
                                 </div>
-                            </Card>
+                             </NeonCard>
 
-                            <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl relative overflow-hidden hover-lift">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-100 to-yellow-50 rounded-bl-[100px] -mr-10 -mt-10 z-0" />
-                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-100 to-teal-50 rounded-tr-[60px] -ml-6 -mb-6 z-0" />
-                                <h4 className="text-xl font-black text-gradient mb-6 relative z-10">🚀 הזדמנויות עסקיות</h4>
-                                <div className="space-y-4 relative z-10">
+                             <NeonCard title="🚀 הזדמנויות עסקיות">
+                                <div className="space-y-4">
                                     {client.pensionSales.length === 0 && (
-                                        <div className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 hover:shadow-lg transition-all duration-300 group">
-                                            <div className="text-3xl group-hover:scale-125 transition-transform">⚠️</div>
-                                            <div className="flex-1">
-                                                <h5 className="font-black text-red-800 text-sm">חסר מוצר פנסיוני</h5>
-                                                <p className="text-xs text-red-600/80">ללקוח אין קופת גמל או קרן פנסיה פעילה</p>
+                                        <div className="p-6 rounded-3xl bg-red-500/10 border border-red-500/20 flex items-center justify-between group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-3xl grayscale group-hover:grayscale-0 transition-all">⚠️</div>
+                                                <div>
+                                                    <h5 className="font-black text-red-400 text-sm">חוסר פנסיוני</h5>
+                                                    <p className="text-xs text-slate-500 font-bold mt-0.5">לא זוהתה קרן פנסיה פעילה</p>
+                                                </div>
                                             </div>
-                                            <Button onClick={() => setActiveTab("לביצוע מכירה")} size="sm" className="bg-white text-red-600 border-2 border-red-200 hover:bg-red-50 hover:scale-105 transition-all shadow-md">טפל</Button>
+                                            <NeonButton size="sm" variant="secondary" onClick={() => setActiveTab("לביצוע מכירה")}>סגור פער</NeonButton>
                                         </div>
                                     )}
                                     {!client.policies.some(p => p.type.includes("בריאות")) && (
-                                        <div className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 hover:shadow-lg transition-all duration-300 group">
-                                            <div className="text-3xl group-hover:scale-125 transition-transform">🏥</div>
-                                            <div className="flex-1">
-                                                <h5 className="font-black text-emerald-800 text-sm">הזדמנות לביטוחי בריאות</h5>
-                                                <p className="text-xs text-emerald-600/80">מומלץ להציע ביטוח משלים או פרטי</p>
+                                        <div className="p-6 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-3xl grayscale group-hover:grayscale-0 transition-all">🏥</div>
+                                                <div>
+                                                    <h5 className="font-black text-blue-400 text-sm">הזדמנות בריאות</h5>
+                                                    <p className="text-xs text-slate-500 font-bold mt-0.5">ניתוח מעלה חוסר בביטוח פרטי</p>
+                                                </div>
                                             </div>
-                                            <Button onClick={() => setActiveTab("לביצוע מכירה")} size="sm" className="bg-white text-emerald-600 border-2 border-emerald-200 hover:bg-emerald-50 hover:scale-105 transition-all shadow-md">הצע</Button>
+                                            <NeonButton size="sm" variant="secondary" onClick={() => setActiveTab("לביצוע מכירה")}>הצע חבילה</NeonButton>
                                         </div>
                                     )}
                                     {!client.hasInsuranceReport && (
-                                        <div className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:shadow-lg transition-all duration-300 group">
-                                            <div className="text-3xl group-hover:scale-125 transition-transform">📄</div>
-                                            <div className="flex-1">
-                                                <h5 className="font-black text-amber-800 text-sm">חסר דוח הר הביטוח</h5>
-                                                <p className="text-xs text-amber-600/80">יש להעלות את דוח הר הביטוח לצפייה מלאה</p>
+                                        <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-3xl grayscale group-hover:grayscale-0 transition-all">📄</div>
+                                                <div>
+                                                    <h5 className="font-black text-amber-400 text-sm">פענוח דוח</h5>
+                                                    <p className="text-xs text-slate-500 font-bold mt-0.5">נדרש העלאת דוח הר הביטוח</p>
+                                                </div>
                                             </div>
-                                            <Button onClick={() => setActiveTab("הר הביטוח")} size="sm" className="bg-white text-amber-600 border-2 border-amber-200 hover:bg-amber-50 hover:scale-105 transition-all shadow-md">העלה</Button>
+                                            <NeonButton size="sm" variant="secondary" onClick={() => setActiveTab("הר הביטוח")}>העלה</NeonButton>
                                         </div>
                                     )}
                                 </div>
-                            </Card>
+                             </NeonCard>
                         </div>
                     </div>
                 )}
@@ -1519,240 +1606,300 @@ ${clipped}`;
                 {activeTab === "לביצוע מכירה" && (
                     <div className="grid lg:grid-cols-2 gap-8 stagger-children">
                         {/* Pension Sales Section */}
-                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift group">
-                            <h4 className="text-xl font-black mb-6 border-b border-slate-100 pb-4 flex items-center gap-3">
-                                <span className="bg-gradient-to-br from-indigo-500 to-purple-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">📈</span> 
-                                <span className="text-gradient">מכירה פנסיונית</span>
-                            </h4>
+                        <NeonCard title="📊 מכירה פנסיונית">
+                            <div className="grid grid-cols-2 gap-6">
+                                <NeonSelect 
+                                    label="סוג המוצר"
+                                    value={pensionForm.type || ""} 
+                                    onChange={e => setPensionForm({ ...pensionForm, type: e.target.value })}
+                                >
+                                    <option value="">בחר...</option>
+                                    <option>קופת גמל</option>
+                                    <option>קרן השתלמות</option>
+                                    <option>קרן פנסיה</option>
+                                </NeonSelect>
 
-                            {/* Pension Form */}
-                            <div className="space-y-4 bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6 rounded-2xl mb-8 border border-slate-200/50">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="group/input">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">סוג המוצר</label>
-                                        <select value={pensionForm.type || ""} onChange={e => setPensionForm({ ...pensionForm, type: e.target.value })} className="input-premium mt-1">
-                                            <option value="">בחר...</option><option>קופת גמל</option><option>קרן השתלמות</option><option>קרן פנסיה</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">חברה מנהלת</label>
-                                        <select value={pensionForm.company || ""} onChange={e => setPensionForm({ ...pensionForm, company: e.target.value })} className="input-premium mt-1">
-                                            <option value="">בחר...</option><option>אלטשולר שחם</option><option>הפניקס</option><option>הראל</option><option>כלל</option><option>מגדל</option><option>מיטב</option><option>מנורה</option><option>פסגות</option><option>מור</option><option>אינפיניטי</option>
-                                        </select>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">שם התוכנית</label>
-                                        <input type="text" value={pensionForm.planName || ""} onChange={e => setPensionForm({ ...pensionForm, planName: e.target.value })} className="input-premium mt-1" placeholder="הזן שם תוכנית..." />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">דנ"ה מצבירה (%)</label>
-                                        <input type="number" step="0.01" value={pensionForm.managementFeeAccumulation || ""} onChange={e => setPensionForm({ ...pensionForm, managementFeeAccumulation: e.target.value })} className="input-premium mt-1" placeholder="0.00" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">דנ"ה מהפקה (%)</label>
-                                        <input type="number" step="0.01" value={pensionForm.managementFeeDeposit || ""} onChange={e => setPensionForm({ ...pensionForm, managementFeeDeposit: e.target.value })} className="input-premium mt-1" placeholder="0.00" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מועד הצטרפות</label>
-                                        <input type="date" value={pensionForm.joinDate || ""} onChange={e => setPensionForm({ ...pensionForm, joinDate: e.target.value })} className="input-premium mt-1" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר קופה/עמית</label>
-                                        <input type="text" value={pensionForm.fundNumber || ""} onChange={e => setPensionForm({ ...pensionForm, fundNumber: e.target.value })} className="input-premium mt-1" placeholder="הזן מספר..." />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">משכורת ממוצעת</label>
-                                        <input type="number" value={pensionForm.avgSalary || ""} onChange={e => setPensionForm({ ...pensionForm, avgSalary: e.target.value })} className="input-premium mt-1" placeholder="₪" />
-                                    </div>
+                                <NeonSelect 
+                                    label="חברה מנהלת"
+                                    value={pensionForm.company || ""} 
+                                    onChange={e => setPensionForm({ ...pensionForm, company: e.target.value })}
+                                >
+                                    <option value="">בחר...</option>
+                                    <option>אלטשולר שחם</option>
+                                    <option>הפניקס</option>
+                                    <option>הראל</option>
+                                    <option>כלל</option>
+                                    <option>מגדל</option>
+                                    <option>מיטב</option>
+                                    <option>מנורה</option>
+                                    <option>פסגות</option>
+                                    <option>מור</option>
+                                    <option>אינפיניטי</option>
+                                </NeonSelect>
+
+                                <div className="col-span-2">
+                                    <NeonInput 
+                                        label="שם התוכנית"
+                                        placeholder="הזן שם תוכנית..." 
+                                        value={pensionForm.planName || ""} 
+                                        onChange={e => setPensionForm({ ...pensionForm, planName: e.target.value })}
+                                    />
                                 </div>
-                                <div className="flex gap-4 mt-6">
-                                    <Button onClick={handleAddPension} className="flex-1 btn-premium">
-                                        <Plus size={16} className="inline ml-2" /> טעינת מוצר
-                                    </Button>
-                                    <Button onClick={() => setShowMarketModal(true)} className="flex-1 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 text-white shadow-xl rounded-2xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-105">
-                                        <span>🤖</span> ניתוח שוק (AI)
-                                    </Button>
+
+                                <NeonInput 
+                                    label='דנ"ה מצבירה (%)'
+                                    type="number" 
+                                    step="0.01" 
+                                    placeholder="0.00"
+                                    value={pensionForm.managementFeeAccumulation || ""} 
+                                    onChange={e => setPensionForm({ ...pensionForm, managementFeeAccumulation: e.target.value })}
+                                />
+
+                                <NeonInput 
+                                    label='דנ"ה מהפקה (%)'
+                                    type="number" 
+                                    step="0.01" 
+                                    placeholder="0.00"
+                                    value={pensionForm.managementFeeDeposit || ""} 
+                                    onChange={e => setPensionForm({ ...pensionForm, managementFeeDeposit: e.target.value })}
+                                />
+
+                                <NeonInput 
+                                    label="מועד הצטרפות"
+                                    type="date"
+                                    value={pensionForm.joinDate || ""} 
+                                    onChange={e => setPensionForm({ ...pensionForm, joinDate: e.target.value })}
+                                />
+
+                                <NeonInput 
+                                    label="מספר קופה/עמית"
+                                    placeholder="הזן מספר..."
+                                    value={pensionForm.fundNumber || ""} 
+                                    onChange={e => setPensionForm({ ...pensionForm, fundNumber: e.target.value })}
+                                />
+
+                                <div className="col-span-2">
+                                    <NeonInput 
+                                        label="משכורת ממוצעת"
+                                        type="number" 
+                                        placeholder="₪"
+                                        value={pensionForm.avgSalary || ""} 
+                                        onChange={e => setPensionForm({ ...pensionForm, avgSalary: e.target.value })}
+                                    />
                                 </div>
+                            </div>
+
+                            <div className="flex gap-4 mt-8">
+                                <NeonButton onClick={handleAddPension} className="flex-1">
+                                    <Plus size={20} className="ml-2" /> טעינת מוצר
+                                </NeonButton>
+                                <button 
+                                    onClick={() => setShowMarketModal(true)} 
+                                    className="flex-1 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black flex items-center justify-center gap-3 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+                                >
+                                    <span className="text-xl">🤖</span> ניתוח שוק (AI)
+                                </button>
                             </div>
 
                             {/* List of Added Pension Products */}
-                            <div className="space-y-3">
-                                <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <span className="bg-indigo-100 text-indigo-600 px-2 py-1 rounded-lg">{client.pensionSales.length}</span>
-                                    מוצרים שנוספו
+                            <div className="mt-8 space-y-4 border-t border-slate-800/50 pt-8">
+                                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                    <span className="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20">{client.pensionSales.length}</span>
+                                    מוצרים שנוספו לרשימה
                                 </h5>
                                 {client.pensionSales.map((item, index) => (
-                                    <div key={item.id} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-md text-sm flex justify-between items-center group/item hover:shadow-lg hover:border-indigo-200 transition-all duration-300" style={{ animationDelay: `${index * 50}ms` }}>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center text-indigo-600 font-bold">
+                                    <div key={item.id} className="p-5 bg-slate-900/50 border border-slate-800 rounded-[1.5rem] flex justify-between items-center group/item hover:border-amber-500/30 transition-all duration-300">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 font-black text-xl shadow-inner border border-amber-500/20">
                                                 {item.type[0]}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-primary">{item.type} - {item.company}</p>
-                                                <p className="text-xs text-slate-400">{item.fundNumber}</p>
+                                                <p className="font-black text-white text-lg">{item.type} - {item.company}</p>
+                                                <p className="text-xs text-slate-500 font-bold tracking-tight mt-1">{item.fundNumber}</p>
                                             </div>
                                         </div>
-                                        <button onClick={() => deleteItem("pensionSales", item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                        <button onClick={() => deleteItem("pensionSales", item.id)} className="p-3 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><Trash2 size={18} /></button>
                                     </div>
                                 ))}
                                 {client.pensionSales.length === 0 && (
-                                    <div className="text-center py-8 text-slate-400">
-                                        <div className="text-4xl mb-2 opacity-50">📈</div>
-                                        <p className="text-sm">אין מוצרים פנסיוניים</p>
+                                    <div className="text-center py-10 bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
+                                        <div className="text-5xl mb-4 opacity-20 filter grayscale">📈</div>
+                                        <p className="text-slate-500 font-bold italic">אין מוצרים פנסיוניים שהוספו</p>
                                     </div>
                                 )}
                             </div>
-                        </Card>
+                        </NeonCard>
 
                         {/* Insurance Sales Section */}
-                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift group">
-                            <h4 className="text-xl font-black mb-6 border-b border-slate-100 pb-4 flex items-center gap-3">
-                                <span className="bg-gradient-to-br from-emerald-500 to-teal-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">🛡️</span>
-                                <span className="text-gradient">מכירת ביטוח</span>
-                            </h4>
+                        <NeonCard title="🛡️ מכירת ביטוח">
+                            <div className="grid grid-cols-2 gap-6">
+                                <NeonSelect 
+                                    label="חברת ביטוח"
+                                    value={insuranceForm.company || ""} 
+                                    onChange={e => setInsuranceForm({ ...insuranceForm, company: e.target.value })}
+                                >
+                                    <option value="">בחר...</option>
+                                    <option>הראל</option>
+                                    <option>הפניקס</option>
+                                    <option>מנורה</option>
+                                    <option>איילון</option>
+                                    <option>הכשרה</option>
+                                </NeonSelect>
 
-                            <div className="space-y-4 bg-gradient-to-br from-slate-50 to-emerald-50/30 p-6 rounded-2xl mb-8 border border-slate-200/50">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">חברת ביטוח</label>
-                                        <select value={insuranceForm.company || ""} onChange={e => setInsuranceForm({ ...insuranceForm, company: e.target.value })} className="input-premium mt-1">
-                                            <option value="">בחר...</option><option>הראל</option><option>הפניקס</option><option>מנורה</option><option>איילון</option><option>הכשרה</option>
-                                        </select>
-                                    </div>
-                                    <div className="col-span-2 bg-white/80 p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-sm font-bold text-primary">מכירת פלטינום?</label>
-                                            <div className="flex gap-4">
-                                                <label className="flex items-center gap-2 text-sm cursor-pointer group/radio">
-                                                    <input type="radio" name="plat" onChange={() => setShowPlatinumSelect(true)} checked={showPlatinumSelect} className="w-4 h-4 text-indigo-600" />
-                                                    <span className="group-hover/radio:text-indigo-600 transition-colors">כן</span>
-                                                </label>
-                                                <label className="flex items-center gap-2 text-sm cursor-pointer group/radio">
-                                                    <input type="radio" name="plat" onChange={() => setShowPlatinumSelect(false)} checked={!showPlatinumSelect} className="w-4 h-4 text-indigo-600" />
-                                                    <span className="group-hover/radio:text-indigo-600 transition-colors">לא</span>
-                                                </label>
-                                            </div>
+                                <div className="col-span-2 bg-slate-900/50 p-6 rounded-[2rem] border border-slate-800">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-black text-white italic">מכירת פלטינום?</label>
+                                        <div className="flex gap-6">
+                                            <label className="flex items-center gap-3 text-sm cursor-pointer group/radio">
+                                                <input type="radio" name="plat" onChange={() => setShowPlatinumSelect(true)} checked={showPlatinumSelect} className="w-5 h-5 accent-amber-500" />
+                                                <span className={`${showPlatinumSelect ? 'text-amber-400' : 'text-slate-500'} font-black transition-colors`}>כן</span>
+                                            </label>
+                                            <label className="flex items-center gap-3 text-sm cursor-pointer group/radio">
+                                                <input type="radio" name="plat" onChange={() => setShowPlatinumSelect(false)} checked={!showPlatinumSelect} className="w-5 h-5 accent-amber-500" />
+                                                <span className={`${!showPlatinumSelect ? 'text-amber-400' : 'text-slate-500'} font-black transition-colors`}>לא</span>
+                                            </label>
                                         </div>
-                                        {showPlatinumSelect ? <div className="mt-4 animate-fade-in-up">
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">בחר מוצרי פלטינום</label>
-                                                <select multiple className="input-premium mt-1 h-28"
-                                                    onChange={e => {
-                                                        const selected = Array.from(e.target.selectedOptions, option => option.value);
-                                                        setInsuranceForm({ ...insuranceForm, platinumProducts: selected });
-                                                    }}
-                                                >
-                                                    <option>פלטינום בריאות</option><option>פלטינום פרימיום</option><option>רופא עד הבית</option><option>שיניים</option><option>רפואה אלטרנטיבית</option>
-                                                </select>
-                                                <p className="text-[10px] text-slate-400 mt-2">* ניתן לבחור מספר פריטים (Ctrl+Click)</p>
-                                            </div> : null}
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מוצר ביטוח</label>
-                                        <select value={insuranceForm.productType || ""} onChange={e => setInsuranceForm({ ...insuranceForm, productType: e.target.value })} className="input-premium mt-1">
-                                            <option value="">בחר...</option><option>בריאות</option><option>מחלות קשות</option><option>ריסק</option><option>תאונות אישיות</option><option>משכנתא</option><option>אכע</option><option>מטריה ביטוחית</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">סכום ביטוח</label>
-                                        <input type="number" value={insuranceForm.amount || ""} onChange={e => setInsuranceForm({ ...insuranceForm, amount: e.target.value })} className="input-premium mt-1" placeholder="₪" />
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3 bg-white/80 rounded-xl border border-slate-100">
-                                        <input type="checkbox" checked={insuranceForm.hasLien || false} onChange={e => setInsuranceForm({ ...insuranceForm, hasLien: e.target.checked })} className="w-5 h-5 rounded text-indigo-600" />
-                                        <label className="text-sm font-bold text-primary">האם קיים שיעבוד?</label>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">פרמיה</label>
-                                        <input type="number" value={insuranceForm.premium || ""} onChange={e => setInsuranceForm({ ...insuranceForm, premium: e.target.value })} className="input-premium mt-1" placeholder="₪" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">כמה נפשות בפוליסה</label>
-                                        <input type="number" value={insuranceForm.numInsured || 1} onChange={e => setInsuranceForm({ ...insuranceForm, numInsured: +e.target.value })} className="input-premium mt-1" />
-                                    </div>
+                                    {showPlatinumSelect && (
+                                        <div className="mt-6 animate-in slide-in-from-top-2 duration-300">
+                                            <NeonSelect 
+                                                multiple 
+                                                label="בחר מוצרי פלטינום (Ctrl+Click)"
+                                                className="h-32"
+                                                onChange={e => {
+                                                    const selected = Array.from((e.target as HTMLSelectElement).selectedOptions, option => option.value);
+                                                    setInsuranceForm({ ...insuranceForm, platinumProducts: selected });
+                                                }}
+                                            >
+                                                <option>פלטינום בריאות</option>
+                                                <option>פלטינום פרימיום</option>
+                                                <option>רופא עד הבית</option>
+                                                <option>שיניים</option>
+                                                <option>רפואה אלטרנטיבית</option>
+                                            </NeonSelect>
+                                        </div>
+                                    )}
                                 </div>
-                                <Button onClick={handleAddInsurance} className="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-xl rounded-2xl font-bold py-3 transition-all hover:scale-[1.02] hover:shadow-2xl">
-                                    <Plus size={16} className="inline ml-2" /> הוסף ביטוח
-                                </Button>
+
+                                <NeonSelect 
+                                    label="מוצר ביטוח"
+                                    value={insuranceForm.productType || ""} 
+                                    onChange={e => setInsuranceForm({ ...insuranceForm, productType: e.target.value })}
+                                >
+                                    <option value="">בחר...</option>
+                                    <option>בריאות</option>
+                                    <option>מחלות קשות</option>
+                                    <option>ריסק</option>
+                                    <option>תאונות אישיות</option>
+                                    <option>משכנתא</option>
+                                    <option>אכע</option>
+                                    <option>מטריה ביטוחית</option>
+                                </NeonSelect>
+
+                                <NeonInput 
+                                    label="סכום ביטוח"
+                                    type="number" 
+                                    placeholder="₪"
+                                    value={insuranceForm.amount || ""} 
+                                    onChange={e => setInsuranceForm({ ...insuranceForm, amount: e.target.value })}
+                                />
+
+                                <div className="flex items-center gap-4 p-5 bg-slate-900/50 rounded-[1.5rem] border border-slate-800">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={insuranceForm.hasLien || false} 
+                                        onChange={e => setInsuranceForm({ ...insuranceForm, hasLien: e.target.checked })} 
+                                        className="w-6 h-6 rounded-lg accent-amber-500" 
+                                    />
+                                    <label className="text-sm font-black text-slate-400 italic">האם קיים שיעבוד?</label>
+                                </div>
+
+                                <NeonInput 
+                                    label="פרמיה"
+                                    type="number" 
+                                    placeholder="₪"
+                                    value={insuranceForm.premium || ""} 
+                                    onChange={e => setInsuranceForm({ ...insuranceForm, premium: e.target.value })}
+                                />
+
+                                <div className="col-span-2">
+                                    <NeonInput 
+                                        label="כמה נפשות בפוליסה"
+                                        type="number" 
+                                        value={insuranceForm.numInsured || 1} 
+                                        onChange={e => setInsuranceForm({ ...insuranceForm, numInsured: +e.target.value })}
+                                    />
+                                </div>
                             </div>
+                            
+                            <NeonButton onClick={handleAddInsurance} className="w-full mt-8">
+                                <Plus size={20} className="ml-2" /> הוסף ביטוח לסל
+                            </NeonButton>
 
                             {/* List of Added Insurance Products */}
-                            <div className="space-y-3">
-                                <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <span className="bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg">{client.insuranceSales.length}</span>
-                                    ביטוחים שנוספו
+                            <div className="mt-8 space-y-4 border-t border-slate-800/50 pt-8">
+                                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                    <span className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20">{client.insuranceSales.length}</span>
+                                    ביטוחים שנוספו לרשימה
                                 </h5>
                                 {client.insuranceSales.map((item, index) => (
-                                    <div key={item.id} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-md text-sm flex justify-between items-center group/item hover:shadow-lg hover:border-emerald-200 transition-all duration-300" style={{ animationDelay: `${index * 50}ms` }}>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center text-emerald-600 font-bold">
+                                    <div key={item.id} className="p-5 bg-slate-900/50 border border-slate-800 rounded-[1.5rem] flex justify-between items-center group/item hover:border-emerald-500/30 transition-all duration-300">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 text-xl shadow-inner border border-emerald-500/20">
                                                 🛡️
                                             </div>
                                             <div>
-                                                <p className="font-bold text-primary">{item.productType} - {item.company}</p>
-                                                <p className="text-xs text-slate-400">{item.isPlatinum ? '✨ כולל פלטינום' : ''} • ₪{item.premium}</p>
+                                                <p className="font-black text-white text-lg">{item.productType} - {item.company}</p>
+                                                <p className="text-xs text-slate-500 font-bold tracking-tight mt-1">
+                                                    {item.isPlatinum ? '✨ כולל פלטינום' : ''} • ₪{item.premium}
+                                                </p>
                                             </div>
                                         </div>
-                                        <button onClick={() => deleteItem("insuranceSales", item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                        <button onClick={() => deleteItem("insuranceSales", item.id)} className="p-3 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"><Trash2 size={18} /></button>
                                     </div>
                                 ))}
                                 {client.insuranceSales.length === 0 && (
-                                    <div className="text-center py-8 text-slate-400">
-                                        <div className="text-4xl mb-2 opacity-50">🛡️</div>
-                                        <p className="text-sm">אין ביטוחים</p>
+                                    <div className="text-center py-10 bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
+                                        <div className="text-5xl mb-4 opacity-20 filter grayscale">🛡️</div>
+                                        <p className="text-slate-500 font-bold italic">אין ביטוחים שהוספו</p>
                                     </div>
                                 )}
                             </div>
-                        </Card>
+                        </NeonCard>
 
                         {/* ===== Platinum Service Sale Section ===== */}
-                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift group">
-                            <h4 className="text-xl font-black mb-6 border-b border-slate-100 pb-4 flex items-center gap-3">
-                                <span className="bg-gradient-to-br from-amber-400 to-yellow-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">⭐</span>
-                                <span className="text-gradient">מכירת כתב שירות פלטינום</span>
-                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full mr-auto">מופקת אוטומטית</span>
-                            </h4>
+                        <NeonCard title="⭐ מכירת כתב שירות פלטינום" className="lg:col-span-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                {/* Form Column */}
+                                <div className="space-y-6">
+                                    <NeonSelect 
+                                        label="שם המוצר"
+                                        value={platinumForm.productName || ""} 
+                                        onChange={e => setPlatinumForm({ ...platinumForm, productName: e.target.value as PlatinumSale['productName'] })} 
+                                    >
+                                        <option value="">בחר מוצר...</option>
+                                        <option value="פלטינום בריאות">פלטינום בריאות</option>
+                                        <option value="פלטינום פרמיום">פלטינום פרמיום</option>
+                                        <option value="רופא עד הבית">רופא עד הבית</option>
+                                        <option value="פלטינום רפואה משלימה">פלטינום רפואה משלימה</option>
+                                        <option value="פלטינום דנטל">פלטינום דנטל</option>
+                                    </NeonSelect>
 
-                            <div className="space-y-4 bg-gradient-to-br from-slate-50 to-amber-50/30 p-6 rounded-2xl mb-8 border border-slate-200/50">
-                                <div className="grid grid-cols-2 gap-4">
-                                    {/* שם המוצר */}
-                                    <div className="col-span-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">שם המוצר</label>
-                                        <select 
-                                            value={platinumForm.productName || ""} 
-                                            onChange={e => setPlatinumForm({ ...platinumForm, productName: e.target.value as PlatinumSale['productName'] })} 
-                                            className="input-premium mt-1"
-                                        >
-                                            <option value="">בחר מוצר...</option>
-                                            <option value="פלטינום בריאות">פלטינום בריאות</option>
-                                            <option value="פלטינום פרמיום">פלטינום פרמיום</option>
-                                            <option value="רופא עד הבית">רופא עד הבית</option>
-                                            <option value="פלטינום רפואה משלימה">פלטינום רפואה משלימה</option>
-                                            <option value="פלטינום דנטל">פלטינום דנטל</option>
-                                        </select>
-                                    </div>
-
-                                    {/* גיל הלקוח */}
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">גיל הלקוח</label>
-                                        <input 
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <NeonInput 
+                                            label="גיל הלקוח"
                                             type="number" 
                                             min="0" 
                                             max="120"
                                             value={platinumForm.clientAge || ""} 
                                             onChange={e => setPlatinumForm({ ...platinumForm, clientAge: +e.target.value })} 
-                                            className="input-premium mt-1" 
                                             placeholder="הזן גיל"
                                         />
-                                    </div>
 
-                                    {/* הנחה */}
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            הנחה {platinumForm.productName === 'פלטינום דנטל' && <span className="text-amber-600">(מקס 10%)</span>}
-                                        </label>
-                                        <select 
+                                        <NeonSelect 
+                                            label={`הנחה ${platinumForm.productName === 'פלטינום דנטל' ? '(מקס 10%)' : ''}`}
                                             value={platinumForm.discount || ""} 
                                             onChange={e => setPlatinumForm({ ...platinumForm, discount: +e.target.value as 10 | 20 | 30 })} 
-                                            className="input-premium mt-1"
                                         >
                                             <option value="">בחר הנחה...</option>
                                             <option value="10">10%</option>
@@ -1762,258 +1909,230 @@ ${clipped}`;
                                                     <option value="30">30%</option>
                                                 </>
                                             )}
-                                        </select>
+                                        </NeonSelect>
                                     </div>
 
-                                    {/* חישוב אוטומטי */}
-                                    {platinumPriceCalc ? <div className="col-span-2 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
+                                    {platinumPriceCalc && (
+                                        <div className="bg-amber-500/10 p-6 rounded-[2rem] border border-amber-500/20 animate-in zoom-in-95 duration-300">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <span className="text-xs text-amber-600 font-bold">מחיר בסיס לפי גיל:</span>
-                                                    <span className="text-lg font-black text-amber-700 mr-2">₪{platinumPriceCalc.basePrice}</span>
+                                                    <span className="text-[10px] text-amber-500/60 font-black uppercase tracking-widest block mb-1">מחיר בסיס</span>
+                                                    <span className="text-2xl font-black text-amber-500 italic">₪{platinumPriceCalc.basePrice}</span>
                                                 </div>
                                                 <div className="text-left">
-                                                    <span className="text-xs text-emerald-600 font-bold">מחיר סופי אחרי הנחה:</span>
-                                                    <span className="text-xl font-black text-emerald-700 mr-2">₪{platinumPriceCalc.finalPrice.toFixed(0)}</span>
-                                                </div>
-                                            </div>
-                                        </div> : null}
-
-                                    {/* עלות חודשית סופית */}
-                                    <div className="col-span-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">עלות חודשית סופית (₪)</label>
-                                        <input 
-                                            type="number" 
-                                            value={platinumForm.monthlyPremium || ""} 
-                                            onChange={e => setPlatinumForm({ ...platinumForm, monthlyPremium: +e.target.value })} 
-                                            className="input-premium mt-1" 
-                                            placeholder={platinumPriceCalc ? `מומלץ: ₪${platinumPriceCalc.finalPrice.toFixed(0)}` : "הזן סכום"}
-                                        />
-                                    </div>
-
-                                    {/* תצוגת עמלות צפויות */}
-                                    {platinumForm.monthlyPremium && platinumForm.productName ? <div className="col-span-2 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
-                                            <h5 className="text-xs font-bold text-indigo-600 mb-2">💰 עמלות צפויות:</h5>
-                                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                                <div>
-                                                    <span className="text-slate-500">עמלה חד-פעמית:</span>
-                                                    <span className="font-bold text-indigo-700 mr-2">₪{(platinumForm.monthlyPremium * 3).toFixed(0)}</span>
-                                                    <span className="text-[10px] text-slate-400">(פרמיה × 3)</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-slate-500">עמלת נפרעים:</span>
-                                                    <span className="font-bold text-indigo-700 mr-2">
-                                                        ₪{(platinumForm.monthlyPremium * (platinumForm.productName === 'פלטינום דנטל' ? 0.30 : 0.45)).toFixed(0)}/חודש
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400">
-                                                        ({platinumForm.productName === 'פלטינום דנטל' ? '30%' : '45%'})
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div> : null}
-                                </div>
-
-                                <Button 
-                                    onClick={handleAddPlatinum} 
-                                    className="w-full mt-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-xl rounded-2xl font-bold py-3 transition-all hover:scale-[1.02] hover:shadow-2xl"
-                                >
-                                    <Plus size={16} className="inline ml-2" /> אישור מכירה
-                                </Button>
-                            </div>
-
-                            {/* List of Platinum Sales */}
-                            <div className="space-y-3">
-                                <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <span className="bg-amber-100 text-amber-600 px-2 py-1 rounded-lg">{(client.platinumSales || []).length}</span>
-                                    מכירות פלטינום
-                                </h5>
-                                {(client.platinumSales || []).map((item, index) => {
-                                    const commission = calculatePlatinumCommission(item);
-                                    return (
-                                        <div key={item.id} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-md text-sm group/item hover:shadow-lg hover:border-amber-200 transition-all duration-300" style={{ animationDelay: `${index * 50}ms` }}>
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl flex items-center justify-center text-amber-600 font-bold">
-                                                        ⭐
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-primary">{item.productName}</p>
-                                                        <p className="text-xs text-slate-400">גיל {item.clientAge} • הנחה {item.discount}% • ₪{item.monthlyPremium}/חודש</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">{item.status}</span>
-                                                    <button onClick={() => deleteItem("platinumSales", item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
-                                                </div>
-                                            </div>
-                                            <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
-                                                <div className="text-slate-500">עמלה חד-פעמית: <span className="font-bold text-indigo-600">₪{commission.oneTimeCommission.toFixed(0)}</span></div>
-                                                <div className="text-slate-500">עמלת נפרעים: <span className="font-bold text-indigo-600">₪{commission.monthlyCommission.toFixed(0)}/חודש</span></div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {(!client.platinumSales || client.platinumSales.length === 0) && (
-                                    <div className="text-center py-8 text-slate-400">
-                                        <div className="text-4xl mb-2 opacity-50">⭐</div>
-                                        <p className="text-sm">אין מכירות פלטינום</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Payment Details Section */}
-                            {client.platinumSales && client.platinumSales.length > 0 ? <div className="mt-6 pt-6 border-t-2 border-amber-200">
-                                    <h5 className="text-sm font-bold text-amber-700 mb-4 flex items-center gap-2">
-                                        <span className="bg-amber-100 p-2 rounded-lg">💳</span>
-                                        פרטי תשלום לפלטינום
-                                    </h5>
-
-                                    {/* ID Type Selection */}
-                                    <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">סוג מסמך זיהוי</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => setClient({ ...client, idType: 'תעודת זהות' })}
-                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
-                                                    client.idType === 'תעודת זהות' 
-                                                        ? 'bg-blue-500 text-white border-blue-500 shadow-lg' 
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
-                                                }`}
-                                            >
-                                                🪪 תעודת זהות
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setClient({ ...client, idType: 'דרכון' })}
-                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
-                                                    client.idType === 'דרכון' 
-                                                        ? 'bg-blue-500 text-white border-blue-500 shadow-lg' 
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
-                                                }`}
-                                            >
-                                                🛂 דרכון
-                                            </button>
-                                        </div>
-
-                                        {/* Passport Fields */}
-                                        {client.idType === 'דרכון' && (
-                                            <div className="grid grid-cols-2 gap-3 mt-4">
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ארץ הנפקה</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={client.passportCountry || ""} 
-                                                        onChange={e => setClient({ ...client, passportCountry: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="ארץ הנפקת הדרכון"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">תוקף דרכון</label>
-                                                    <input 
-                                                        type="date" 
-                                                        value={client.passportExpiry || ""} 
-                                                        onChange={e => setClient({ ...client, passportExpiry: e.target.value })} 
-                                                        className="input-premium mt-1"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Payment Method Selection */}
-                                    <div className="mb-4">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">אמצעי תשלום</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, paymentMethod: 'אשראי' })}
-                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
-                                                    platinumPaymentForm.paymentMethod === 'אשראי' 
-                                                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg' 
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
-                                                }`}
-                                            >
-                                                💳 כרטיס אשראי
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, paymentMethod: 'הוראת קבע' })}
-                                                className={`p-3 rounded-xl border-2 font-bold text-sm transition-all ${
-                                                    platinumPaymentForm.paymentMethod === 'הוראת קבע' 
-                                                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg' 
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
-                                                }`}
-                                            >
-                                                🏦 הוראת קבע
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Credit Card Fields */}
-                                    {platinumPaymentForm.paymentMethod === 'אשראי' && (
-                                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-200 space-y-3">
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר כרטיס אשראי</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={platinumPaymentForm.creditCardNumber || ""} 
-                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardNumber: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="XXXX-XXXX-XXXX-XXXX"
-                                                        maxLength={19}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">תוקף</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={platinumPaymentForm.creditCardExpiry || ""} 
-                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardExpiry: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="MM/YY"
-                                                        maxLength={5}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ת"ז גורם משלם</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={platinumPaymentForm.creditCardPayerIdNumber || ""} 
-                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardPayerIdNumber: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="מספר ת.ז של בעל הכרטיס"
-                                                        maxLength={9}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">טלפון בעל הכרטיס</label>
-                                                    <input 
-                                                        type="tel" 
-                                                        value={platinumPaymentForm.creditCardPayerPhone || ""} 
-                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardPayerPhone: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="050-0000000"
-                                                    />
+                                                    <span className="text-[10px] text-emerald-500/60 font-black uppercase tracking-widest block mb-1">מחיר סופי</span>
+                                                    <span className="text-3xl font-black text-emerald-500 italic">₪{platinumPriceCalc.finalPrice.toFixed(0)}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Direct Debit Fields */}
-                                    {platinumPaymentForm.paymentMethod === 'הוראת קבע' && (
-                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 space-y-3">
-                                            <div className="grid grid-cols-3 gap-3">
+                                    <NeonInput 
+                                        label="עלות חודשית סופית (₪)"
+                                        type="number" 
+                                        value={platinumForm.monthlyPremium || ""} 
+                                        onChange={e => setPlatinumForm({ ...platinumForm, monthlyPremium: +e.target.value })} 
+                                        placeholder={platinumPriceCalc ? `מומלץ: ₪${platinumPriceCalc.finalPrice.toFixed(0)}` : "הזן סכום"}
+                                    />
+
+                                    {platinumForm.monthlyPremium && platinumForm.productName && (
+                                        <div className="bg-indigo-500/10 p-6 rounded-[2rem] border border-indigo-500/20">
+                                            <h5 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">💰 עמלות צפויות</h5>
+                                            <div className="grid grid-cols-2 gap-6 text-sm">
                                                 <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">שם הבנק</label>
-                                                    <select 
+                                                    <p className="text-slate-500 font-bold mb-1">חד-פעמית</p>
+                                                    <p className="font-black text-indigo-400 text-lg">₪{(platinumForm.monthlyPremium * 3).toFixed(0)}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-slate-500 font-bold mb-1">נפרעים</p>
+                                                    <p className="font-black text-indigo-400 text-lg">₪{(platinumForm.monthlyPremium * (platinumForm.productName === 'פלטינום דנטל' ? 0.30 : 0.45)).toFixed(0)}/ח'</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <NeonButton onClick={handleAddPlatinum} className="w-full">
+                                        <Plus size={20} className="ml-2" /> אישור מכירה פלטינום
+                                    </NeonButton>
+                                </div>
+
+                                {/* List Column */}
+                                <div className="space-y-6">
+                                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        <span className="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20">{(client.platinumSales || []).length}</span>
+                                        מכירות פלטינום בסל
+                                    </h5>
+                                    <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar px-2">
+                                        {(client.platinumSales || []).map((item, index) => {
+                                            const commission = calculatePlatinumCommission(item);
+                                            return (
+                                                <div key={item.id} className="p-5 bg-slate-900/50 border border-slate-800 rounded-[1.5rem] group/item hover:border-amber-500/30 transition-all duration-300">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 text-xl border border-amber-500/20 shadow-inner">⭐</div>
+                                                            <div>
+                                                                <p className="font-black text-white text-lg">{item.productName}</p>
+                                                                <p className="text-xs text-slate-500 font-bold mt-1">
+                                                                    גיל {item.clientAge} • הנחה {item.discount}% • ₪{item.monthlyPremium}/ח'
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full font-black border border-emerald-500/20 tracking-tighter uppercase">{item.status}</span>
+                                                            <button onClick={() => deleteItem("platinumSales", item.id)} className="p-2 text-slate-700 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 pt-4 border-t border-slate-800/50 grid grid-cols-2 gap-4 text-[10px] font-black uppercase tracking-tight">
+                                                        <div className="text-slate-600">עמלה חד"פ: <span className="text-indigo-400">₪{commission.oneTimeCommission.toFixed(0)}</span></div>
+                                                        <div className="text-slate-600">עמלת נפרעים: <span className="text-indigo-400">₪{commission.monthlyCommission.toFixed(0)}</span></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {(!client.platinumSales || client.platinumSales.length === 0) && (
+                                            <div className="text-center py-20 bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
+                                                <div className="text-6xl mb-4 opacity-20 filter grayscale">⭐</div>
+                                                <p className="text-slate-500 font-bold italic">אין מכירות פלטינום</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Payment Details Section */}
+                            {client.platinumSales && client.platinumSales.length > 0 && (
+                                <div className="mt-12 pt-12 border-t-2 border-slate-800/50">
+                                    <div className="flex items-center gap-3 mb-10 overflow-hidden">
+                                        <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-black text-2xl shadow-[0_0_20px_rgba(245,158,11,0.5)]">💳</div>
+                                        <div>
+                                            <h5 className="text-2xl font-black text-white italic tracking-tight">פרטי תשלום והפקה</h5>
+                                            <p className="text-xs text-slate-500 font-black uppercase tracking-[0.2em] mt-1">Payment & Issuance Details</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                        <div className="space-y-8">
+                                            {/* ID Type Selection */}
+                                            <div className="bg-[#0d1326] p-6 rounded-[2.5rem] border border-slate-800 shadow-inner">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 mr-2">סוג מסמך זיהוי</label>
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setClient({ ...client, idType: 'תעודת זהות' })}
+                                                        className={`p-5 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-center gap-3 ${
+                                                            client.idType === 'תעודת זהות' 
+                                                                ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)]' 
+                                                                : 'bg-slate-900/50 text-slate-400 border-slate-800 hover:border-slate-700'
+                                                        }`}
+                                                    >
+                                                        <span className="text-xl">🪪</span> תעודת זהות
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setClient({ ...client, idType: 'דרכון' })}
+                                                        className={`p-5 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-center gap-3 ${
+                                                            client.idType === 'דרכון' 
+                                                                ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)]' 
+                                                                : 'bg-slate-900/50 text-slate-400 border-slate-800 hover:border-slate-700'
+                                                        }`}
+                                                    >
+                                                        <span className="text-xl">🛂</span> דרכון
+                                                    </button>
+                                                </div>
+
+                                                {client.idType === 'דרכון' && (
+                                                    <div className="grid grid-cols-2 gap-6 mt-8 animate-in slide-in-from-top-4 duration-300">
+                                                        <NeonInput 
+                                                            label="ארץ הנפקה"
+                                                            value={client.passportCountry || ""} 
+                                                            onChange={e => setClient({ ...client, passportCountry: e.target.value })} 
+                                                            placeholder="ארץ הנפקת הדרכון"
+                                                        />
+                                                        <NeonInput 
+                                                            label="תוקף דרכון"
+                                                            type="date" 
+                                                            value={client.passportExpiry || ""} 
+                                                            onChange={e => setClient({ ...client, passportExpiry: e.target.value })} 
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Payment Method Selection */}
+                                            <div className="bg-[#0d1326] p-6 rounded-[2.5rem] border border-slate-800 shadow-inner">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 mr-2">אמצעי תשלום</label>
+                                                <div className="grid grid-cols-2 gap-6">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, paymentMethod: 'אשראי' })}
+                                                        className={`p-5 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-center gap-3 ${
+                                                            platinumPaymentForm.paymentMethod === 'אשראי' 
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-[0_0_25px_rgba(37,99,235,0.3)]' 
+                                                                : 'bg-slate-900/50 text-slate-400 border-slate-800 hover:border-slate-700'
+                                                        }`}
+                                                    >
+                                                        <span className="text-xl">💳</span> כרטיס אשראי
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, paymentMethod: 'הוראת קבע' })}
+                                                        className={`p-5 rounded-2xl border-2 font-black text-sm transition-all flex items-center justify-center gap-3 ${
+                                                            platinumPaymentForm.paymentMethod === 'הוראת קבע' 
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-[0_0_25px_rgba(37,99,235,0.3)]' 
+                                                                : 'bg-slate-900/50 text-slate-400 border-slate-800 hover:border-slate-700'
+                                                        }`}
+                                                    >
+                                                        <span className="text-xl">🏦</span> הוראת קבע
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-8">
+                                            {/* Dynamic Payment Fields */}
+                                            {platinumPaymentForm.paymentMethod === 'אשראי' && (
+                                                <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 space-y-6 animate-in fade-in duration-500">
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div className="col-span-2">
+                                                            <NeonInput 
+                                                                label="מספר כרטיס אשראי"
+                                                                placeholder="XXXX-XXXX-XXXX-XXXX"
+                                                                maxLength={19}
+                                                                value={platinumPaymentForm.creditCardNumber || ""} 
+                                                                onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardNumber: e.target.value })} 
+                                                            />
+                                                        </div>
+                                                        <NeonInput 
+                                                            label="תוקף"
+                                                            placeholder="MM/YY"
+                                                            maxLength={5}
+                                                            value={platinumPaymentForm.creditCardExpiry || ""} 
+                                                            onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardExpiry: e.target.value })} 
+                                                        />
+                                                        <NeonInput 
+                                                            label='ת"ז גורם משלם'
+                                                            maxLength={9}
+                                                            placeholder="מספר ת.ז"
+                                                            value={platinumPaymentForm.creditCardPayerIdNumber || ""} 
+                                                            onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardPayerIdNumber: e.target.value })} 
+                                                        />
+                                                    </div>
+                                                    <NeonInput 
+                                                        label="טלפון בעל הכרטיס"
+                                                        type="tel" 
+                                                        placeholder="050-0000000"
+                                                        value={platinumPaymentForm.creditCardPayerPhone || ""} 
+                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, creditCardPayerPhone: e.target.value })} 
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {platinumPaymentForm.paymentMethod === 'הוראת קבע' && (
+                                                <div className="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 space-y-6 animate-in fade-in duration-500">
+                                                    <NeonSelect 
+                                                        label="שם הבנק"
                                                         value={platinumPaymentForm.bankName || ""} 
                                                         onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankName: e.target.value })} 
-                                                        className="input-premium mt-1"
                                                     >
                                                         <option value="">בחר בנק...</option>
                                                         <option value="הפועלים">הפועלים</option>
@@ -2024,200 +2143,331 @@ ${clipped}`;
                                                         <option value="יהב">יהב</option>
                                                         <option value="מרכנתיל">מרכנתיל</option>
                                                         <option value="אוצר החייל">אוצר החייל</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר סניף</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={platinumPaymentForm.bankBranch || ""} 
-                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankBranch: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="מספר סניף"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">מספר חשבון</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={platinumPaymentForm.bankAccountNumber || ""} 
-                                                        onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankAccountNumber: e.target.value })} 
-                                                        className="input-premium mt-1" 
-                                                        placeholder="מספר חשבון"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">סוג חשבון</label>
-                                                <div className="grid grid-cols-2 gap-3 mt-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, accountType: 'עו"ש' })}
-                                                        className={`p-2 rounded-lg border-2 font-bold text-xs transition-all ${
-                                                            platinumPaymentForm.accountType === 'עו"ש' 
-                                                                ? 'bg-blue-500 text-white border-blue-500' 
-                                                                : 'bg-white text-slate-600 border-slate-200'
-                                                        }`}
-                                                    >
-                                                        עו"ש
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, accountType: 'חיסכון' })}
-                                                        className={`p-2 rounded-lg border-2 font-bold text-xs transition-all ${
-                                                            platinumPaymentForm.accountType === 'חיסכון' 
-                                                                ? 'bg-blue-500 text-white border-blue-500' 
-                                                                : 'bg-white text-slate-600 border-slate-200'
-                                                        }`}
-                                                    >
-                                                        חיסכון
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                                    </NeonSelect>
 
-                                    {/* Billing Day */}
-                                    <div className="mt-4">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">יום גבייה בחודש</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {[2, 10, 15, 20].map(day => (
-                                                <button
-                                                    key={day}
-                                                    type="button"
-                                                    onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, billingDay: day as 2 | 10 | 15 | 20 })}
-                                                    className={`p-3 rounded-xl border-2 font-bold text-lg transition-all ${
-                                                        platinumPaymentForm.billingDay === day 
-                                                            ? 'bg-amber-500 text-white border-amber-500 shadow-lg' 
-                                                            : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300'
-                                                    }`}
-                                                >
-                                                    {day}
-                                                </button>
-                                            ))}
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <NeonInput 
+                                                            label="מספר סניף"
+                                                            placeholder="סניף"
+                                                            value={platinumPaymentForm.bankBranch || ""} 
+                                                            onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankBranch: e.target.value })} 
+                                                        />
+                                                        <NeonInput 
+                                                            label="מספר חשבון"
+                                                            placeholder="חשבון"
+                                                            value={platinumPaymentForm.bankAccountNumber || ""} 
+                                                            onChange={e => setPlatinumPaymentForm({ ...platinumPaymentForm, bankAccountNumber: e.target.value })} 
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 mr-2">סוג חשבון</label>
+                                                        <div className="grid grid-cols-2 gap-6">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, accountType: 'עו&quot;ש' })}
+                                                                className={`p-4 rounded-2xl border-2 font-black text-xs transition-all ${
+                                                                    platinumPaymentForm.accountType === 'עו&quot;ש' 
+                                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg' 
+                                                                        : 'bg-slate-900/50 text-slate-400 border-slate-800'
+                                                                }`}
+                                                            >עו&quot;ש</button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, accountType: 'חיסכון' })}
+                                                                className={`p-4 rounded-2xl border-2 font-black text-xs transition-all ${
+                                                                    platinumPaymentForm.accountType === 'חיסכון' 
+                                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg' 
+                                                                        : 'bg-slate-900/50 text-slate-400 border-slate-800'
+                                                                }`}
+                                                            >חיסכון</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Billing Day */}
+                                            <div className="bg-[#0d1326] p-6 rounded-[2.5rem] border border-slate-800 shadow-inner">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4 mr-2">יום גבייה בחודש</label>
+                                                <div className="grid grid-cols-4 gap-4">
+                                                    {[2, 10, 15, 20].map(day => (
+                                                        <button
+                                                            key={day}
+                                                            type="button"
+                                                            onClick={() => setPlatinumPaymentForm({ ...platinumPaymentForm, billingDay: day as 2 | 10 | 15 | 20 })}
+                                                            className={`p-4 rounded-2xl border-2 font-black text-lg transition-all ${
+                                                                platinumPaymentForm.billingDay === day 
+                                                                    ? 'bg-amber-500 text-black border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]' 
+                                                                    : 'bg-slate-900/50 text-slate-400 border-slate-800 hover:border-slate-700'
+                                                            }`}
+                                                        >
+                                                            {day}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Submit Button */}
-                                    <Button 
+                                    <button 
                                         onClick={handleSubmitPlatinumProducts} 
                                         disabled={isSubmittingPlatinum || !client.platinumSales?.some(s => s.status === 'ממתין להפקה')}
-                                        className="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xl rounded-2xl font-bold py-4 transition-all hover:scale-[1.02] hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full mt-12 bg-linear-to-r from-purple-600 via-indigo-600 to-purple-600 text-white shadow-[0_0_50px_rgba(79,70,229,0.3)] rounded-[2rem] font-black py-6 text-xl italic tracking-tighter transition-all hover:scale-[1.02] hover:shadow-[0_0_60px_rgba(79,70,229,0.5)] active:scale-[0.98] disabled:opacity-30 disabled:grayscale group relative overflow-hidden"
                                     >
+                                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                         {isSubmittingPlatinum ? (
-                                            <>
-                                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full inline-block ml-2" />
-                                                שולח לפלטינום...
-                                            </>
+                                            <div className="flex items-center justify-center gap-4">
+                                                <div className="animate-spin h-6 w-6 border-4 border-white border-t-transparent rounded-full" />
+                                                <span>מעבד פקודת הפקה...</span>
+                                            </div>
                                         ) : (
-                                            <>
-                                                <Send size={18} className="inline ml-2" />
-                                                הפק מוצרי פלטינום ({client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0})
-                                            </>
+                                            <div className="flex items-center justify-center gap-4">
+                                                <Send size={24} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                                <span>הפקת מוצרי פלטינום ({client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0})</span>
+                                            </div>
                                         )}
-                                    </Button>
+                                    </button>
 
                                     {/* Products Status Summary */}
-                                    <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                                        <div className="bg-amber-50 p-2 rounded-lg border border-amber-200">
-                                            <div className="font-black text-amber-700">{client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0}</div>
-                                            <div className="text-amber-600">ממתינים</div>
+                                    <div className="mt-8 grid grid-cols-3 gap-6">
+                                        <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800 text-center">
+                                            <div className="text-2xl font-black text-amber-500 italic leading-none">{client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0}</div>
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">ממתינים</div>
                                         </div>
-                                        <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
-                                            <div className="font-black text-blue-700">{client.platinumSales?.filter(s => s.status === 'הופקה').length || 0}</div>
-                                            <div className="text-blue-600">הופקו</div>
+                                        <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800 text-center">
+                                            <div className="text-2xl font-black text-blue-500 italic leading-none">{client.platinumSales?.filter(s => s.status === 'הופקה').length || 0}</div>
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">הופקו</div>
                                         </div>
-                                        <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                                            <div className="font-black text-emerald-700">{client.platinumSales?.filter(s => s.status === 'נשלח לפלטינום').length || 0}</div>
-                                            <div className="text-emerald-600">נשלחו</div>
+                                        <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800 text-center">
+                                            <div className="text-2xl font-black text-emerald-500 italic leading-none">{client.platinumSales?.filter(s => s.status === 'נשלח לפלטינום').length || 0}</div>
+                                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">נשלחו</div>
                                         </div>
                                     </div>
-                                </div> : null}
-                        </Card>
+                                </div>
+                            )}
+                        </NeonCard>
                     </div>
                 )}
 
                 {/* --- Tab Content: Personal --- */}
                 {activeTab === "פרטים אישיים" && (
                     <div className="grid gap-8 stagger-children">
-                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift group">
-                            <h4 className="text-lg font-black mb-6 border-b border-slate-100 pb-4 flex items-center gap-3">
-                                <span className="bg-gradient-to-br from-blue-500 to-cyan-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">📍</span>
-                                <span className="text-gradient">כתובת מגורים</span>
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 p-5 rounded-2xl border border-slate-200/50 hover:border-blue-200 hover:shadow-md transition-all duration-300 group/item">
-                                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-widest mb-2">עיר</span>
-                                    <span className="font-bold text-primary text-lg group-hover/item:text-blue-600 transition-colors">{client.address.city}</span>
-                                </div>
-                                <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 p-5 rounded-2xl border border-slate-200/50 hover:border-blue-200 hover:shadow-md transition-all duration-300 group/item">
-                                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-widest mb-2">רחוב</span>
-                                    <span className="font-bold text-primary text-lg group-hover/item:text-blue-600 transition-colors">{client.address.street} {client.address.num}</span>
-                                </div>
+                        <NeonCard title="📍 כתובת מגורים">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <NeonInput 
+                                    label="עיר" 
+                                    value={client.address.city} 
+                                    readOnly 
+                                />
+                                <NeonInput 
+                                    label="רחוב ומספר" 
+                                    value={`${client.address.street} ${client.address.num}`} 
+                                    readOnly 
+                                />
                             </div>
-                        </Card>
-                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift group">
-                            <h4 className="text-lg font-black mb-6 border-b border-slate-100 pb-4 flex items-center gap-3">
-                                <span className="bg-gradient-to-br from-amber-500 to-orange-500 p-3 rounded-2xl text-white shadow-lg group-hover:scale-110 transition-transform duration-300">💼</span>
-                                <span className="text-gradient">תעסוקה</span>
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gradient-to-br from-slate-50 to-amber-50/30 p-5 rounded-2xl border border-slate-200/50 hover:border-amber-200 hover:shadow-md transition-all duration-300 group/item">
-                                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-widest mb-2">סטטוס</span>
-                                    <span className="font-bold text-primary text-lg group-hover/item:text-amber-600 transition-colors">{client.employment.status}</span>
-                                </div>
-                                <div className="bg-gradient-to-br from-slate-50 to-amber-50/30 p-5 rounded-2xl border border-slate-200/50 hover:border-amber-200 hover:shadow-md transition-all duration-300 group/item">
-                                    <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-widest mb-2">עיסוק</span>
-                                    <span className="font-bold text-primary text-lg group-hover/item:text-amber-600 transition-colors">{client.employment.occupation}</span>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                )}
+                        </NeonCard>
 
-                {/* --- Tab Content: Elementary (Family) --- */}
-                {activeTab === "אלמנטרי" && (
-                    <div className="space-y-8 stagger-children">
-                        <Card className="border-none shadow-2xl bg-white/80 backdrop-blur-xl p-8 rounded-3xl hover-lift">
-                            <div className="flex items-center justify-between mb-8">
-                                <h4 className="text-lg font-black flex items-center gap-3">
-                                    <span className="bg-gradient-to-br from-pink-500 to-rose-500 p-3 rounded-2xl text-white shadow-lg">👨‍👩‍👧‍👦</span>
-                                    <span className="text-gradient">בני משפחה</span>
-                                </h4>
-                                <Button onClick={() => handleEdit("family")} size="sm" className="btn-premium px-6">
-                                    <Plus size={14} className="inline ml-2" /> הוסף
-                                </Button>
+                        <NeonCard title="💼 תעסוקה">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <NeonInput 
+                                    label="סטטוס" 
+                                    value={client.employment.status} 
+                                    readOnly 
+                                />
+                                <NeonInput 
+                                    label="עיסוק" 
+                                    value={client.employment.occupation} 
+                                    readOnly 
+                                />
                             </div>
-                            <div className="grid md:grid-cols-2 gap-6">
+                        </NeonCard>
+
+                        {/* Family Members Section */}
+                        <NeonCard title="👨‍👩‍👧‍👦 בני משפחה">
+                            <div className="flex justify-end mb-6">
+                                <NeonButton onClick={() => handleEdit("family")} variant="secondary">
+                                    <Plus size={16} className="ml-2" /> הוסף בן משפחה
+                                </NeonButton>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {client.family.map((member, i) => (
-                                    <div key={member.id} className="p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-pink-50/30 border border-slate-100 relative group hover:shadow-xl hover:border-pink-200 transition-all duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                                    <div key={member.id} className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] relative group hover:border-amber-500/30 transition-all duration-300">
                                         <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                            <button onClick={() => handleEdit("family", member)} className="p-2 bg-white rounded-lg shadow-md text-slate-400 hover:text-indigo-600 transition-colors"><Edit2 size={14} /></button>
-                                            <button onClick={() => deleteItem("family", member.id)} className="p-2 bg-white rounded-lg shadow-md text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={14} /></button>
+                                            <button onClick={() => handleEdit("family", member)} className="p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-amber-400 transition-colors"><Edit2 size={14} /></button>
+                                            <button onClick={() => deleteItem("family", member.id)} className="p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                                         </div>
-                                        <div className="flex items-center gap-4 mb-3">
-                                            <div className="h-14 w-14 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center text-indigo-600 text-xl font-black shadow-lg group-hover:scale-110 transition-transform">{member.name[0]}</div>
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className="h-14 w-14 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 text-xl font-black">{member.name[0]}</div>
                                             <div>
-                                                <p className="font-black text-primary text-lg">{member.name}</p>
-                                                <p className="text-sm text-slate-500 flex items-center gap-2">
-                                                    <span className="bg-slate-100 px-2 py-0.5 rounded-full text-xs">{member.relation}</span>
-                                                    <span className="bg-slate-100 px-2 py-0.5 rounded-full text-xs">גיל {member.age}</span>
+                                                <p className="font-black text-white text-lg">{member.name}</p>
+                                                <p className="text-xs text-slate-500 font-bold flex items-center gap-2 mt-1">
+                                                    <span className="bg-slate-800 px-3 py-0.5 rounded-full">{member.relation}</span>
+                                                    <span className="bg-slate-800 px-3 py-0.5 rounded-full">גיל {member.age}</span>
                                                 </p>
                                             </div>
                                         </div>
-                                        <Badge variant={member.insured ? 'success' : 'error'} className={`text-[11px] font-bold ${member.insured ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                                        <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${member.insured ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
                                             {member.insured ? '✓ מבוטח' : '✗ לא מבוטח'}
-                                        </Badge>
+                                        </div>
                                     </div>
                                 ))}
                                 {client.family.length === 0 && (
-                                    <div className="col-span-2 text-center py-12 text-slate-400">
-                                        <div className="text-5xl mb-3 opacity-50">👨‍👩‍👧‍👦</div>
-                                        <p className="text-sm">אין בני משפחה</p>
+                                    <div className="col-span-2 text-center py-16 bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
+                                        <div className="text-6xl mb-4 opacity-10">👨‍👩‍👧‍👦</div>
+                                        <p className="text-slate-500 font-bold italic">אין בני משפחה רשומים</p>
                                     </div>
                                 )}
                             </div>
-                        </Card>
+                        </NeonCard>
+                    </div>
+                )}
+
+                {/* --- Tab Content: Elementary (Car/Home) --- */}
+                {activeTab === "אלמנטרי" && (
+                    <div className="space-y-8 stagger-children">
+                        <NeonCard title="🚗 הוספת ביטוח אלמנטרי">
+                            <div className="flex justify-center mb-10 p-1 bg-slate-900/50 rounded-[2rem] border border-slate-800 w-fit mx-auto">
+                                <button 
+                                    onClick={() => setElementaryForm({...elementaryForm, category: 'רכב', type: 'חובה ומקיף'})}
+                                    className={`px-10 py-3 rounded-[1.5rem] text-sm font-black transition-all ${elementaryForm.category === 'רכב' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                                >רכב</button>
+                                <button 
+                                    onClick={() => setElementaryForm({...elementaryForm, category: 'דירה', type: 'מבנה ותכולה'})}
+                                    className={`px-10 py-3 rounded-[1.5rem] text-sm font-black transition-all ${elementaryForm.category === 'דירה' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                                >דירה</button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <NeonSelect 
+                                    label="סוג כיסוי"
+                                    value={elementaryForm.type}
+                                    onChange={(e) => setElementaryForm({...elementaryForm, type: e.target.value})}
+                                >
+                                    {elementaryForm.category === 'רכב' ? (
+                                        <>
+                                            <option value="חובה">חובה</option>
+                                            <option value="צד ג'">צד ג'</option>
+                                            <option value="מקיף">מקיף</option>
+                                            <option value="חובה וצד ג'">חובה וצד ג'</option>
+                                            <option value="חובה ומקיף">חובה ומקיף</option>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <option value="מבנה">מבנה</option>
+                                            <option value="תכולה">תכולה</option>
+                                            <option value="מבנה ותכולה">מבנה ותכולה</option>
+                                        </>
+                                    )}
+                                </NeonSelect>
+
+                                {elementaryForm.category === 'רכב' && (
+                                    <NeonSelect 
+                                        label="יצרן רכב (לוי יצחק)"
+                                        value={elementaryForm.manufacturer}
+                                        onChange={(e) => setElementaryForm({...elementaryForm, manufacturer: e.target.value})}
+                                    >
+                                        {["טויוטה", "יונדאי", "קיה", "מאזדה", "סקודה", "מיצובישי", "שברולט", "רנו", "פיג'ו", "סיטרואן", "הונדה", "ניסאן", "סובארו", "פולקסווגן", "אאודי", "מרצדס", "ב.מ.וו", "טסלה", "BYD", "MG", "יומי", "צ'רי"].map(m => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
+                                    </NeonSelect>
+                                )}
+
+                                <NeonSelect 
+                                    label="חברה מבטחת"
+                                    value={elementaryForm.insurer}
+                                    onChange={(e) => setElementaryForm({...elementaryForm, insurer: e.target.value})}
+                                >
+                                    {["כלל", "מגדל", "הראל", "מנורה", "הפניקס", "איילון"].map(ins => (
+                                        <option key={ins} value={ins}>{ins}</option>
+                                    ))}
+                                </NeonSelect>
+
+                                <NeonInput 
+                                    label="תאריך כניסה לתוקף"
+                                    type="date"
+                                    value={elementaryForm.effectiveDate}
+                                    onChange={(e) => {
+                                        const newDate = e.target.value;
+                                        const endDate = new Date(new Date(newDate).setFullYear(new Date(newDate).getFullYear() + 1)).toISOString().split('T')[0];
+                                        setElementaryForm({...elementaryForm, effectiveDate: newDate, endDate});
+                                    }}
+                                />
+
+                                <NeonInput 
+                                    label="מועד סיום"
+                                    type="date"
+                                    value={elementaryForm.endDate}
+                                    onChange={(e) => setElementaryForm({...elementaryForm, endDate: e.target.value})}
+                                />
+
+                                <NeonInput 
+                                    label="פרמיה שנתית (₪)"
+                                    type="number"
+                                    value={elementaryForm.premium}
+                                    onChange={(e) => setElementaryForm({...elementaryForm, premium: Number(e.target.value)})}
+                                    placeholder="0.00"
+                                />
+                            </div>
+
+                            <NeonButton 
+                                onClick={async () => {
+                                    const newElem = {
+                                        ...elementaryForm,
+                                        id: Date.now().toString(),
+                                        status: 'פעיל'
+                                    } as ElementaryInsurance;
+                                    
+                                    const updatedList = [...(client.elementaryInsurances || []), newElem];
+                                    await saveData("elementaryInsurances", updatedList);
+                                    toast.success(`ביטוח ${newElem.category} הוסף בהצלחה!`);
+                                    
+                                    // Reset
+                                    setElementaryForm({
+                                        category: 'רכב',
+                                        type: 'חובה ומקיף',
+                                        insurer: 'כלל',
+                                        effectiveDate: new Date().toISOString().split('T')[0],
+                                        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+                                        premium: 0,
+                                        status: 'פעיל'
+                                    });
+                                }}
+                                className="w-full mt-10"
+                            >
+                                <Save size={20} className="ml-2" /> שמור ביטוח חדש
+                            </NeonButton>
+                        </NeonCard>
+
+                        {/* List of existing elementary insurances */}
+                        {client.elementaryInsurances?.length > 0 && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {client.elementaryInsurances.map((ins, i) => (
+                                    <div key={ins.id} className="p-8 bg-slate-900/50 border border-slate-800 rounded-[2.5rem] group relative hover:border-amber-500/30 transition-all duration-300 overflow-hidden">
+                                        <div className={`absolute top-0 right-0 w-2 h-full ${ins.category === 'רכב' ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]'}`} />
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex gap-6">
+                                                <div className="h-16 w-16 rounded-[1.5rem] bg-slate-800 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-500 border border-slate-700">
+                                                    {ins.category === 'רכב' ? '🚗' : '🏠'}
+                                                </div>
+                                                <div>
+                                                    <h5 className="font-black text-white text-2xl italic tracking-tight">{ins.category === 'רכב' ? `רכב - ${ins.manufacturer}` : `דירה - ${ins.type}`}</h5>
+                                                    <p className="text-xs font-black text-slate-500 mt-1 uppercase tracking-widest">{ins.insurer} • {ins.type}</p>
+                                                    <div className="flex gap-4 mt-4">
+                                                        <span className="bg-slate-800/80 text-amber-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-slate-700">₪{ins.premium.toLocaleString()} / שנה</span>
+                                                        <span className="bg-slate-800/80 text-slate-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-slate-700">{ins.effectiveDate} - {ins.endDate}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => deleteItem("elementaryInsurances" as any, ins.id)}
+                                                className="p-3 text-slate-700 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"
+                                            ><Trash2 size={18} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -2233,7 +2483,7 @@ ${clipped}`;
                         <div className="grid gap-6">
                             {client.policies.map((policy, index) => (
                                 <Card key={policy.id} className="border-none shadow-2xl bg-white/80 backdrop-blur-xl overflow-hidden group hover-lift" style={{ animationDelay: `${index * 100}ms` }}>
-                                    <div className={`h-2 bg-gradient-to-r ${policy.color || 'from-indigo-500 via-purple-500 to-fuchsia-500'} progress-animated`} />
+                                    <div className={`h-2 bg-linear-to-r ${policy.color || 'from-indigo-500 via-purple-500 to-fuchsia-500'} progress-animated`} />
                                     <div className="p-8 relative">
                                         <div className="absolute top-8 left-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2">
                                             <button onClick={() => handleEdit("policy", policy)} className="p-3 bg-white hover:bg-indigo-50 rounded-xl shadow-lg border border-slate-100 transition-all hover:scale-110"><Edit2 size={16} className="text-slate-500 hover:text-indigo-600" /></button>
@@ -2250,19 +2500,19 @@ ${clipped}`;
                                             <Badge variant="outline" className={`text-xs font-bold px-4 py-2 rounded-xl ${policy.status === 'פעיל' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>{policy.status}</Badge>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                            <div className="bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all">
+                                            <div className="bg-linear-to-br from-slate-50 to-indigo-50/30 p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-all">
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">פרמיה</p>
                                                 <p className="text-2xl font-black text-gradient">{policy.premium}</p>
                                             </div>
-                                            <div className="bg-gradient-to-br from-slate-50 to-purple-50/30 p-4 rounded-2xl border border-slate-100 hover:border-purple-200 transition-all">
+                                            <div className="bg-linear-to-br from-slate-50 to-purple-50/30 p-4 rounded-2xl border border-slate-100 hover:border-purple-200 transition-all">
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">כיסוי</p>
                                                 <p className="text-2xl font-black text-gradient">{policy.coverage}</p>
                                             </div>
-                                            <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-4 rounded-2xl border border-slate-100">
+                                            <div className="bg-linear-to-br from-slate-50 to-slate-100/50 p-4 rounded-2xl border border-slate-100">
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">תחולה</p>
                                                 <p className="text-sm font-bold text-primary">{policy.startDate}</p>
                                             </div>
-                                            <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-4 rounded-2xl border border-slate-100">
+                                            <div className="bg-linear-to-br from-slate-50 to-slate-100/50 p-4 rounded-2xl border border-slate-100">
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">חידוש</p>
                                                 <p className="text-sm font-bold text-primary">{policy.renewalDate}</p>
                                             </div>
@@ -2471,7 +2721,7 @@ ${clipped}`;
                                 <Button
                                     onClick={handleGenerateAIInsights}
                                     disabled={isGeneratingInsights}
-                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl px-10 py-6 font-black shadow-lg text-lg hover:shadow-2xl transition-all"
+                                    className="bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-2xl px-10 py-6 font-black shadow-lg text-lg hover:shadow-2xl transition-all"
                                 >
                                     {isGeneratingInsights ? "מנתח נתונים..." : "✨ הרץ ניתוח AI מלא"}
                                 </Button>
@@ -2539,16 +2789,16 @@ ${clipped}`;
                     <div className="space-y-8 animate-in fade-in duration-700">
                         {/* Financial Overview Cards using derived data */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <Card className="border-none shadow-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8">
+                            <Card className="border-none shadow-xl bg-linear-to-br from-slate-900 to-slate-800 text-white p-8">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl">💰</div>
                                     <span className="bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-xs font-black">+2.5%</span>
                                 </div>
                                 <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">סך פרמיות חודשי</p>
                                 <h3 className="text-3xl font-black font-mono">
-                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(curr.premium?.replace(/[^\d.-]/g, '')) || 0), 0) +
-                                        client.insuranceSales.reduce((acc, curr) => acc + (parseFloat(curr.premium?.replace(/[^\d.-]/g, '')) || 0), 0) +
-                                        client.pensionSales.reduce((acc, curr) => acc + (parseFloat(curr.managementFeeDeposit?.replace(/[^\d.-]/g, '')) || 0), 0) // Naive estimate for pension
+                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(String(curr.premium || '').replace(/[^\d.-]/g, '')) || 0), 0) +
+                                        client.insuranceSales.reduce((acc, curr) => acc + (parseFloat(String(curr.premium || '').replace(/[^\d.-]/g, '')) || 0), 0) +
+                                        client.pensionSales.reduce((acc, curr) => acc + (parseFloat(String(curr.managementFeeDeposit || '').replace(/[^\d.-]/g, '')) || 0), 0) // Naive estimate for pension
                                     }
                                 </h3>
                             </Card>
@@ -2560,7 +2810,7 @@ ${clipped}`;
                                 </div>
                                 <p className="text-xs text-slate-400 font-black uppercase tracking-widest mb-1">שווי תיק ביטוחי</p>
                                 <h3 className="text-3xl font-black text-primary font-mono">
-                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(curr.coverage?.replace(/[^\d.-]/g, '')) || 0), 0).toLocaleString()}
+                                    ₪{client.policies.reduce((acc, curr) => acc + (parseFloat(String(curr.coverage || '').replace(/[^\d.-]/g, '')) || 0), 0).toLocaleString()}
                                 </h3>
                             </Card>
 
@@ -2575,13 +2825,8 @@ ${clipped}`;
                                     <div className="bg-blue-500" style={{ width: '35%' }} />
                                     <div className="bg-purple-500" style={{ width: '25%' }} />
                                 </div>
-                                <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2">
-                                    <span>פנסיוני</span>
-                                    <span>בריאות</span>
-                                    <span>סיכונים</span>
-                                </div>
                             </Card>
-                        </div >
+                        </div>
 
                         <div className="grid lg:grid-cols-2 gap-8">
                             <Card className="border-none shadow-xl bg-white p-8">
@@ -2679,291 +2924,136 @@ ${clipped}`;
                     )
                 }
 
-                {/* --- Modal Overlay --- */}
-                {
-                    editMode ? <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-                            <div className="bg-white rounded-[2.5rem] p-0 w-full max-w-lg shadow-3xl relative overflow-hidden animate-in zoom-in-95 duration-300">
-                                {/* Modal Header Decoration */}
-                                <div className="h-2 w-full bg-gradient-to-r from-accent via-indigo-500 to-purple-600" />
-
-                                <div className="p-10">
-                                    <button onClick={() => setEditMode(null)} className="absolute top-8 left-8 p-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-primary transition-all">
-                                        <X size={20} />
-                                    </button>
-
-                                    <div className="flex items-center gap-4 mb-10">
-                                        <div className="h-12 w-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent">
-                                            {editMode.type === 'task' ? <Plus size={24} /> : editMode.type === 'policy' ? <FileText size={24} /> : <Edit2 size={24} />}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-primary leading-tight">
-                                                {editMode.type === 'family' ? 'עריכת בן משפחה' : 
-                                                 editMode.type === 'policy' ? 'עריכת פוליסה' : 
-                                                 editMode.type === 'task' ? 'עריכת משימה' : 
-                                                 editMode.type === 'clientDetails' ? 'פרטי לקוח' :
-                                                 editMode.type === 'additionalDetails' ? 'פרטים נוספים' :
-                                                 'עריכת פרטים'}
-                                            </h3>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">ניהול פרטי לקוח במערכת מגן זהב</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6 max-h-[60vh] overflow-y-auto px-1 scrollbar-none">
-                                        {editMode.type === 'family' && (
-                                            <div className="space-y-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">שם מלא</label>
-                                                    <input placeholder="שם בן המשפחה" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">קרבה משפחתית</label>
-                                                    <input placeholder="ילד, בן זוג, הורה..." value={formData.relation || ''} onChange={e => setFormData({ ...formData, relation: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">גיל</label>
-                                                        <input type="number" placeholder="גיל" value={formData.age || ''} onChange={e => setFormData({ ...formData, age: +e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                    <div className="flex items-center h-full pt-6 pr-4">
-                                                        <label className="flex items-center gap-3 font-bold text-sm text-slate-500 cursor-pointer group">
-                                                            <input type="checkbox" className="h-5 w-5 rounded-lg border-2 border-slate-200 text-accent focus:ring-accent" checked={formData.insured || false} onChange={e => setFormData({ ...formData, insured: e.target.checked })} />
-                                                            <span className="group-hover:text-primary transition-colors">מבוטח במערכת?</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {editMode.type === 'policy' && (
-                                            <div className="space-y-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סוג פוליסה</label>
-                                                    <select value={formData.type || ''} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                        <option value="">בחר סוג...</option><option>ביטוח חיים</option><option>ביטוח בריאות</option><option>פנסיה</option><option>ביטוח רכב</option><option>ביטוח דירה</option>
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">חברה מבטחת</label>
-                                                    <input placeholder="שם החברה" value={formData.company || ''} onChange={e => setFormData({ ...formData, company: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">מספר פוליסה</label>
-                                                    <input placeholder="מספר פוליסה רשמי" value={formData.policyNumber || ''} onChange={e => setFormData({ ...formData, policyNumber: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">פרמיה (₪)</label>
-                                                        <input placeholder="0" value={formData.premium || ''} onChange={e => setFormData({ ...formData, premium: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סכום כיסוי (₪)</label>
-                                                        <input placeholder="0" value={formData.coverage || ''} onChange={e => setFormData({ ...formData, coverage: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                </div>
-                                                {/* העלאת קובץ פוליסה */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">קובץ פוליסה <span className="text-red-500">*</span></label>
-                                                    <FileUpload 
-                                                        onUpload={(file) => setFormData({ ...formData, policyFile: file, documentName: file.name })} 
-                                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                                        label="העלה את קובץ הפוליסה"
-                                                    />
-                                                    {formData.documentName ? <p className="text-xs text-green-600 font-bold flex items-center gap-1 mt-2">
-                                                            <FileText size={14} /> {formData.documentName}
-                                                        </p> : null}
-                                                </div>
-                                                {/* הצגה באיזור האישי של הלקוח */}
-                                                <div className="bg-gradient-to-l from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="h-10 w-10 rounded-xl bg-blue-500 text-white flex items-center justify-center">
-                                                                <Share2 size={18} />
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-black text-primary text-sm">הצג באיזור האישי של הלקוח</p>
-                                                                <p className="text-[10px] text-slate-500">הלקוח יוכל לראות את הפוליסה באיזור האישי שלו</p>
-                                                            </div>
-                                                        </div>
-                                                        <label className="relative inline-flex items-center cursor-pointer">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                className="sr-only peer" 
-                                                                checked={formData.showInClientPortal ?? true}
-                                                                onChange={e => setFormData({ ...formData, showInClientPortal: e.target.checked })}
-                                                            />
-                                                            <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:-translate-x-full rtl:peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all" />
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {editMode.type === 'task' && (
-                                            <div className="space-y-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">כותרת המשימה</label>
-                                                    <input placeholder="מה צריך לעשות?" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all text-sm font-bold" />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">עדיפות</label>
-                                                        <select value={formData.priority || 'נמוכה'} onChange={e => setFormData({ ...formData, priority: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                            <option>נמוכה</option><option>בינונית</option><option>גבוהה</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תאריך יעד</label>
-                                                        <input type="date" value={formData.dueDate || ''} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סטטוס משימה</label>
-                                                    <select value={formData.status || 'ממתינה'} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                        <option>ממתינה</option><option>בתהליך</option><option>הושלמה</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {editMode.type === 'personal' && (
-                                            <div className="space-y-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">שם מלא</label>
-                                                    <input placeholder="שם הלקוח" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">טלפון</label>
-                                                        <input placeholder="050-0000000" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תעודת זהות</label>
-                                                        <input placeholder="ת.ז" value={formData.idNumber || ''} onChange={e => setFormData({ ...formData, idNumber: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">דואר אלקטרוני</label>
-                                                    <input placeholder="email@example.com" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm font-bold" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">סטטוס לקוח</label>
-                                                    <select value={formData.status || 'פעיל'} onChange={e => setFormData({ ...formData, status: e.target.value as any })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                        <option>פעיל</option><option>לא פעיל</option><option>נמכר</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {/* מודל עריכת פרטי לקוח */}
-                                        {editMode.type === 'clientDetails' && (
-                                            <div className="space-y-6">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">מספר זהות</label>
-                                                        <input type="text" placeholder="000000000" value={formData.idNumber || ''} onChange={e => setFormData({ ...formData, idNumber: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תאריך לידה</label>
-                                                        <input type="date" value={formData.birthDate || ''} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">גיל (חישוב אוטומטי)</label>
-                                                        <div className="w-full bg-slate-100 px-5 py-4 rounded-2xl border border-slate-100 font-bold text-slate-500 text-sm">
-                                                            {formData.birthDate ? calculateAge(formData.birthDate) : '—'}
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תאריך הנפקת ת.ז</label>
-                                                        <input type="date" value={formData.idIssueDate || ''} onChange={e => setFormData({ ...formData, idIssueDate: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {/* מודל עריכת פרטים נוספים */}
-                                        {editMode.type === 'additionalDetails' && (
-                                            <div className="space-y-6">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">קופת חולים</label>
-                                                        <select value={formData.healthFund || ''} onChange={e => setFormData({ ...formData, healthFund: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                            <option value="">בחר...</option>
-                                                            <option value="כללית">כללית</option>
-                                                            <option value="מכבי">מכבי</option>
-                                                            <option value="מאוחדת">מאוחדת</option>
-                                                            <option value="לאומית">לאומית</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">האם מעשן</label>
-                                                        <select value={formData.isSmoker === true ? 'כן' : formData.isSmoker === false ? 'לא' : ''} onChange={e => setFormData({ ...formData, isSmoker: e.target.value === 'כן' })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                            <option value="">בחר...</option>
-                                                            <option value="לא">לא</option>
-                                                            <option value="כן">כן</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">תנאי תשלום</label>
-                                                        <select value={formData.paymentTerms || ''} onChange={e => setFormData({ ...formData, paymentTerms: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm">
-                                                            <option value="">בחר...</option>
-                                                            <option value="העברה">העברה</option>
-                                                            <option value="אשראי">אשראי</option>
-                                                            <option value="הוראת קבע">הוראת קבע</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">דואר אלקטרוני</label>
-                                                        <input type="email" placeholder="email@example.com" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">האם קשור ללקוח בסוכנות?</label>
-                                                    <div className="relative">
-                                                        <input 
-                                                            type="text" 
-                                                            placeholder="חפש לקוח לפי שם או ת.ז..." 
-                                                            value={clientSearchQuery} 
-                                                            onChange={e => setClientSearchQuery(e.target.value)} 
-                                                            className="w-full bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 font-bold outline-none focus:bg-white focus:border-accent transition-all text-sm" 
-                                                        />
-                                                        {clientSearchQuery && filteredClients.length > 0 ? <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                                                                {filteredClients.slice(0, 5).map(c => (
-                                                                    <button 
-                                                                        key={c.id} 
-                                                                        onClick={() => {
-                                                                            setFormData({ ...formData, linkedClientId: c.id, linkedClientName: c.name });
-                                                                            setClientSearchQuery('');
-                                                                        }}
-                                                                        className="w-full text-right px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
-                                                                    >
-                                                                        <span className="font-bold text-primary">{c.name}</span>
-                                                                        <span className="text-xs text-slate-400 mr-2">{c.idNumber}</span>
-                                                                    </button>
-                                                                ))}
-                                                            </div> : null}
-                                                    </div>
-                                                    {formData.linkedClientName ? <div className="flex items-center gap-2 mt-2 bg-indigo-50 px-4 py-2 rounded-xl">
-                                                            <span className="text-indigo-600 font-bold">מקושר ל: {formData.linkedClientName}</span>
-                                                            <button onClick={() => setFormData({ ...formData, linkedClientId: undefined, linkedClientName: undefined })} className="text-red-500 hover:text-red-700 mr-auto">✕</button>
-                                                        </div> : null}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2">נציג מכירה</label>
-                                                    <div className="w-full bg-slate-100 px-5 py-4 rounded-2xl border border-slate-100 font-bold text-slate-500 text-sm">
-                                                        {client.salesRepresentative || 'נציג נוכחי'} <span className="text-[10px] text-slate-400">(אוטומטי)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mt-12 flex flex-col gap-4">
-                                        <Button onClick={handleSaveModal} className="w-full py-5 text-lg font-black italic shadow-2xl shadow-accent/20" variant="secondary">שמור שינויים במערכת</Button>
-                                        <button onClick={() => setEditMode(null)} className="text-xs font-black text-slate-400 hover:text-primary uppercase tracking-[0.2em] transition-colors">סגור ללא שמירה</button>
-                                    </div>
-                                </div>
+                {/* --- Unified Edit Modal --- */}
+                {editMode && (
+                    <NeonModal
+                        isOpen={!!editMode}
+                        onClose={() => setEditMode(null)}
+                        title={
+                            editMode.type === 'family' ? '👥 עריכת בן משפחה' :
+                            editMode.type === 'policy' ? '📄 פרטי פוליסה' :
+                            editMode.type === 'task' ? '📅 ניהול משימה' :
+                            editMode.type === 'clientDetails' ? '👤 פרטים מזהים' :
+                            '📝 עריכת נוספים'
+                        }
+                        onSave={handleSaveModal}
+                        saveLabel="שמור שינויים"
+                        maxWidth="max-w-2xl"
+                    >
+                        {/* Family Member Edit */}
+                        {editMode.type === 'family' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <NeonInput label="שם מלא" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                <NeonInput label="קרבה" value={formData.relation || ''} onChange={e => setFormData({...formData, relation: e.target.value})} />
+                                <NeonInput label="גיל" type="number" value={formData.age || ''} onChange={e => setFormData({...formData, age: e.target.value})} />
+                                <NeonSelect label="מבוטח?" value={formData.insured ? 'כן' : 'לא'} onChange={e => setFormData({...formData, insured: e.target.value === 'כן'})}>
+                                    <option value="לא">לא</option>
+                                    <option value="כן">כן</option>
+                                </NeonSelect>
                             </div>
-                        </div> : null
-                }
+                        )}
+
+                        {/* Task Edit */}
+                        {editMode.type === 'task' && (
+                            <div className="space-y-6">
+                                <NeonInput label="נושא המשימה" value={formData.title || ''} onChange={e => setFormData({...formData, title: e.target.value})} />
+                                <div className="grid grid-cols-2 gap-6">
+                                    <NeonInput label="תאריך יעד" type="date" value={formData.dueDate || ''} onChange={e => setFormData({...formData, dueDate: e.target.value})} />
+                                    <NeonSelect label="עדיפות" value={formData.priority || 'בינונית'} onChange={e => setFormData({...formData, priority: e.target.value})}>
+                                        <option value="נמוכה">נמוכה</option>
+                                        <option value="בינונית">בינונית</option>
+                                        <option value="גבוהה">גבוהה</option>
+                                    </NeonSelect>
+                                </div>
+                                <NeonSelect label="סטטוס" value={formData.status || 'ממתינה'} onChange={e => setFormData({...formData, status: e.target.value})}>
+                                    <option value="ממתינה">ממתינה</option>
+                                    <option value="בתהליך">בתהליך</option>
+                                    <option value="הושלמה">הושלמה</option>
+                                </NeonSelect>
+                            </div>
+                        )}
+
+                        {/* Policy Edit */}
+                        {editMode.type === 'policy' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <NeonInput label="סוג מוצר" value={formData.type || ''} onChange={e => setFormData({...formData, type: e.target.value})} />
+                                <NeonInput label="חברה" value={formData.company || ''} onChange={e => setFormData({...formData, company: e.target.value})} />
+                                <NeonInput label="מספר פוליסה" value={formData.id || ''} readOnly />
+                                <NeonInput label="פרמיה חודשית" value={formData.premium || ''} onChange={e => setFormData({...formData, premium: e.target.value})} />
+                                <NeonInput label="סכום כיסוי" value={formData.coverage || ''} onChange={e => setFormData({...formData, coverage: e.target.value})} />
+                                <NeonInput label="תאריך סיום" type="date" value={formData.endDate || ''} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+                            </div>
+                        )}
+
+                        {/* Client Details Edit */}
+                        {editMode.type === 'clientDetails' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <NeonInput label="מספר זהות" value={formData.idNumber || ''} onChange={e => setFormData({...formData, idNumber: e.target.value})} />
+                                <NeonInput label="תאריך לידה" type="date" value={formData.birthDate || ''} onChange={e => setFormData({...formData, birthDate: e.target.value})} />
+                                <NeonInput label="תאריך הנפקת ת.ז" type="date" value={formData.idIssueDate || ''} onChange={e => setFormData({...formData, idIssueDate: e.target.value})} />
+                                <NeonSelect label="האם מעשן" value={formData.isSmoker ? 'כן' : 'לא'} onChange={e => setFormData({...formData, isSmoker: e.target.value === 'כן'})}>
+                                    <option value="לא">לא</option>
+                                    <option value="כן">כן</option>
+                                </NeonSelect>
+                            </div>
+                        )}
+
+                        {/* Additional Details Edit */}
+                        {editMode.type === 'additionalDetails' && (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <NeonSelect label="קופת חולים" value={formData.healthFund || ''} onChange={e => setFormData({...formData, healthFund: e.target.value})}>
+                                        <option value="">בחר...</option>
+                                        <option value="כללית">כללית</option>
+                                        <option value="מכבי">מכבי</option>
+                                        <option value="מאוחדת">מאוחדת</option>
+                                        <option value="לאומית">לאומית</option>
+                                    </NeonSelect>
+                                </div>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <NeonSelect label="תנאי תשלום" value={formData.paymentTerms || ''} onChange={e => setFormData({...formData, paymentTerms: e.target.value})}>
+                                        <option value="">בחר...</option>
+                                        <option value="העברה">העברה</option>
+                                        <option value="אשראי">אשראי</option>
+                                        <option value="הוראת קבע">הוראת קבע</option>
+                                    </NeonSelect>
+                                    <NeonInput label="דואר אלקטרוני" type="email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                </div>
+                                
+                                <NeonInput 
+                                    label="חיפוש לקוח מקושר" 
+                                    placeholder="חפש לפי שם או ת.ז..." 
+                                    value={clientSearchQuery} 
+                                    onChange={e => setClientSearchQuery(e.target.value)} 
+                                />
+                                
+                                {clientSearchQuery && filteredClients.length > 0 && (
+                                    <div className="bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden max-h-40 overflow-y-auto">
+                                        {filteredClients.slice(0, 5).map(c => (
+                                            <button 
+                                                key={c.id} 
+                                                onClick={() => {
+                                                    setFormData({ ...formData, linkedClientId: c.id, linkedClientName: c.name });
+                                                    setClientSearchQuery('');
+                                                }}
+                                                className="w-full text-right px-6 py-3 hover:bg-slate-800 border-b border-slate-800 last:border-b-0 text-white font-bold text-sm"
+                                            >
+                                                {c.name} <span className="text-slate-500 text-xs mr-2">{c.idNumber}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {formData.linkedClientName && (
+                                    <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 px-6 py-3 rounded-2xl">
+                                        <span className="text-amber-400 font-bold">מקושר ל: {formData.linkedClientName}</span>
+                                        <button onClick={() => setFormData({ ...formData, linkedClientId: undefined, linkedClientName: undefined })} className="text-red-400 hover:text-red-500">✕</button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </NeonModal>
+                )}
 
                 {/* --- Market Analysis Modal --- */}
                 {
@@ -3084,8 +3174,8 @@ ${clipped}`;
                             </div>
                         </div> : null
                 }
-            </div >
-        </DashboardShell >
+            </div>
+        </DashboardShell>
     );
 }
 
@@ -3108,7 +3198,7 @@ function DocumentsTab({
         documentType: 'אישי' as ClientDocument['documentType'],
         producer: '' as ClientDocument['producer'] | '',
     });
-    const [editingDoc, setEditingDoc] = useState<string | null>(null);
+    // const [editingDoc, setEditingDoc] = useState<string | null>(null);
 
     const DOCUMENT_TYPES = ['אישי', 'רפואי', 'ביטוחי', 'פנסיוני'];
     const PRODUCERS = ['הפניקס', 'כלל', 'מגדל', 'מנורה', 'איילון', 'הכשרה', 'מור', 'אלטשולר', 'מיטב דש', 'אחר'];

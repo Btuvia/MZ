@@ -257,7 +257,7 @@ export default function AgentDashboard() {
                                     initial={{ width: 0 }}
                                     animate={{ width: `${Math.min(stats.salesGoalProgress, 100)}%` }}
                                     transition={{ duration: 1, ease: "easeOut" }}
-                                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full shadow-lg shadow-emerald-500/30"
+                                    className="h-full bg-linear-to-r from-emerald-500 to-emerald-400 rounded-full shadow-lg shadow-emerald-500/30"
                                  />
                             </div>
                         </Card>
@@ -304,7 +304,7 @@ export default function AgentDashboard() {
                                         >
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center font-bold text-slate-900 group-hover:scale-110 transition-all text-xs shadow-lg shadow-amber-500/20">
+                                                    <div className="h-9 w-9 rounded-xl bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center font-bold text-slate-900 group-hover:scale-110 transition-all text-xs shadow-lg shadow-amber-500/20">
                                                         {row.name ? row.name.charAt(0) : '?'}
                                                     </div>
                                                     <span className="font-bold text-slate-200">{row.name}</span>

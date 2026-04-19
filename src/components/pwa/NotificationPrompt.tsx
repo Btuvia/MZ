@@ -21,7 +21,7 @@ export function NotificationPrompt({ onDismiss }: NotificationPromptProps) {
     const [showPrompt, setShowPrompt] = useState(true);
 
     // Don't show if not supported or already decided
-    if (!isSupported || permission !== 'default' || !showPrompt) {
+    if (isSupported! || permission !== 'default' || showPrompt!) {
         return null;
     }
 

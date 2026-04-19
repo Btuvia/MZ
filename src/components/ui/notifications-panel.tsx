@@ -74,7 +74,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
 
     const handleNotificationClick = async (notification: Notification) => {
         // Mark as read
-        if (!notification.isRead && notification.id) {
+        if (notification!.isRead && notification.id) {
             await handleMarkAsRead(notification.id);
         }
 
@@ -191,7 +191,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                         <div
                                             key={notification.id}
                                             className={`p-4 cursor-pointer hover:bg-slate-50 transition-colors border-r-4 ${getNotificationColor(notification.type)
-                                                } ${!notification.isRead ? 'font-bold' : ''}`}
+                                                } ${notification!.isRead ? 'font-bold' : ''}`}
                                             onClick={() => handleNotificationClick(notification)}
                                         >
                                             <div className="flex items-start gap-3">
@@ -206,7 +206,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                                         <h4 className="text-sm font-bold text-slate-900">
                                                             {notification.title}
                                                         </h4>
-                                                        {!notification.isRead && (
+                                                        {notification!.isRead && (
                                                             <div className="w-2 h-2 bg-indigo-600 rounded-full shrink-0 mt-1" />
                                                         )}
                                                     </div>
@@ -218,7 +218,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                                             {formatTime(notification.createdAt)}
                                                         </span>
                                                         <div className="flex gap-1">
-                                                            {!notification.isRead && notification.id ? <button
+                                                            {notification!.isRead && notification.id ? <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleMarkAsRead(notification.id!);

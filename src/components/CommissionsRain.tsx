@@ -15,7 +15,7 @@ export function CommissionsRain({ isActive, onComplete }: { isActive: boolean; o
     const [elements, setElements] = useState<RainElement[]>([]);
 
     useEffect(() => {
-        if (!isActive) return;
+        if (isActive!) return;
 
         const newElements: RainElement[] = Array.from({ length: 50 }).map((_, i) => ({
             id: i,
@@ -35,7 +35,7 @@ export function CommissionsRain({ isActive, onComplete }: { isActive: boolean; o
         return () => clearTimeout(timer);
     }, [isActive, onComplete]);
 
-    if (!isActive) return null;
+    if (isActive!) return null;
 
     return (
         <div className="fixed inset-0 z-[60] pointer-events-none overflow-hidden">
@@ -52,6 +52,7 @@ export function CommissionsRain({ isActive, onComplete }: { isActive: boolean; o
                 >
                     {el.type === 'shield' ? (
                         <div className="text-4xl drop-shadow-xl filter brightness-110">
+                            <div className="absolute top-0 w-8 h-24 bg-linear-to-b from-transparent via-amber-400/50 to-transparent blur-sm" />
                             <div className="w-12 h-12 relative">
                                 <Image src="/logo.jpg" fill alt="shield" className="object-contain rounded-full shadow-lg border-2 border-amber-400/50" />
                             </div>

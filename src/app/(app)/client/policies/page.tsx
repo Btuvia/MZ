@@ -100,7 +100,7 @@ export default function PoliciesPage() {
         <DashboardShell role="לקוח" navItems={CLIENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-accent via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-accent via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2"></div>
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">הפוליסות שלי</h1>
@@ -126,7 +126,7 @@ export default function PoliciesPage() {
                         { label: "תשלום שנתי", value: "₪3,200", icon: "📅", color: "from-purple-600 to-indigo-700" },
                         { label: "חיסכון השנה", value: "₪1,240", icon: "💰", color: "from-amber-500 to-orange-600" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -140,11 +140,11 @@ export default function PoliciesPage() {
                 <div className="grid gap-6">
                     {policies.map((policy) => (
                         <Card key={policy.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all">
-                            <div className={`h-2 w-full bg-gradient-to-r ${policy.color}`}></div>
+                            <div className={`h-2 w-full bg-linear-to-r ${policy.color}`}></div>
                             <div className="p-8">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
-                                        <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${policy.color} flex items-center justify-center text-3xl shadow-lg`}>
+                                        <div className={`h-16 w-16 rounded-2xl bg-linear-to-br ${policy.color} flex items-center justify-center text-3xl shadow-lg`}>
                                             {policy.icon}
                                         </div>
                                         <div>

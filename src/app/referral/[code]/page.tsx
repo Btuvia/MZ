@@ -126,6 +126,10 @@ export default function ReferralPage() {
                 referralCode: code,
                 referralNotes: formData.notes,
                 
+                // Urgency & Hot Lead Status
+                isHotLead: true,
+                priority: "critical",
+                
                 // Interests
                 interests: formData.interests,
                 
@@ -140,7 +144,7 @@ export default function ReferralPage() {
                     type: 'referral',
                     direction: 'inbound',
                     date: new Date().toLocaleString("he-IL"),
-                    summary: `ליד הגיע דרך שיתוף פעולה: ${collaborator.name}\n\nהערות מהמפנה: ${formData.notes || "אין"}`,
+                    summary: `🔥 ליד רותח! הגיע דרך "חבר מביא חבר" מ: ${collaborator.name}\n\nהערות מהמפנה: ${formData.notes || "אין"}`,
                     sentiment: 'positive'
                 }],
                 
@@ -148,7 +152,19 @@ export default function ReferralPage() {
                 updatedAt: new Date()
             };
 
-            await firestoreService.addClient(clientData as any);
+            const addedClient = await firestoreService.addClient(clientData as any);
+
+            // Create an immediate urgent task for the agent
+            await firestoreService.addTask({
+                title: `🔥 ליד רותח: ${clientData.name}`,
+                description: `ליד חדש הגיע מהפניה של ${collaborator.name}. יש לחזור בדחיפות!`,
+                priority: "high",
+                status: "pending",
+                dueDate: new Date().toISOString().split('T')[0],
+                clientName: clientData.name,
+                clientId: addedClient || "",
+                type: "call"
+            } as any);
             setSubmitted(true);
             toast.success("הפרטים נשלחו בהצלחה!");
         } catch (err) {
@@ -161,7 +177,7 @@ export default function ReferralPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center" dir="rtl">
+            <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center" dir="rtl">
                 <div className="text-center">
                     <Loader2 size={48} className="animate-spin text-indigo-600 mx-auto mb-4" />
                     <p className="text-slate-600 font-bold">טוען...</p>
@@ -172,7 +188,7 @@ export default function ReferralPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center p-4" dir="rtl">
+            <div className="min-h-screen bg-linear-to-br from-red-50 via-white to-orange-50 flex items-center justify-center p-4" dir="rtl">
                 <Card className="max-w-md w-full p-8 text-center border-none shadow-2xl">
                     <div className="text-6xl mb-4">😕</div>
                     <h1 className="text-2xl font-black text-slate-900 mb-2">אופס!</h1>
@@ -184,7 +200,7 @@ export default function ReferralPage() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4" dir="rtl">
+            <div className="min-h-screen bg-linear-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4" dir="rtl">
                 <Toaster position="top-center" richColors />
                 <Card className="max-w-md w-full p-8 text-center border-none shadow-2xl">
                     <div className="h-20 w-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
@@ -201,13 +217,13 @@ export default function ReferralPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4" dir="rtl">
+        <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 py-8 px-4" dir="rtl">
             <Toaster position="top-center" richColors />
             
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-3xl font-black shadow-xl mb-4">
+                    <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 text-white text-3xl font-black shadow-xl mb-4">
                         🛡️
                     </div>
                     <h1 className="text-3xl font-black text-slate-900 mb-2">מגן זהב</h1>
@@ -448,7 +464,7 @@ export default function ReferralPage() {
                         {/* Submit */}
                         <Button 
                             type="submit"
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-4 rounded-xl font-black text-lg shadow-xl gap-2"
+                            className="w-full bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-4 rounded-xl font-black text-lg shadow-xl gap-2"
                             disabled={submitting}
                         >
                             {submitting ? (

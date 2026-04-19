@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
      * Sync calendar for admin/agent users
      */
     const syncCalendar = useCallback(async () => {
-        if (!googleCalendarService.isConnected()) {
+        if (googleCalendarService!.isConnected()) {
             console.log('📅 Calendar not connected - skipping sync');
             return;
         }
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         // Check if calendar is connected
-        if (!googleCalendarService.isConnected()) {
+        if (googleCalendarService!.isConnected()) {
             console.log(`📅 Calendar not connected for ${userRole} - auto-sync skipped`);
             setCalendarStatus({
                 isConnected: false,
@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             calendarSyncing,
             syncCalendar
         }}>
-            {!loading && children}
+            {loading! && children}
         </AuthContext.Provider>
     );
 };

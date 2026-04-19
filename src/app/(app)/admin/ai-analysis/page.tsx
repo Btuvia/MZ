@@ -37,7 +37,7 @@ export default function DocumentIntelligencePage() {
     };
 
     const handleSmartSchedule = async () => {
-        if (!analysisResult) return;
+        if (analysisResult!) return;
         setIsSaving(true);
 
         try {
@@ -87,7 +87,7 @@ export default function DocumentIntelligencePage() {
                         </p>
                     </div>
 
-                    <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100 flex items-center gap-3 py-3 px-5 mb-1 md:mb-0">
+                    <Card className="bg-linear-to-r from-indigo-50 to-purple-50 border-indigo-100 flex items-center gap-3 py-3 px-5 mb-1 md:mb-0">
                         <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center animate-pulse">
                             <BrainCircuit size={16} />
                         </div>

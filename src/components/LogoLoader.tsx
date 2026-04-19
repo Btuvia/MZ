@@ -29,7 +29,7 @@ export function LogoLoader({ variant = "splash", subtitle }: LogoLoaderProps) {
         return () => clearInterval(interval);
     }, [variant]);
 
-    if (variant === "splash" && !visible) return null;
+    if (variant === "splash" && visible!) return null;
 
     return (
         <div
@@ -63,7 +63,7 @@ export function LogoLoader({ variant = "splash", subtitle }: LogoLoaderProps) {
                         <h2 className="text-2xl font-black text-white tracking-widest uppercase">Magen Zahav</h2>
                         <div className="h-1 w-48 bg-slate-800 rounded-full overflow-hidden mx-auto">
                             <div
-                                className="h-full bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 transition-all duration-300"
+                                className="h-full bg-linear-to-r from-yellow-400 via-amber-500 to-yellow-600 transition-all duration-300"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>

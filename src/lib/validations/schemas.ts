@@ -1,0 +1,37 @@
+
+import { z } from "zod";
+
+export const TaskSchema = z.object({
+    id: z.string().optional(),
+    title: z.string().min(3, "Title too short"),
+    description: z.string().optional(),
+    dueDate: z.any().optional(), // Can be Firestore Timestamp or string
+    priority: z.enum(["low", "medium", "high", "urgent"]),
+    status: z.enum(["new", "in_progress", "completed", "pending"]),
+    assignedTo: z.string().optional(),
+    clientName: z.string().optional(),
+    createdAt: z.any().optional(),
+});
+
+export const LeadSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(2, "Name too short"),
+    phone: z.string().optional(),
+    email: z.string().email().optional().or(z.literal("")),
+    source: z.string().default("General"),
+    score: z.number().min(0).max(100).default(50),
+    status: z.string().default("new"),
+    createdAt: z.any().optional(),
+});
+
+export const AgencySchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(2, "Agency name too short"),
+    seatCount: z.number().int().positive("Seat count must be positive"),
+    status: z.enum(["active", "pending", "suspended"]).default("pending"),
+    contactEmail: z.string().email().optional(),
+});
+
+export type TaskInput = z.infer<typeof TaskSchema>;
+export type LeadInput = z.infer<typeof LeadSchema>;
+export type AgencyInput = z.infer<typeof AgencySchema>;

@@ -39,7 +39,7 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
             <aside className="fixed inset-y-4 right-4 z-50 hidden lg:flex flex-col w-72 glass-card rounded-3xl p-6 shadow-2xl transition-all duration-500 border border-amber-500/20">
                 {/* Logo Section */}
                 <div className="mb-10 flex items-center gap-4 px-2">
-                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-black text-2xl shadow-xl shadow-amber-500/40 animate-float neon-gold">🛡️</div>
+                    <div className="h-14 w-14 rounded-2xl bg-linear-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-black text-2xl shadow-xl shadow-amber-500/40 animate-float neon-gold">🛡️</div>
                     <div>
                         <h2 className="text-2xl font-black leading-tight font-display tracking-tight">
                             <span className="text-gradient-gold neon-text-gold">מגן</span>
@@ -50,10 +50,10 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                 </div>
 
                 {/* User Profile Badge */}
-                <div className="mb-8 px-4 py-3 bg-gradient-to-r from-amber-500/10 to-blue-500/10 rounded-2xl border border-amber-500/20 backdrop-blur-sm">
+                <div className="mb-8 px-4 py-3 bg-linear-to-r from-amber-500/10 to-blue-500/10 rounded-2xl border border-amber-500/20 backdrop-blur-sm">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">פרופיל משתמש</p>
                     <div className="flex items-center gap-3">
-                        <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50" />
+                        <div className="h-2.5 w-2.5 rounded-full bg-linear-to-r from-emerald-400 to-emerald-500 animate-pulse shadow-lg shadow-emerald-500/50" />
                         <p className="text-sm font-black text-amber-200">{role}</p>
                     </div>
                 </div>
@@ -67,8 +67,8 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all duration-300 group ${isActive
-                                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 shadow-xl shadow-amber-500/30 translate-x-[-4px] neon-gold"
-                                    : "text-slate-400 hover:bg-gradient-to-r hover:from-slate-800/80 hover:to-slate-700/80 hover:text-amber-200 hover:shadow-lg hover:translate-x-[-2px] hover:border-amber-500/20"
+                                    ? "bg-linear-to-r from-amber-500 to-amber-600 text-slate-900 shadow-xl shadow-amber-500/30 translate-x-[-4px] neon-gold"
+                                    : "text-slate-400 hover:bg-linear-to-r hover:from-slate-800/80 hover:to-slate-700/80 hover:text-amber-200 hover:shadow-lg hover:translate-x-[-2px] hover:border-amber-500/20"
                                     }`}
                             >
                                 <span className={`transition-all duration-300 ${isActive ? "text-slate-900 scale-110" : "text-slate-500 group-hover:text-amber-400 group-hover:scale-110"}`}>
@@ -100,14 +100,14 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                 <header className={`sticky top-4 left-4 right-4 z-40 transition-all duration-500 ${scrolled ? 'mx-4' : 'mx-0'}`}>
                     <div className={`flex items-center justify-between h-20 px-8 transition-all duration-500 ${scrolled ? 'glass-card rounded-3xl shadow-xl border border-amber-500/20' : 'bg-transparent'}`}>
                         <div className="flex items-center gap-4">
-                            <div className="lg:hidden h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-black text-xl shadow-lg shadow-amber-500/40">🛡️</div>
+                            <div className="lg:hidden h-12 w-12 rounded-xl bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-black text-xl shadow-lg shadow-amber-500/40">🛡️</div>
                         </div>
 
                         <div className="flex items-center gap-4">
                             {user ? <NotificationsPanel userId={user.uid} /> : null}
 
-                            <div className="flex items-center gap-3 p-1.5 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl shadow-xl border border-amber-500/30 hover:border-amber-500/50 transition-all">
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black shadow-inner neon-gold">🛡️</div>
+                            <div className="flex items-center gap-3 p-1.5 bg-linear-to-r from-slate-800 to-slate-900 rounded-2xl shadow-xl border border-amber-500/30 hover:border-amber-500/50 transition-all">
+                                <div className="h-10 w-10 rounded-xl bg-linear-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black shadow-inner neon-gold">🛡️</div>
                                 <div className="hidden sm:block pl-2">
                                     <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none neon-text-gold">{role}</p>
                                     <p className="text-xs font-bold text-slate-300 mt-1">מגן זהב</p>

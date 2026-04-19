@@ -87,7 +87,7 @@ export default function SubjectsPage() {
     };
 
     const handleSave = async () => {
-        if (!formName.trim()) {
+        if (formName!.trim()) {
             alert("נא להזין שם נושא");
             return;
         }
@@ -140,7 +140,7 @@ export default function SubjectsPage() {
     const toggleActive = async (subject: TaskSubject) => {
         try {
             await firestoreService.updateSubject(subject.id, {
-                isActive: !subject.isActive
+                isActive: subject!.isActive
             });
             await loadData();
         } catch (error) {
@@ -255,7 +255,7 @@ export default function SubjectsPage() {
                                                 {subject.isSystem && (
                                                     <Badge variant="outline" className="text-xs">מערכת</Badge>
                                                 )}
-                                                {!subject.isActive && (
+                                                {subject!.isActive && (
                                                     <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge>
                                                 )}
                                             </div>
@@ -299,7 +299,7 @@ export default function SubjectsPage() {
                                         >
                                             <Edit2 size={18} />
                                         </button>
-                                        {!subject.isSystem && (
+                                        {subject!.isSystem && (
                                             <button
                                                 onClick={() => handleDelete(subject)}
                                                 className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"

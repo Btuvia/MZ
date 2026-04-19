@@ -29,12 +29,12 @@ export function SubjectSelector({
         <div className="relative">
             <label className="block text-sm font-bold text-amber-200 mb-2">
                 נושא
-                {!value && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
+                {value! && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
             </label>
 
             <button
                 type="button"
-                onClick={() => !disabled && setIsOpen(!isOpen)}
+                onClick={() => disabled! && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={`w-full px-4 py-3 rounded-xl border-2 text-right flex items-center justify-between transition-all
           ${disabled
@@ -76,7 +76,7 @@ export function SubjectSelector({
                 </svg>
             </button>
 
-            {isOpen && !disabled ? <>
+            {isOpen && disabled! ? <>
                     {/* Backdrop */}
                     <div
                         className="fixed inset-0 z-10"

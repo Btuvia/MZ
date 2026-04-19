@@ -6,18 +6,16 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { NeonCard, NeonInput, NeonSelect, NeonButton } from "@/components/ui/neon-form";
 
 export default function ReferralPage() {
     const { user } = useAuth();
     const [viewState, setViewState] = useState<"intro" | "form">("intro");
     const [isLoading, setIsLoading] = useState(false);
-    const [clientCoins, setClientCoins] = useState(0); // Mock starting balance
+    const [clientCoins, setClientCoins] = useState(0);
 
-    // Mock user fetching/coins loading
     useEffect(() => {
-        // In a real app, we would fetch the client's actual coin balance here
-        // const fetchCoins = async () => { ... }
-        setClientCoins(150); // Example: Client already has some coins
+        setClientCoins(150);
     }, []);
 
     const [formData, setFormData] = useState({
@@ -36,24 +34,20 @@ export default function ReferralPage() {
         setIsLoading(true);
 
         try {
-            // 1. Create the lead
             await firestoreService.addLead({
                 firstName: formData.contactName.split(" ")[0],
                 lastName: formData.contactName.split(" ").slice(1).join(" ") || "",
                 phone: formData.phone,
-                email: "", // Not provided in simplified form
+                email: "",
                 status: "new",
                 source: "Referral",
                 interestedIn: formData.product,
-                referredBy: user?.uid || "unknown_client", // Link to current user
+                referredBy: user?.uid || "unknown_client",
                 createdAt: new Date(),
                 notes: `System: Referral from client. Call back at: ${formData.callTime}`
             } as any);
 
-            // 2. Feedback
             toast.success("ההפניה התקבלה בהצלחה! 75 מטבעות יחכו לך לאחר הסגירה.");
-
-            // 3. Reset
             setFormData({
                 contactName: "",
                 phone: "",
@@ -70,7 +64,7 @@ export default function ReferralPage() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-4 md:p-6" dir="rtl">
             <AnimatePresence mode="wait">
                 {viewState === "intro" ? (
                     <IntroView onComplete={handleIntroComplete} />
@@ -78,7 +72,7 @@ export default function ReferralPage() {
                     <div className="space-y-8">
                         <CoinsDashboard currentCoins={clientCoins} />
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                             <ReferralForm
                                 formData={formData}
                                 setFormData={setFormData}
@@ -99,11 +93,10 @@ export default function ReferralPage() {
 function IntroView({ onComplete }: { onComplete: () => void }) {
     const [showExplanation, setShowExplanation] = useState(false);
 
-    // Initial "Heart Hand" Animation Sequence
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowExplanation(true);
-        }, 2500); // Show explanation after animation
+        }, 2500);
         return () => clearTimeout(timer);
     }, []);
 
@@ -112,14 +105,14 @@ function IntroView({ onComplete }: { onComplete: () => void }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden"
+            className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-slate-950/80 rounded-[2.5rem] shadow-2xl border border-amber-500/30 relative overflow-hidden backdrop-blur-xl"
         >
             {/* Background Effects */}
-            <div className="absolute inset-0 bg-gradient-to-b from-red-50 to-white opacity-50" />
+            <div className="absolute inset-0 bg-linear-to-b from-amber-500/10 to-transparent opacity-50" />
+            <div className="absolute -top-24 -left-24 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl opacity-30" />
 
             {!showExplanation ? (
                 <div className="relative z-10 scale-150">
-                    {/* "Heart Hands" Animation Simulation */}
                     <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -128,17 +121,17 @@ function IntroView({ onComplete }: { onComplete: () => void }) {
                     >
                         {/* Left Hand */}
                         <motion.div
-                            className="absolute -left-12 top-0 text-primary"
+                            className="absolute -left-12 top-0"
                             initial={{ x: -50, rotate: -45, opacity: 0 }}
                             animate={{ x: -18, rotate: -15, opacity: 1 }}
                             transition={{ delay: 0.5, duration: 0.8 }}
                         >
-                            <span className="text-6xl">🤏</span> {/* Placeholder emoji for hand shape */}
+                            <span className="text-6xl">🤏</span>
                         </motion.div>
 
                         {/* Right Hand */}
                         <motion.div
-                            className="absolute -right-12 top-0 text-primary scale-x-[-1]"
+                            className="absolute -right-12 top-0 scale-x-[-1]"
                             initial={{ x: 50, rotate: -45, opacity: 0 }}
                             animate={{ x: 18, rotate: -15, opacity: 1 }}
                             transition={{ delay: 0.5, duration: 0.8 }}
@@ -146,21 +139,20 @@ function IntroView({ onComplete }: { onComplete: () => void }) {
                             <span className="text-6xl">🤏</span>
                         </motion.div>
 
-                        {/* The Heart & Logo appearing in middle */}
                         <motion.div
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 1.2, type: "spring" }}
-                            className="w-20 h-20 bg-gradient-to-tr from-accent to-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-200 z-20 mx-auto"
+                            className="w-20 h-20 bg-linear-to-tr from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/20 z-20 mx-auto"
                         >
-                            <Heart className="w-10 h-10 text-white fill-current animate-pulse" />
+                            <Heart className="w-10 h-10 text-slate-900 fill-current animate-pulse" />
                         </motion.div>
                     </motion.div>
                     <motion.h2
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.5 }}
-                        className="mt-12 text-2xl font-black text-slate-800 font-display"
+                        className="mt-12 text-2xl font-black text-amber-200 font-display italic tracking-tight"
                     >
                         מגן זהב אוהבים אותך!
                     </motion.h2>
@@ -171,39 +163,39 @@ function IntroView({ onComplete }: { onComplete: () => void }) {
                     animate={{ opacity: 1, y: 0 }}
                     className="relative z-10 max-w-md space-y-6"
                 >
-                    <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto text-yellow-600 mb-4">
+                    <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto text-amber-400 mb-4 border border-amber-500/30">
                         <Coins className="w-10 h-10" />
                     </div>
 
-                    <h2 className="text-3xl font-black text-slate-800 font-display">הכירו את MagenCoins!</h2>
+                    <h2 className="text-3xl font-black text-white font-display italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]">הכירו את MagenCoins!</h2>
 
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-right space-y-4 border border-slate-100 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">1</div>
-                            <p className="text-slate-600 font-medium">המליצו לחבר על השירותים שלנו</p>
+                    <div className="bg-slate-950/60 backdrop-blur-md rounded-[2rem] p-8 text-right space-y-6 border border-amber-500/20 shadow-inner">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-200 font-black border border-amber-500/30">1</div>
+                            <p className="text-slate-300 font-bold">המליצו לחבר על השירותים שלנו</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">2</div>
-                            <p className="text-slate-600 font-medium">ברגע שהחבר מצטרף למשפחה...</p>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-200 font-black border border-amber-500/30">2</div>
+                            <p className="text-slate-300 font-bold">ברגע שהחבר מצטרף למשפחה...</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold">3</div>
-                            <p className="text-slate-800 font-bold">אתם מקבלים 75 מטבעות!</p>
+                        <div className="flex items-center gap-4 translate-x-2">
+                            <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/30">3</div>
+                            <p className="text-white text-lg font-black italic drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">אתם מקבלים 75 מטבעות!</p>
                         </div>
-                        <div className="pt-2 border-t mt-4">
-                            <p className="text-center font-bold text-accent">
+                        <div className="pt-6 border-t border-white/10 mt-4">
+                            <p className="text-center font-black text-amber-400 italic">
                                 צברתם 225 מטבעות? <br />
-                                <span className="text-sm font-normal text-slate-500">חנות המתנות הסודית נפתחת עבורכם! 🎁</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 block">חנות המתנות הסודית נפתחת</span>
                             </p>
                         </div>
                     </div>
 
-                    <button
+                    <NeonButton
                         onClick={onComplete}
-                        className="w-full bg-gradient-to-r from-primary to-primary-dark text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95"
+                        className="w-full text-lg py-6"
                     >
                         תודה על העדכון, בואו נתחיל!
-                    </button>
+                    </NeonButton>
                 </motion.div>
             )}
         </motion.div>
@@ -215,50 +207,50 @@ function CoinsDashboard({ currentCoins }: { currentCoins: number }) {
     const progress = Math.min((currentCoins / TARGET) * 100, 100);
 
     return (
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden">
-            {/* Background Patterns */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 rounded-[2.5rem] p-10 text-white relative overflow-hidden border border-amber-500/30 shadow-2xl">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-50" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 opacity-30" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                 <div className="text-center md:text-right">
-                    <h2 className="text-2xl font-black mb-1 font-display opacity-90">הארנק שלי</h2>
-                    <p className="text-slate-400 text-sm">הדרך למתנה הבאה שלך</p>
+                    <h2 className="text-3xl font-black mb-2 font-display italic tracking-tighter text-amber-200 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">הארנק שלי</h2>
+                    <p className="text-slate-400 font-bold text-sm">הדרך למתנה הבאה שלך מתחילה כאן</p>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-6 bg-white/5 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-inner">
                     <div className="text-right">
-                        <span className="block text-4xl font-black font-mono tracking-tight text-yellow-400">{currentCoins}</span>
-                        <span className="text-xs text-slate-400 uppercase tracking-widest">MagenCoins</span>
+                        <span className="block text-5xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-linear-to-t from-amber-600 to-amber-200">{currentCoins}</span>
+                        <span className="text-[10px] text-amber-400/60 font-black uppercase tracking-widest block -mt-1">MagenCoins Balance</span>
                     </div>
-                    <div className="w-16 h-16 bg-yellow-500/20 rounded-2xl flex items-center justify-center border border-yellow-500/50">
-                        <Coins className="w-8 h-8 text-yellow-400" />
+                    <div className="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center border border-amber-500/40 shadow-[0_0_20px_rgba(251,191,36,0.2)]">
+                        <Coins className="w-8 h-8 text-amber-400 animate-pulse" />
                     </div>
                 </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mt-8 relative pt-6">
-                <div className="flex justify-between text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">
-                    <span>0</span>
-                    <span>{TARGET} (Goal)</span>
+            <div className="mt-12 relative pt-6">
+                <div className="flex justify-between text-[10px] font-black text-amber-400/60 mb-3 uppercase tracking-[0.2em]">
+                    <span>נקודת התחלה</span>
+                    <span>יעד: {TARGET} מטבעות</span>
                 </div>
-                <div className="h-4 bg-slate-700/50 rounded-full overflow-hidden backdrop-blur-sm">
+                <div className="h-6 bg-slate-900 border border-white/5 rounded-full overflow-hidden backdrop-blur-sm p-1 shadow-inner">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                        className="h-full bg-gradient-to-r from-yellow-500 to-amber-300 rounded-full relative"
+                        transition={{ duration: 1.5, ease: "circOut" }}
+                        className="h-full bg-linear-to-r from-amber-600 via-amber-400 to-orange-400 rounded-full relative group"
                     >
-                        <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]" />
+                        <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" />
                     </motion.div>
                 </div>
                 {progress >= 100 && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 px-6 py-2 rounded-full text-xs font-black shadow-[0_0_25px_rgba(251,191,36,0.5)] z-20"
                     >
-                        🎉 מגיע לך מתנה!
+                        🎉 מזל טוב! החנות פתוחה עבורך
                     </motion.div>
                 )}
             </div>
@@ -268,79 +260,75 @@ function CoinsDashboard({ currentCoins }: { currentCoins: number }) {
 
 function ReferralForm({ formData, setFormData, onSubmit, isLoading }: any) {
     return (
-        <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
-            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-primary" />
+        <NeonCard className="p-8 md:p-10">
+            <h3 className="text-2xl font-black text-amber-200 mb-8 flex items-center gap-3 italic drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]">
+                <UserPlus className="w-6 h-6 text-amber-400" />
                 הפניית חבר חדש
             </h3>
 
-            <form onSubmit={onSubmit} className="space-y-5">
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">שם החבר/ה</label>
-                    <input
-                        type="text"
+            <form onSubmit={onSubmit} className="space-y-6">
+                <NeonInput
+                    label="שם החבר/ה"
+                    required
+                    placeholder="ישראל ישראלי"
+                    value={formData.contactName}
+                    onChange={e => setFormData({ ...formData, contactName: e.target.value })}
+                />
+
+                <NeonInput
+                    label="טלפון"
+                    type="tel"
+                    required
+                    placeholder="050-0000000"
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                />
+
+                <NeonSelect
+                    label="במה הם מתעניינים?"
+                    value={formData.product}
+                    onChange={e => setFormData({ ...formData, product: e.target.value })}
+                >
+                    <option value="insurance" className="bg-slate-900 border-none">ביטוח (רכב/דירה)</option>
+                    <option value="platinum" className="bg-slate-900 border-none">מועדון פלטינום</option>
+                    <option value="pension" className="bg-slate-900 border-none">פנסיה ופיננסים</option>
+                </NeonSelect>
+
+                <div className="relative">
+                    <NeonInput
+                        label="מתי נוח להם לדבר?"
+                        type="time"
                         required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        placeholder="ישראל ישראלי"
-                        value={formData.contactName}
-                        onChange={e => setFormData({ ...formData, contactName: e.target.value })}
+                        value={formData.callTime}
+                        onChange={e => setFormData({ ...formData, callTime: e.target.value })}
                     />
+                    <Clock className="w-4 h-4 text-amber-400/50 absolute left-4 bottom-4" />
                 </div>
 
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">טלפון</label>
-                    <input
-                        type="tel"
-                        required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        placeholder="050-0000000"
-                        value={formData.phone}
-                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">במה הם מתעניינים?</label>
-                    <select
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                        value={formData.product}
-                        onChange={e => setFormData({ ...formData, product: e.target.value })}
-                    >
-                        <option value="insurance">ביטוח (רכב/דירה)</option>
-                        <option value="platinum">מועדון פלטינום</option>
-                        <option value="pension">פנסיה ופיננסים</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">מתי נוח להם לדבר?</label>
-                    <div className="relative">
-                        <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="time"
-                            required
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                            value={formData.callTime}
-                            onChange={e => setFormData({ ...formData, callTime: e.target.value })}
-                        />
-                    </div>
-                </div>
-
-                <div className="pt-2">
-                    <button
+                <div className="pt-6">
+                    <NeonButton
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+                        className="w-full py-5 text-base"
                     >
-                        {isLoading ? <span className="animate-spin">⌛</span> : <Send className="w-4 h-4 rtl:-scale-x-100" />}
-                        שלח לטיפול וצבור מטבעות
-                    </button>
-                    <p className="text-center text-xs text-slate-400 mt-3">
+                        {isLoading ? (
+                            <span className="flex items-center gap-2">
+                                <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>⌛</motion.span>
+                                שולח...
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-3">
+                                <Send className="w-4 h-4" />
+                                שלח לטיפול וצבור מטבעות
+                            </span>
+                        )}
+                    </NeonButton>
+                    <p className="text-center text-[10px] text-slate-500 mt-4 font-bold uppercase tracking-widest">
                         * המטבעות יתעדכנו לאחר שהחבר יבצע רכישה
                     </p>
                 </div>
             </form>
-        </div>
+        </NeonCard>
     );
 }
 
@@ -348,64 +336,76 @@ function SecretGiftList({ currentCoins }: { currentCoins: number }) {
     const isUnlocked = currentCoins >= 225;
 
     const GIFTS = [
-        { name: "שובר לארוחת בוקר זוגית", cost: 225 },
-        { name: "כרטיס לסרט VIP", cost: 300 },
-        { name: "סטייק בייקבוק יוקרתי", cost: 450 },
+        { name: "שובר לארוחת בוקר זוגית", cost: 225, icon: "🍳" },
+        { name: "כרטיס לסרט VIP", cost: 300, icon: "🎬" },
+        { name: "סטייק בייקבוק יוקרתי", cost: 450, icon: "🥩" },
     ];
 
     return (
-        <div className={`rounded-3xl p-8 border border-slate-100 shadow-sm relative overflow-hidden transition-all duration-500
-            ${isUnlocked ? "bg-gradient-to-b from-white to-amber-50" : "bg-slate-50"}`}
+        <div className={`rounded-[2.5rem] p-8 md:p-10 border transition-all duration-700 relative overflow-hidden h-full flex flex-col
+            ${isUnlocked 
+                ? "bg-slate-950/80 border-amber-500/30 shadow-[0_0_40px_rgba(251,191,36,0.1)]" 
+                : "bg-slate-900/40 border-white/5"}`}
         >
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                    <Gift className={`w-5 h-5 ${isUnlocked ? "text-accent" : "text-slate-400"}`} />
-                    חנות המתנות הסודית
+            <div className="flex items-center justify-between mb-10 relative z-10">
+                <h3 className={`text-2xl font-black flex items-center gap-3 italic drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]
+                    ${isUnlocked ? "text-amber-200" : "text-slate-500"}`}
+                >
+                    <Gift className={`w-6 h-6 ${isUnlocked ? "text-amber-400" : "text-slate-600"}`} />
+                    חנות המתנות
                 </h3>
                 {isUnlocked ? (
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                        <Unlock className="w-3 h-3" /> פתוח
+                    <span className="bg-amber-500/20 text-amber-200 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-amber-500/30 uppercase tracking-widest">
+                        <Unlock className="w-3 h-3" /> UNLOCKED
                     </span>
                 ) : (
-                    <span className="bg-slate-200 text-slate-500 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> נעול
+                    <span className="bg-slate-800/80 text-slate-500 px-4 py-1.5 rounded-full text-[10px] font-black flex items-center gap-2 border border-slate-700 uppercase tracking-widest">
+                        <Lock className="w-3 h-3" /> LOCKED
                     </span>
                 )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6 relative z-10 flex-1">
                 {GIFTS.map((gift, idx) => (
-                    <div key={idx} className={`flex items-center justify-between p-4 rounded-xl border transition-all
+                    <motion.div 
+                        key={idx}
+                        whileHover={isUnlocked ? { scale: 1.02, x: -5 } : {}}
+                        className={`flex items-center justify-between p-6 rounded-2xl border transition-all duration-500
                         ${isUnlocked
-                            ? "bg-white border-amber-100 shadow-sm hover:shadow-md cursor-pointer"
-                            : "bg-slate-100 border-transparent opacity-60 blur-[1px] select-none"
+                            ? "bg-white/5 border-amber-500/20 hover:border-amber-400 shadow-sm backdrop-blur-md"
+                            : "bg-slate-900/30 border-transparent opacity-40 blur-[0.5px] select-none"
                         }`}
                     >
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center
-                                ${isUnlocked ? "bg-amber-100 text-amber-600" : "bg-slate-200 text-slate-400"}`}
+                        <div className="flex items-center gap-5">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner
+                                ${isUnlocked ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-slate-800 text-slate-600"}`}
                             >
-                                <Gift className="w-5 h-5" />
+                                {gift.icon}
                             </div>
                             <div>
-                                <p className="font-bold text-slate-800">{gift.name}</p>
-                                <p className="text-xs text-slate-500">{gift.cost} מטבעות</p>
+                                <p className={`font-black italic ${isUnlocked ? "text-white" : "text-slate-500"}`}>{gift.name}</p>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                    <Coins size={10} className="text-amber-500/70" />
+                                    <p className="text-[11px] font-black text-amber-500/70 uppercase tracking-tighter">{gift.cost} MagenCoins</p>
+                                </div>
                             </div>
                         </div>
-                        {isUnlocked ? <button className="bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-slate-800">
-                                הזמן
-                            </button> : null}
-                    </div>
+                        {isUnlocked && (
+                            <button className="bg-amber-500 text-slate-950 text-[10px] font-black px-5 py-2 rounded-xl hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 uppercase">
+                                הזמן עכשיו
+                            </button>
+                        )}
+                    </motion.div>
                 ))}
 
                 {!isUnlocked && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center md:pt-20 bg-slate-50/50 backdrop-blur-[1px] text-center p-6 z-10">
-                        <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                            <Lock className="w-8 h-8" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-10">
+                        <div className="w-20 h-20 bg-slate-800/80 rounded-[1.5rem] flex items-center justify-center mb-6 text-slate-600 border border-slate-700/50 shadow-2xl">
+                            <Lock className="w-10 h-10" />
                         </div>
-                        <p className="font-bold text-slate-600 mb-1">החנות עדיין נעולה</p>
-                        <p className="text-sm text-slate-500 max-w-[200px]">
-                            הגיעו ל-225 מטבעות כדי לחשוף את ההטבות המיוחדות שלנו
+                        <p className="font-black text-slate-400 text-lg italic mb-2">החנות עדיין נעולה</p>
+                        <p className="text-xs text-slate-600 max-w-[220px] font-bold leading-relaxed">
+                            הגיעו ל-225 מטבעות <br />כדי לחשוף את ההטבות המיוחדות שלנו
                         </p>
                     </div>
                 )}

@@ -123,7 +123,7 @@ export default function AgencyManagementPage() {
 
     // Team Management
     const handleSaveTeamMember = () => {
-        if (!teamForm.name || !teamForm.email) return;
+        if (teamForm!.name || teamForm!.email) return;
 
         if (editingMember) {
             setTeam(team.map(m => m.id === editingMember.id ? { ...m, ...teamForm } as TeamMember : m));
@@ -191,7 +191,7 @@ export default function AgencyManagementPage() {
 
     // AI Handlers (Same as before, simplified for brevity)
     const handleGenerateField = async () => {
-        if (!fieldInput.trim()) {
+        if (fieldInput!.trim()) {
             toast.error("אנא תאר את השדה שברצונך ליצור");
             return;
         }
@@ -246,20 +246,20 @@ Required JSON format:
             
             // Find JSON object in the response
             const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
+            if (jsonMatch!) {
                 throw new Error("לא נמצא JSON תקין בתגובה");
             }
             
             const parsedField = JSON.parse(jsonMatch[0]);
             
             // Validate required fields
-            if (!parsedField.label || !parsedField.type || !parsedField.description) {
+            if (parsedField!.label || parsedField!.type || parsedField!.description) {
                 throw new Error("השדה שנוצר חסר שדות נדרשים");
             }
             
             // Validate type
             const validTypes = ['text', 'number', 'select', 'date'];
-            if (!validTypes.includes(parsedField.type)) {
+            if (validTypes!.includes(parsedField.type)) {
                 parsedField.type = 'text'; // fallback
             }
             
@@ -275,7 +275,7 @@ Required JSON format:
     };
 
     const handleGenerateAutomation = async () => {
-        if (!automationInput.trim()) {
+        if (automationInput!.trim()) {
             toast.error("אנא תאר את האוטומציה שברצונך ליצור");
             return;
         }
@@ -333,14 +333,14 @@ Required JSON format:
             
             // Find JSON object
             const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
+            if (jsonMatch!) {
                 throw new Error("לא נמצא JSON תקין בתגובה");
             }
             
             const newAuto = JSON.parse(jsonMatch[0]);
             
             // Validate
-            if (!newAuto.title || !newAuto.desc) {
+            if (newAuto!.title || newAuto!.desc) {
                 throw new Error("האוטומציה חסרה שדות נדרשים");
             }
             
@@ -409,8 +409,8 @@ Required JSON format:
                 <div className="mt-8 transition-all duration-500 ease-out">
                     {activeTab === "צוות וסוכנים" && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                            <div className="flex justify-between items-center bg-gradient-to-r from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2rem] border border-amber-500/30 px-8 py-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.7)]">
-                            <Button onClick={() => openTeamModal()} className="bg-gradient-to-r from-amber-500 to-orange-400 text-amber-900 font-black shadow-xl shadow-amber-500/30 rounded-2xl px-8 italic gap-2">
+                            <div className="flex justify-between items-center bg-linear-to-r from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2rem] border border-amber-500/30 px-8 py-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.7)]">
+                            <Button onClick={() => openTeamModal()} className="bg-linear-to-r from-amber-500 to-orange-400 text-amber-900 font-black shadow-xl shadow-amber-500/30 rounded-2xl px-8 italic gap-2">
                                     <Plus size={16} /> הוסף חבר צוות
                                 </Button>
                                 <div className="text-right">
@@ -419,7 +419,7 @@ Required JSON format:
                                 </div>
                             </div>
 
-                            <Card className="overflow-hidden border border-amber-500/20 shadow-xl bg-gradient-to-br from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2.5rem]">
+                            <Card className="overflow-hidden border border-amber-500/20 shadow-xl bg-linear-to-br from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2.5rem]">
                                 <table className="w-full text-right">
                                     <thead>
                                         <tr className="border-b border-slate-50">
@@ -519,7 +519,7 @@ Required JSON format:
                             </div>
 
                             {/* AI Builder Card */}
-                            <div className="relative overflow-hidden bg-gradient-to-l from-indigo-600 to-purple-600 rounded-[3rem] p-12 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
+                            <div className="relative overflow-hidden bg-linear-to-l from-indigo-600 to-purple-600 rounded-[3rem] p-12 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8">
                                 <div className="relative z-10 text-center md:text-right space-y-4 flex-1">
                                     <div className="flex items-center gap-3 justify-center md:justify-start">
                                         <Badge className="bg-white/20 text-white border-none py-1.5 px-3 backdrop-blur-md text-[10px] font-black uppercase tracking-widest">Premium AI Feature</Badge>
@@ -547,7 +547,7 @@ Required JSON format:
                                             type="text" 
                                             value={fieldInput} 
                                             onChange={(e) => setFieldInput(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && !isGeneratingField && isGeminiConfigured && handleGenerateField()}
+                                            onKeyDown={(e) => e.key === 'Enter' && isGeneratingField! && isGeminiConfigured && handleGenerateField()}
                                             placeholder={isGeminiConfigured ? 'לדוגמה: "שדה תאריך תחילת פנסיה"' : 'נדרש מפתח API...'} 
                                             disabled={!isGeminiConfigured}
                                             className="flex-1 bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-md text-white placeholder-white/40 text-sm font-bold outline-none disabled:opacity-50 disabled:cursor-not-allowed" 
@@ -576,13 +576,13 @@ Required JSON format:
 
                             {/* Manual Modal */}
                             {isFieldModalOpen ? <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4 text-slate-100">
+                                    <div className="bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4 text-slate-100">
                                         <h3 className="text-xl font-black mb-4 text-amber-200">הוספת שדה חדש</h3>
                                         <input type="text" placeholder="שם השדה" value={manualField.label} onChange={e => setManualField({ ...manualField, label: e.target.value })} className="w-full bg-slate-900/70 p-3 rounded-xl border border-amber-500/25 font-bold outline-none text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-amber-400/30" />
                                         <select value={manualField.type} onChange={e => setManualField({ ...manualField, type: e.target.value })} className="w-full bg-slate-900/70 p-3 rounded-xl border border-amber-500/25 font-bold outline-none text-slate-100">
                                             <option value="text">טקסט</option><option value="number">מספר</option><option value="date">תאריך</option><option value="select">בחירה</option>
                                         </select>
-                                        <Button onClick={() => { setCustomFields([...customFields, { ...manualField, id: Date.now() }]); setIsFieldModalOpen(false); }} className="w-full bg-gradient-to-r from-amber-500 to-orange-400 text-slate-900 py-4 rounded-xl font-black shadow-lg shadow-amber-500/30">שמור</Button>
+                                        <Button onClick={() => { setCustomFields([...customFields, { ...manualField, id: Date.now() }]); setIsFieldModalOpen(false); }} className="w-full bg-linear-to-r from-amber-500 to-orange-400 text-slate-900 py-4 rounded-xl font-black shadow-lg shadow-amber-500/30">שמור</Button>
                                         <button onClick={() => setIsFieldModalOpen(false)} className="w-full text-amber-200 text-xs font-bold mt-2">ביטול</button>
                                     </div>
                                 </div> : null}
@@ -630,7 +630,7 @@ Required JSON format:
                                         type="text" 
                                         value={automationInput} 
                                         onChange={e => setAutomationInput(e.target.value)} 
-                                        onKeyDown={e => e.key === 'Enter' && !isGeneratingAutomation && isGeminiConfigured && handleGenerateAutomation()} 
+                                        onKeyDown={e => e.key === 'Enter' && isGeneratingAutomation! && isGeminiConfigured && handleGenerateAutomation()} 
                                         placeholder={isGeminiConfigured ? "תאר אוטומציה..." : "נדרש מפתח API..."}
                                         disabled={!isGeminiConfigured}
                                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none font-bold disabled:opacity-50 disabled:cursor-not-allowed" 
@@ -653,7 +653,7 @@ Required JSON format:
                                 {automations.map((auto, i) => (
                                     <Card key={i} className={`p-6 shadow-lg rounded-[2rem] flex items-center justify-between ${auto.active ? 'bg-slate-950/80 border border-amber-500/30' : 'bg-slate-900/60 border border-slate-700'}`}>
                                         <div className="flex items-center gap-4">
-                                            <button onClick={() => { const n = [...automations]; n[i].active = !n[i].active; setAutomations(n); }} className={`w-12 h-7 rounded-full relative transition-colors ${auto.active ? 'bg-emerald-500/80' : 'bg-slate-700'}`}>
+                                            <button onClick={() => { const n = [...automations]; n[i].active = n![i].active; setAutomations(n); }} className={`w-12 h-7 rounded-full relative transition-colors ${auto.active ? 'bg-emerald-500/80' : 'bg-slate-700'}`}>
                                                 <div className={`w-5 h-5 rounded-full absolute top-1 transition-all shadow-sm ${auto.active ? 'bg-amber-100 right-6' : 'bg-slate-300 right-1'}`} />
                                             </button>
                                             <div className="text-right">
@@ -668,11 +668,11 @@ Required JSON format:
 
                             {/* Manual Automation Modal */}
                             {isAutomationModalOpen ? <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4 text-slate-100">
+                                    <div className="bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-[2rem] p-8 w-full max-w-md shadow-2xl space-y-4 text-slate-100">
                                         <h3 className="text-xl font-black mb-4 text-amber-200">אוטומציה חדשה</h3>
                                         <input type="text" placeholder="שם" value={manualAutomation.title} onChange={e => setManualAutomation({ ...manualAutomation, title: e.target.value })} className="w-full bg-slate-900/70 p-3 rounded-xl border border-amber-500/25 font-bold outline-none text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-amber-400/30" />
                                         <textarea placeholder="תיאור" value={manualAutomation.desc} onChange={e => setManualAutomation({ ...manualAutomation, desc: e.target.value })} className="w-full bg-slate-900/70 p-3 rounded-xl border border-amber-500/25 font-bold outline-none resize-none text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-amber-400/30" rows={3} />
-                                        <Button onClick={() => { setAutomations([...automations, { ...manualAutomation, active: true }]); setIsAutomationModalOpen(false); }} className="w-full bg-gradient-to-r from-amber-500 to-orange-400 text-slate-900 py-4 rounded-xl font-black shadow-lg shadow-amber-500/30">שמור</Button>
+                                        <Button onClick={() => { setAutomations([...automations, { ...manualAutomation, active: true }]); setIsAutomationModalOpen(false); }} className="w-full bg-linear-to-r from-amber-500 to-orange-400 text-slate-900 py-4 rounded-xl font-black shadow-lg shadow-amber-500/30">שמור</Button>
                                         <button onClick={() => setIsAutomationModalOpen(false)} className="w-full text-amber-200 text-xs font-bold mt-2">ביטול</button>
                                     </div>
                                 </div> : null}
@@ -683,7 +683,7 @@ Required JSON format:
                         <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-12">
                             {/* Branding & Config */}
                             <div className="grid lg:grid-cols-2 gap-8">
-                                <Card className="p-8 border border-amber-500/20 shadow-xl bg-gradient-to-br from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2.5rem]">
+                                <Card className="p-8 border border-amber-500/20 shadow-xl bg-linear-to-br from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2.5rem]">
                                     <h4 className="text-lg font-black italic mb-6 text-primary border-b border-slate-50 pb-4">מיתוג והגדרות בסיס</h4>
                                     <div className="space-y-6">
                                         <div>
@@ -727,7 +727,7 @@ Required JSON format:
                                     </div>
                                 </Card>
 
-                                <Card className="p-8 border-none shadow-xl bg-gradient-to-br from-slate-900 to-indigo-900 text-white rounded-[2.5rem]">
+                                <Card className="p-8 border-none shadow-xl bg-linear-to-br from-slate-900 to-indigo-900 text-white rounded-[2.5rem]">
                                     <h4 className="text-lg font-black italic mb-6">Gemini API Key</h4>
                                     <p className="text-indigo-200 text-sm mb-6">
                                         ה-AI מוגדר בצד השרת באמצעות <span className="font-mono">GEMINI_API_KEY</span> בקובץ <span className="font-mono">.env.local</span>.
@@ -747,11 +747,11 @@ Required JSON format:
                             </div>
 
                             {/* Integrations */}
-                            <Card className="p-8 border border-amber-500/20 shadow-xl bg-gradient-to-br from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2.5rem]">
+                            <Card className="p-8 border border-amber-500/20 shadow-xl bg-linear-to-br from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-[2.5rem]">
                                 <h4 className="text-lg font-black italic mb-8 text-primary border-b border-slate-50 pb-4">אינטגרציות וחיבורים</h4>
                                 <div className="space-y-4">
                                     {integrations.map((int) => (
-                                        <div key={int.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-2xl border border-amber-500/20 group hover:border-amber-400/40 hover:shadow-[0_0_20px_rgba(251,191,36,0.25)] transition-all">
+                                        <div key={int.id} className="flex items-center justify-between p-4 bg-linear-to-r from-slate-950/90 via-slate-900/85 to-slate-950/90 rounded-2xl border border-amber-500/20 group hover:border-amber-400/40 hover:shadow-[0_0_20px_rgba(251,191,36,0.25)] transition-all">
                                             <div className="flex items-center gap-4">
                                                 <span className="text-2xl bg-slate-900/80 border border-amber-500/30 text-amber-200 p-2 rounded-xl shadow-inner">
                                                     {int.icon}
@@ -781,8 +781,8 @@ Required JSON format:
 
             {/* Team Modal */}
             {isTeamModalOpen ? <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 relative overflow-hidden text-slate-100">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-amber-500 to-orange-400" />
+                    <div className="bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 border border-amber-500/30 rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 relative overflow-hidden text-slate-100">
+                        <div className="absolute top-0 right-0 w-full h-2 bg-linear-to-r from-amber-500 to-orange-400" />
                         <h3 className="text-2xl font-black mb-6 italic text-amber-200">{editingMember ? "עריכת איש צוות" : "הוספת איש צוות"}</h3>
                         <div className="space-y-4">
                             <div>
@@ -814,7 +814,7 @@ Required JSON format:
                         </div>
                         <div className="flex gap-3 mt-8">
                             <Button onClick={closeTeamModal} variant="ghost" className="flex-1 text-amber-200 hover:text-white">ביטול</Button>
-                            <Button onClick={handleSaveTeamMember} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-400 text-slate-900 shadow-lg shadow-amber-500/30">שמור</Button>
+                            <Button onClick={handleSaveTeamMember} className="flex-1 bg-linear-to-r from-amber-500 to-orange-400 text-slate-900 shadow-lg shadow-amber-500/30">שמור</Button>
                         </div>
                     </div>
                 </div> : null}

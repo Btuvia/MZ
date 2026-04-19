@@ -29,7 +29,7 @@ export function TaskListView({ tasks, onTaskClick, onTaskComplete, onTaskDelete 
     // Group tasks by date
     const groupedTasks = tasks.reduce((groups, task) => {
         const date = task.date;
-        if (!groups[date]) {
+        if (groups![date]) {
             groups[date] = [];
         }
         groups[date].push(task);

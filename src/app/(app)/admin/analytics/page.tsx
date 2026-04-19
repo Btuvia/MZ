@@ -125,12 +125,12 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* AI Executive Summary - NEW */}
-                <div className="relative overflow-hidden rounded-[2.5rem] p-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 shadow-2xl">
+                <div className="relative overflow-hidden rounded-[2.5rem] p-1 bg-linear-to-r from-blue-600 via-indigo-500 to-purple-600 shadow-2xl">
                     <div className="bg-white rounded-[2.4rem] p-8 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 
                         <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
-                            <div className="h-16 w-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-200">
+                            <div className="h-16 w-16 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-200">
                                 <Sparkles size={32} className="animate-pulse" />
                             </div>
                             <div>
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     {currentData.kpis.map((kpi: any, i: number) => (
                         <Card key={i} className="border-none shadow-xl bg-white p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                            <div className={`absolute top-0 right-0 h-1 w-full bg-gradient-to-l ${kpi.trend === 'up' ? 'from-emerald-500 to-emerald-300' : 'from-red-500 to-red-300'}`}></div>
+                            <div className={`absolute top-0 right-0 h-1 w-full bg-linear-to-l ${kpi.trend === 'up' ? 'from-emerald-500 to-emerald-300' : 'from-red-500 to-red-300'}`}></div>
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-4xl filter drop-shadow-md">{kpi.icon}</span>
                                 <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black ${kpi.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
@@ -193,7 +193,7 @@ export default function AnalyticsPage() {
                                     </div>
                                     <div className="h-4 bg-slate-50 rounded-full overflow-hidden shadow-inner">
                                         <div
-                                            className="h-full bg-gradient-to-l from-indigo-600 to-blue-400 rounded-full transition-all duration-1000 ease-out group-hover:from-indigo-500 group-hover:to-purple-500 relative"
+                                            className="h-full bg-linear-to-l from-indigo-600 to-blue-400 rounded-full transition-all duration-1000 ease-out group-hover:from-indigo-500 group-hover:to-purple-500 relative"
                                             style={{ width: `${(item.value / item.max) * 100}%` }}
                                         >
                                             <div className="absolute left-0 top-0 bottom-0 w-full bg-white/20 animate-pulse"></div>

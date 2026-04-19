@@ -28,7 +28,7 @@ export function PolicyTimeline({ status }: PolicyTimelineProps) {
 
                 {/* Progress Line */}
                 <motion.div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 h-2 bg-gradient-to-r from-primary to-accent rounded-full md:left-[2.5%]"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-2 bg-linear-to-r from-primary to-accent rounded-full md:left-[2.5%]"
                     initial={{ width: "0%" }}
                     animate={{ width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%` }}
                     transition={{ duration: 1, ease: "easeOut" }}
@@ -92,7 +92,7 @@ export function PolicyTimeline({ status }: PolicyTimelineProps) {
                                             rotate: { repeat: Infinity, duration: 4, repeatDelay: 1 },
                                             y: { repeat: Infinity, duration: 2, ease: "easeInOut" }
                                         }}
-                                        className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 text-white"
+                                        className="w-10 h-10 bg-linear-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 text-white"
                                     >
                                         <Shield className="w-5 h-5 fill-current" />
                                     </motion.div>

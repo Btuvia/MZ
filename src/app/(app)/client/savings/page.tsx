@@ -17,7 +17,7 @@ export default function SavingsPage() {
 
     useEffect(() => {
         const fetchProducts = async () => {
-            if (!user?.uid) return;
+            if (user!?.uid) return;
             setLoading(true);
             try {
                 const data = await firestoreService.getFinancialProducts(user.uid);
@@ -38,7 +38,7 @@ export default function SavingsPage() {
     }, [user?.uid]);
 
     const handleCreateDemoData = async () => {
-        if (!user?.uid) return;
+        if (user!?.uid) return;
         setLoading(true);
         const demoProducts = [
             {
@@ -114,7 +114,7 @@ export default function SavingsPage() {
         <DashboardShell role="לקוח" navItems={CLIENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2"></div>
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">החיסכון הפנסיוני שלי</h1>
@@ -126,7 +126,7 @@ export default function SavingsPage() {
 
                 {/* Total Summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="border-none p-8 text-white bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl relative overflow-hidden group col-span-1 md:col-span-2">
+                    <Card className="border-none p-8 text-white bg-linear-to-br from-blue-600 to-indigo-700 shadow-2xl relative overflow-hidden group col-span-1 md:col-span-2">
                         <div className="absolute -right-8 -bottom-8 text-white/5 text-9xl font-black group-hover:scale-125 transition-transform duration-700">💎</div>
                         <div className="relative z-10">
                             <p className="text-xs font-black uppercase tracking-[0.2em] text-white/70 mb-3">סך צבירה כולל</p>
@@ -144,7 +144,7 @@ export default function SavingsPage() {
                         </div>
                     </Card>
 
-                    <Card className="border-none p-8 text-white bg-gradient-to-br from-emerald-600 to-teal-700 shadow-2xl relative overflow-hidden group">
+                    <Card className="border-none p-8 text-white bg-linear-to-br from-emerald-600 to-teal-700 shadow-2xl relative overflow-hidden group">
                         <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">📈</div>
                         <div className="relative z-10">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">הפקדה חודשית</p>
@@ -173,11 +173,11 @@ export default function SavingsPage() {
                     ) : (
                         pensionAccounts.map((account) => (
                             <Card key={account.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all">
-                                <div className={`h-2 w-full bg-gradient-to-r ${account.color}`}></div>
+                                <div className={`h-2 w-full bg-linear-to-r ${account.color}`}></div>
                                 <div className="p-8">
                                     <div className="flex items-start justify-between mb-6">
                                         <div className="flex items-center gap-4">
-                                            <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${account.color} flex items-center justify-center text-3xl shadow-lg`}>
+                                            <div className={`h-16 w-16 rounded-2xl bg-linear-to-br ${account.color} flex items-center justify-center text-3xl shadow-lg`}>
                                                 {account.icon}
                                             </div>
                                             <div>
@@ -262,7 +262,7 @@ export default function SavingsPage() {
                                                                 setStatusLoading(account.id + status.value);
                                                                 try {
                                                                     await firestoreService.updateFinancialProduct(account.id, { operationsStatus: status.value });
-                                                                    setPensionAccounts((prev: any[]) => prev.map((a) => a.id === account.id ? { ...a, operationsStatus: status.value } : a));
+                                                                    setPensionAccounts((prev: any[]) => prev.map((a: any) => a.id === account.id ? { ...a, operationsStatus: status.value } : a));
                                                                 } finally {
                                                                     setStatusLoading(null);
                                                                 }

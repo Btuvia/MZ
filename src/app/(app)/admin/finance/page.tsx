@@ -64,7 +64,7 @@ export default function AdminFinancePage() {
 
     // פונקציות המרה
     const mapPolicyTypeToProductType = (type: string): ProductType => {
-        if (!type) return 'life';
+        if (type!) return 'life';
         const lowerType = type.toLowerCase();
         if (lowerType.includes('חיים') || lowerType.includes('ריסק')) return 'life';
         if (lowerType.includes('בריאות') || lowerType.includes('סיעודי')) return 'health';
@@ -75,7 +75,7 @@ export default function AdminFinancePage() {
     };
 
     const mapInsuranceProductType = (type: string): ProductType => {
-        if (!type) return 'life';
+        if (type!) return 'life';
         const lowerType = type.toLowerCase();
         if (lowerType.includes('חיים') || lowerType.includes('ריסק')) return 'life';
         if (lowerType.includes('בריאות') || lowerType.includes('סיעודי')) return 'health';
@@ -248,7 +248,7 @@ export default function AdminFinancePage() {
         const net = calc.result.totalOneTime - calc.result.clawbackAmount;
 
         // Company
-        if (!companyStats[calc.deal.company]) {
+        if (companyStats![calc.deal.company]) {
             companyStats[calc.deal.company] = { total: 0, count: 0 };
         }
         companyStats[calc.deal.company].total += net;
@@ -256,7 +256,7 @@ export default function AdminFinancePage() {
 
         // Agent
         const agent = calc.deal.agentName || "לא משויך";
-        if (!agentStats[agent]) {
+        if (agentStats![agent]) {
             agentStats[agent] = { total: 0, deals: 0 };
         }
         agentStats[agent].total += net;
@@ -275,7 +275,7 @@ export default function AdminFinancePage() {
             <div className="space-y-8 animate-in fade-in duration-500 pb-20" dir="rtl">
 
                 {/* Header Hero */}
-                <div className="bg-gradient-to-r from-slate-900 via-amber-900/20 to-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden border border-amber-500/20">
+                <div className="bg-linear-to-r from-slate-900 via-amber-900/20 to-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden border border-amber-500/20">
                     <div className="absolute top-0 left-0 w-full h-full bg-[url('/grid.svg')] opacity-10" />
                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -287,7 +287,7 @@ export default function AdminFinancePage() {
                                 <h1 className="text-3xl font-black font-display">
                                     {isAdmin ? 'ניהול עמלות וביצועים' : 'העמלות שלי'}
                                 </h1>
-                                {!isAdmin && (
+                                {isAdmin! && (
                                     <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30">
                                         <Lock size={12} className="ml-1" />
                                         תצוגה מוגבלת
@@ -465,7 +465,7 @@ export default function AdminFinancePage() {
                                 <h3 className="font-black text-lg text-slate-800 flex items-center gap-2">
                                     <span className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><DollarSign size={18} /></span>
                                     פירוט עמלות לפי עסקה
-                                    {!isAdmin && <Badge className="bg-amber-100 text-amber-700 text-xs">העסקאות שלי</Badge>}
+                                    {isAdmin! && <Badge className="bg-amber-100 text-amber-700 text-xs">העסקאות שלי</Badge>}
                                 </h3>
                                 <Button variant="ghost" size="sm" className="text-slate-500 hover:text-amber-600 font-bold">צפה בהכל</Button>
                             </div>
@@ -538,7 +538,7 @@ export default function AdminFinancePage() {
                     {/* Sidebar Stats */}
                     <div className="space-y-6">
                         {/* Top Agents Leaderboard - Admin Only */}
-                        {isAdmin ? <Card className="border-none shadow-xl bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 relative overflow-hidden">
+                        {isAdmin ? <Card className="border-none shadow-xl bg-linear-to-b from-slate-900 to-slate-800 text-white p-6 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl" />
                                 <h3 className="font-black text-lg mb-6 flex items-center gap-2 relative z-10">
                                     <span className="bg-white/10 p-2 rounded-lg text-amber-400"><Users size={18} /></span>
@@ -567,7 +567,7 @@ export default function AdminFinancePage() {
                                                             <motion.div
                                                                 initial={{ width: 0 }}
                                                                 animate={{ width: `${(data.total / maxAgentVal) * 100}%` }}
-                                                                className="h-full bg-gradient-to-r from-amber-500 to-amber-400"
+                                                                className="h-full bg-linear-to-r from-amber-500 to-amber-400"
                                                             />
                                                         </div>
                                                     </div>

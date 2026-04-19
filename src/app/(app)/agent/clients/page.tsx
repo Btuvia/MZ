@@ -5,6 +5,7 @@ import { Card, Button, Badge } from "@/components/ui/base";
 import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
 import Link from "next/link";
+import { ClientQuickActions } from "@/components/clients/ClientQuickActions";
 
 export default function ClientsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -46,7 +47,7 @@ export default function ClientsPage() {
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+                <div className="bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
@@ -69,7 +70,7 @@ export default function ClientsPage() {
                         { label: "לא פעילים", value: stats.inactive, icon: "⏸️", color: "from-slate-500 to-slate-700" },
                         { label: "ממתינים", value: stats.pending, icon: "⏳", color: "from-amber-500 to-orange-600" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`border-none p-6 text-white bg-gradient-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
+                        <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group`}>
                             <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
                             <div className="relative z-10">
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
@@ -135,7 +136,7 @@ export default function ClientsPage() {
                                     <tr key={client.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-accent to-blue-700 flex items-center justify-center text-white font-black text-xs shadow-md group-hover:scale-110 transition-transform">
+                                                <div className="h-10 w-10 rounded-xl bg-linear-to-br from-accent to-blue-700 flex items-center justify-center text-white font-black text-xs shadow-md group-hover:scale-110 transition-transform">
                                                     {client.avatar}
                                                 </div>
                                                 <div>
@@ -169,15 +170,18 @@ export default function ClientsPage() {
                                             <span className="text-xs font-medium text-slate-400">{client.lastContact}</span>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-4">
+                                                <ClientQuickActions 
+                                                    clientId={client.id}
+                                                    clientName={client.name}
+                                                    phone={client.phone}
+                                                    email={client.email}
+                                                />
                                                 <Link href={`/admin/clients/${client.id}`}>
-                                                    <Button variant="secondary" size="sm" className="px-4">
+                                                    <Button variant="secondary" size="sm" className="px-4 rounded-xl font-bold">
                                                         פתח תיק
                                                     </Button>
                                                 </Link>
-                                                <Button variant="outline" size="sm" className="px-3">
-                                                    📞
-                                                </Button>
                                             </div>
                                         </td>
                                     </tr>

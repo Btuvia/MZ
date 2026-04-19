@@ -101,7 +101,7 @@ export default function SalesVisualPage() {
         
         deals.forEach(deal => {
             const agentName = deal.agent;
-            if (!agentMap.has(agentName)) {
+            if (agentMap!.has(agentName)) {
                 agentMap.set(agentName, {
                     id: agentName,
                     name: agentName,
@@ -490,7 +490,7 @@ export default function SalesVisualPage() {
                                     const StageIcon = stageConfig.icon;
                                     
                                     return (
-                                        <div key={stage} className="flex-shrink-0 w-64">
+                                        <div key={stage} className="shrink-0 w-64">
                                             {/* Stage Header */}
                                             <div className={`p-3 rounded-t-xl bg-${stageConfig.color}-500/10 border border-b-0 border-${stageConfig.color}-500/20`}>
                                                 <div className="flex items-center justify-between">
@@ -578,10 +578,10 @@ export default function SalesVisualPage() {
                                                     transition={{ delay: i * 0.1, duration: 0.5 }}
                                                     className={`w-4 rounded-t-lg ${
                                                         data.value >= data.target 
-                                                            ? 'bg-gradient-to-t from-emerald-600 to-emerald-400' 
+                                                            ? 'bg-linear-to-t from-emerald-600 to-emerald-400' 
                                                             : data.current 
-                                                                ? 'bg-gradient-to-t from-amber-600 to-amber-400'
-                                                                : 'bg-gradient-to-t from-blue-600 to-blue-400'
+                                                                ? 'bg-linear-to-t from-amber-600 to-amber-400'
+                                                                : 'bg-linear-to-t from-blue-600 to-blue-400'
                                                     }`}
                                                 />
                                             </div>

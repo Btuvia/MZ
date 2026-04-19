@@ -41,7 +41,7 @@ export function WelcomeEmailPreview({ isOpen, onClose, clientName }: { isOpen: b
                     </div>
 
                     <div className="text-center py-4">
-                        <Button className="bg-gradient-to-r from-amber-400 to-amber-600 text-white font-black px-10 py-4 rounded-xl shadow-lg hover:scale-105 transition-transform">
+                        <Button className="bg-linear-to-r from-amber-400 to-amber-600 text-white font-black px-10 py-4 rounded-xl shadow-lg hover:scale-105 transition-transform">
                             כניסה לאיזור האישי 👈
                         </Button>
                         <p className="text-xs text-slate-400 mt-2 font-mono">שם משתמש: {clientName.split(" ")[0]}@insurcrm  |  סיסמה: ****</p>

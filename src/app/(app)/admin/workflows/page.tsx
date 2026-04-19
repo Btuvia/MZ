@@ -102,7 +102,7 @@ export default function WorkflowsPage() {
     };
 
     const handleSave = async () => {
-        if (!formName.trim()) {
+        if (formName!.trim()) {
             alert("נא להזין שם תהליך");
             return;
         }
@@ -114,7 +114,7 @@ export default function WorkflowsPage() {
 
         // Validate steps
         for (const step of formSteps) {
-            if (!step.name.trim()) {
+            if (step!.name.trim()) {
                 alert(`נא להזין שם לשלב ${step.stepNumber}`);
                 return;
             }
@@ -165,7 +165,7 @@ export default function WorkflowsPage() {
     const toggleActive = async (workflow: Workflow) => {
         try {
             await firestoreService.updateWorkflow(workflow.id, {
-                isActive: !workflow.isActive
+                isActive: workflow!.isActive
             });
             showSuccess(workflow.isActive ? 'התהליך הושבת' : 'התהליך הופעל');
             await loadWorkflows();
@@ -257,7 +257,7 @@ export default function WorkflowsPage() {
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-slate-900 text-lg">{workflow.name}</h3>
                                                 {workflow.category ? <Badge variant="outline" className="text-xs">{workflow.category}</Badge> : null}
-                                                {!workflow.isActive && (
+                                                {workflow!.isActive && (
                                                     <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge>
                                                 )}
                                             </div>

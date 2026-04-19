@@ -30,7 +30,7 @@ export function TransferTaskModal({
     const selectedUser = availableUsers.find(u => u.id === selectedUserId);
 
     const handleSubmit = async () => {
-        if (!selectedUserId || !selectedUser) return;
+        if (selectedUserId! || selectedUser!) return;
 
         setIsSubmitting(true);
         try {
@@ -119,7 +119,7 @@ export function TransferTaskModal({
                                             }
                     `}
                                     >
-                                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                        <div className="w-12 h-12 bg-linear-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                                             {user.name.charAt(0)}
                                         </div>
                                         <div className="flex-1 text-right">
@@ -162,7 +162,7 @@ export function TransferTaskModal({
                 <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex gap-3">
                     <Button
                         onClick={handleSubmit}
-                        disabled={!selectedUserId || isSubmitting}
+                        disabled={selectedUserId! || isSubmitting}
                         className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-slate-300 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'מעביר...' : 'העבר משימה'}

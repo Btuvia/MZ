@@ -26,7 +26,7 @@ export default function DataChat() {
 
     const sendMessage = async (userMsg: string) => {
         const trimmed = userMsg.trim();
-        if (!trimmed) return;
+        if (trimmed!) return;
 
         setMessages(prev => [...prev, { role: 'user', content: trimmed }]);
         setIsLoading(true);
@@ -67,9 +67,10 @@ export default function DataChat() {
     }, []);
 
     return (
-        <Card className="bg-slate-900/90 backdrop-blur-xl border-indigo-500/30 shadow-xl flex flex-col h-[420px] overflow-hidden rounded-2xl relative">
+        <Card className="flex-1 flex flex-col bg-slate-900 border-none rounded-3xl overflow-hidden shadow-2xl relative h-[420px]">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-[progress_3s_infinite]" />
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-4 flex items-center gap-3 shadow-lg z-10 shrink-0">
+            <div className="bg-slate-900/50 p-4 flex items-center gap-3 shadow-lg z-10 shrink-0">
                 <div className="bg-white/20 p-2 rounded-xl text-white backdrop-blur-md shrink-0">
                     <Sparkles size={18} />
                 </div>
@@ -90,7 +91,7 @@ export default function DataChat() {
                             {m.role === 'user' ? <User size={12} /> : <Bot size={12} />}
                         </div>
                         <div className={`
-                            p-2.5 rounded-xl max-w-[85%] text-xs font-medium shadow-sm leading-relaxed break-words
+                            p-4 rounded-2xl max-w-[85%] text-sm font-bold wrap-break-word leading-relaxed
                             ${m.role === 'user'
                                 ? 'bg-slate-800 text-slate-200 rounded-tr-sm border border-slate-700'
                                 : 'bg-indigo-600 text-white rounded-tl-sm'}
@@ -126,7 +127,7 @@ export default function DataChat() {
                     <Button
                         type="submit"
                         size="sm"
-                        disabled={isLoading || !input.trim()}
+                        disabled={isLoading || input!.trim()}
                         className="rounded-lg h-8 w-8 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shrink-0 p-0 flex items-center justify-center"
                     >
                         <Send size={14} />
