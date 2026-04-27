@@ -2,13 +2,14 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Phone, Mail, FileText, Clock, AlertTriangle, Bell } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ClientQuickActions } from "@/components/clients/ClientQuickActions";
 import { Card, Button, Badge } from "@/components/ui/base";
 import { ReminderPicker } from "@/components/ui/ReminderPicker";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { ClientQuickActions } from "@/components/clients/ClientQuickActions";
 
 export interface FocusItem {
     id: string;
@@ -81,7 +82,7 @@ export default function FocusFeed() {
     };
 
     const handleSetReminder = async (reminderTime: Date) => {
-        if (selectedItem! || user!) return;
+        if (!selectedItem || !user) return;
 
         try {
             await firestoreService.addReminder({
@@ -128,10 +129,10 @@ export default function FocusFeed() {
 
     const getColor = (type: FocusItem['type']) => {
         switch (type) {
-            case 'call': return 'bg-blue-100 text-blue-600';
-            case 'email': return 'bg-purple-100 text-purple-600';
-            case 'review': return 'bg-slate-100 text-slate-600';
-            case 'urgent': return 'bg-red-100 text-red-600';
+            case 'call': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+            case 'email': return 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
+            case 'review': return 'bg-slate-500/10 text-slate-400 border border-slate-500/20';
+            case 'urgent': return 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
         }
     };
 
@@ -184,7 +185,12 @@ export default function FocusFeed() {
                                                 <div className="flex items-center gap-3 text-xs font-bold text-slate-500">
                                                     <span className="flex items-center gap-1"><Clock size={12} /> {item.timeAgo}</span>
                                                     <span>•</span>
-                                                    <span className="text-indigo-400">{item.clientName}</span>
+                                                    <Link 
+                                                        href={`/admin/clients/${item.clientId}`}
+                                                        className="text-indigo-400 hover:text-indigo-300 hover:underline transition-all cursor-pointer font-black"
+                                                    >
+                                                        {item.clientName}
+                                                    </Link>
                                                 </div>
                                                 {item.context ? <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-xs text-red-300 flex items-center gap-2">
                                                         <AlertTriangle size={12} />

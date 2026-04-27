@@ -37,7 +37,7 @@ export default function DocumentIntelligencePage() {
     };
 
     const handleSmartSchedule = async () => {
-        if (analysisResult!) return;
+        if (!analysisResult) return;
         setIsSaving(true);
 
         try {
@@ -79,10 +79,10 @@ export default function DocumentIntelligencePage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
                     <div>
-                        <h1 className="text-4xl font-black text-slate-800 mb-2 font-display">
+                        <h1 className="text-4xl font-black text-white mb-2 font-display">
                             ניתוח הר הביטוח <span className="text-accent">AI</span>
                         </h1>
-                        <p className="text-slate-500 font-medium max-w-xl">
+                        <p className="text-slate-400 font-medium max-w-xl">
                             העלה דוח הר הביטוח (Excel/PDF/תמונה), והמערכת תחלץ את תאריכי הפקיעה ותייצר אוטומטית משימות חידוש ל-1 בחודש הרלוונטי.
                         </p>
                     </div>
@@ -105,7 +105,7 @@ export default function DocumentIntelligencePage() {
                     {/* Left Column: Upload */}
                     <div className="lg:col-span-1 space-y-6">
                         <Card className="border-none shadow-xl relative overflow-hidden">
-                            <h3 className="text-lg font-black text-primary mb-6 flex items-center gap-2">
+                            <h3 className="text-lg font-black text-white mb-6 flex items-center gap-2">
                                 <Search size={20} className="text-accent" />
                                 סריקת דוח
                             </h3>
@@ -116,14 +116,14 @@ export default function DocumentIntelligencePage() {
                                 accept=".pdf,.xlsx,.png,.jpg"
                             />
 
-                            <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">קבצים שנסרקו לאחרונה</h4>
+                            <div className="mt-6 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">קבצים שנסרקו לאחרונה</h4>
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-3 text-sm font-medium text-slate-500 opacity-60">
+                                    <div className="flex items-center gap-3 text-sm font-medium text-slate-400 opacity-60">
                                         <FileText size={14} /> הר הביטוח 2023 - כהן
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-slate-200">
+                                <div className="mt-4 pt-4 border-t border-white/10">
                                     <button
                                         onClick={() => setAnalysisResult({
                                             clientName: "ישראל ישראלי (הדגמה)",
@@ -222,10 +222,10 @@ export default function DocumentIntelligencePage() {
                             </div>
                         ) : (
                             <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-center opacity-40">
-                                <div className="h-40 w-40 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-300">
+                                <div className="h-40 w-40 bg-white/5 rounded-full flex items-center justify-center mb-6 text-slate-700">
                                     <Shield size={64} />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-400">העלה דוח הר הביטוח</h3>
+                                <h3 className="text-2xl font-black text-slate-200">העלה דוח הר הביטוח</h3>
                                 <p className="text-slate-400 font-medium max-w-xs mt-2">
                                     המערכת תמנע נטישת לקוחות ע"י תזמון פניות יזומות לפני תום תקופת הביטוח
                                 </p>

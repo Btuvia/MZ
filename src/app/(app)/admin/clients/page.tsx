@@ -6,13 +6,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Card, Button, Badge } from "@/components/ui/base";
-import { NeonCard, NeonButton, NeonInput } from "@/components/ui/neon-form";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { NeonCard, NeonButton, NeonInput } from "@/components/ui/neon-form";
 import { Pagination, usePagination } from "@/components/ui/Pagination";
 import { handleError, showSuccess } from "@/lib/error-handler";
 import { firestoreService, PaginatedResult } from "@/lib/firebase/firestore-service";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { type Client } from "@/types";
+import { getClientRating, getRatingColor } from "@/lib/client-utils";
 
 export default function ClientsListPage() {
     const [clients, setClients] = useState<Client[]>([]);
@@ -166,6 +167,7 @@ export default function ClientsListPage() {
                                         <tr className="border-b border-slate-800 bg-slate-900/50">
                                             <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">מבוטח / לקוח</th>
                                             <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest">תעודת זהות</th>
+                                            <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">דירוג</th>
                                             <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">סטטוס</th>
                                             <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">פעולות</th>
                                         </tr>
@@ -185,6 +187,11 @@ export default function ClientsListPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-10 py-6 font-mono font-black text-slate-400 group-hover:text-slate-200 transition-colors text-lg">{client.nationalId}</td>
+                                                <td className="px-10 py-6 text-center">
+                                                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black shadow-lg ${getRatingColor(getClientRating(client))}`}>
+                                                        {getClientRating(client)}
+                                                    </span>
+                                                </td>
                                                 <td className="px-10 py-6 text-center">
                                                     <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                                                         client.status === 'active' 
@@ -213,7 +220,7 @@ export default function ClientsListPage() {
                                         ))}
                                         {filteredClients.length === 0 && (
                                             <tr>
-                                                <td colSpan={4} className="py-12 text-center text-slate-500 italic">לא נמצאו לקוחות</td>
+                                                <td colSpan={5} className="py-12 text-center text-slate-500 italic">לא נמצאו לקוחות</td>
                                             </tr>
                                         )}
                                     </tbody>

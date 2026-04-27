@@ -31,18 +31,15 @@ interface UsePushNotificationsReturn {
 
 export function usePushNotifications(): UsePushNotificationsReturn {
     const { user } = useAuth();
-    const [isSupported, setIsSupported] = useState(false);
-    const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
+    const [isSupported, setIsSupported] = useState<boolean>(() => 
+        typeof window !== 'undefined' ? pushNotificationService.isSupported() : false
+    );
+    const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() => 
+        typeof window !== 'undefined' ? pushNotificationService.getPermissionStatus() : 'unsupported'
+    );
     const [preferences, setPreferences] = useState<NotificationPreferences>(
         pushNotificationService.getPreferences()
     );
-
-    // Check support and permission on mount
-    useEffect(() => {
-        const supported = pushNotificationService.isSupported();
-        setIsSupported(supported);
-        setPermission(pushNotificationService.getPermissionStatus());
-    }, []);
 
     // Save token when user logs in
     useEffect(() => {

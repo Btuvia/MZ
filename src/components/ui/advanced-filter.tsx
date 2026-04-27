@@ -156,7 +156,7 @@ export function AdvancedFilter({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <button
-                    onClick={() => setIsExpanded(isExpanded!)}
+                    onClick={() => setIsExpanded(!isExpanded)}
                     className="flex items-center gap-2 text-lg font-semibold text-gray-900"
                 >
                     <span>🔍</span>
@@ -178,14 +178,12 @@ export function AdvancedFilter({
                             נקה הכל
                         </button>
                     )}
-                    {onSaveFilter && activeFilterCount > 0 && (
-                        <button
+                    {onSaveFilter && activeFilterCount > 0 ? <button
                             onClick={() => setShowSaveDialog(true)}
                             className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
                             💾 שמור סינון
-                        </button>
-                    )}
+                        </button> : null}
                 </div>
             </div>
 
@@ -208,8 +206,7 @@ export function AdvancedFilter({
             )}
 
             {/* Filter Fields */}
-            {isExpanded && (
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {isExpanded ? <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filters.map((filter) => (
                         <div key={filter.id} className="space-y-1">
                             <label className="block text-sm font-medium text-gray-700">
@@ -218,12 +215,10 @@ export function AdvancedFilter({
                             {renderFilter(filter)}
                         </div>
                     ))}
-                </div>
-            )}
+                </div> : null}
 
             {/* Save Filter Dialog */}
-            {showSaveDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            {showSaveDialog ? <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
                         <h3 className="text-lg font-semibold mb-4">שמור סינון</h3>
                         <input
@@ -242,15 +237,14 @@ export function AdvancedFilter({
                             </button>
                             <button
                                 onClick={handleSaveFilter}
-                                disabled={saveFilterName!}
+                                disabled={!saveFilterName}
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 שמור
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
+                </div> : null}
         </div>
     );
 }

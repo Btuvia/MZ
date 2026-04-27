@@ -7,6 +7,7 @@ import { sendEmail } from "@/app/actions/email";
 import { createUser } from "@/app/actions/users";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { NeonModal, NeonInput, NeonSelect, NeonCard, NeonTextarea } from "@/components/ui/neon-form";
 import { handleError, showSuccess } from "@/lib/error-handler";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
@@ -510,31 +511,29 @@ export default function UserManagementPage() {
         <DashboardShell role="מנהל" navItems={ADMIN_NAV_ITEMS}>
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
-                <div className="bg-linear-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
+                <div className="bg-linear-to-r from-amber-600 via-orange-600 to-amber-600 rounded-[2.5rem] p-12 text-slate-900 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/20 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
-                            <h1 className="text-4xl font-black font-display leading-none mb-4">ניהול משתמשים</h1>
-                            <p className="text-sm font-medium text-white/80 max-w-2xl">
-                                ניהול מלא של משתמשי המערכת, הרשאות ותפקידים
+                            <h1 className="text-5xl font-black font-display italic tracking-tighter leading-none mb-4 uppercase">ניהול משתמשים</h1>
+                            <p className="text-sm font-bold text-slate-900/80 max-w-2xl">
+                                שליטה מלאה במשתמשי המערכת, הרשאות סוכנים וניהול שיתופי פעולה חיצוניים
                             </p>
                         </div>
                         {activeTab === 'agents' ? (
                             <Button
-                                variant="glass"
-                                className="bg-white/10 hover:bg-white/20 border-white/20 text-white gap-2"
+                                className="bg-slate-900 text-amber-400 hover:bg-black border border-amber-500/30 gap-2 h-14 px-8 rounded-2xl shadow-xl font-black"
                                 onClick={() => openModal()}
                             >
-                                <UserPlus size={18} />
+                                <UserPlus size={20} />
                                 משתמש חדש
                             </Button>
                         ) : (
                             <Button
-                                variant="glass"
-                                className="bg-white/10 hover:bg-white/20 border-white/20 text-white gap-2"
+                                className="bg-slate-900 text-amber-400 hover:bg-black border border-amber-500/30 gap-2 h-14 px-8 rounded-2xl shadow-xl font-black"
                                 onClick={() => openCollabModal()}
                             >
-                                <Handshake size={18} />
+                                <Handshake size={20} />
                                 שיתוף פעולה חדש
                             </Button>
                         )}
@@ -542,27 +541,27 @@ export default function UserManagementPage() {
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="flex gap-2 bg-white rounded-2xl p-2 shadow-lg border border-slate-100">
+                <div className="flex gap-4 glass-dark rounded-[2rem] p-3 shadow-2xl border border-slate-800/50 max-w-2xl mx-auto">
                     <button
                         onClick={() => setActiveTab('agents')}
-                        className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+                        className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-[1.5rem] font-black text-sm transition-all duration-500 ${
                             activeTab === 'agents'
-                                ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                                : 'text-slate-600 hover:bg-slate-50'
+                                ? 'bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 shadow-lg shadow-amber-500/20 scale-[1.02]'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                         }`}
                     >
-                        <UserPlus size={18} />
+                        <UserPlus size={20} />
                         סוכנים ומשתמשים
                     </button>
                     <button
                         onClick={() => setActiveTab('collaborations')}
-                        className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+                        className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-[1.5rem] font-black text-sm transition-all duration-500 ${
                             activeTab === 'collaborations'
-                                ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                                : 'text-slate-600 hover:bg-slate-50'
+                                ? 'bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 shadow-lg shadow-amber-500/20 scale-[1.02]'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
                         }`}
                     >
-                        <Handshake size={18} />
+                        <Handshake size={20} />
                         שיתוף פעולה
                     </button>
                 </div>
@@ -572,66 +571,69 @@ export default function UserManagementPage() {
                         {/* Stats */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                             {[
-                                { label: "סך משתמשים", value: stats.total, icon: "👥", color: "from-blue-600 to-indigo-700" },
-                                { label: "מנהלים", value: stats.admins, icon: "👑", color: "from-purple-600 to-indigo-700" },
-                                { label: "סוכנים", value: stats.agents, icon: "💼", color: "from-emerald-600 to-teal-700" },
-                                { label: "לקוחות", value: stats.clients, icon: "🤝", color: "from-amber-500 to-orange-600" }
+                                { label: "סך משתמשים", value: stats.total, icon: "👥", color: "from-blue-600/20 to-indigo-700/20", border: "border-blue-500/30" },
+                                { label: "מנהלים", value: stats.admins, icon: "👑", color: "from-purple-600/20 to-indigo-700/20", border: "border-purple-500/30" },
+                                { label: "סוכנים", value: stats.agents, icon: "💼", color: "from-emerald-600/20 to-teal-700/20", border: "border-emerald-500/30" },
+                                { label: "לקוחות", value: stats.clients, icon: "🤝", color: "from-amber-500/20 to-orange-600/20", border: "border-amber-500/30" }
                             ].map((stat, i) => (
-                                <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform`}>
-                                    <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
-                                    <div className="relative z-10">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
-                                        <h4 className="text-4xl font-black tracking-tighter font-display">{stat.value}</h4>
+                                <NeonCard key={i} className={`p-6 border-2 ${stat.border}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">{stat.label}</p>
+                                            <h4 className="text-4xl font-black tracking-tighter text-white font-display italic">{stat.value}</h4>
+                                        </div>
+                                        <div className="text-3xl grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">{stat.icon}</div>
                                     </div>
-                                </Card>
+                                </NeonCard>
                             ))}
                         </div>
 
                 {/* Search and Filters */}
-                <Card className="border-none shadow-lg bg-white p-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <NeonCard className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <div className="flex-1 relative group">
+                            <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-amber-500 transition-colors" size={20} />
                             <input
                                 type="text"
                                 placeholder="חפש משתמש לפי שם או אימייל..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-6 pr-12 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:bg-white transition-all"
+                                className="w-full pl-6 pr-14 py-5 rounded-2xl bg-[#0d1326] border-2 border-slate-800/80 font-bold text-white text-sm focus:border-amber-500 outline-none transition-all shadow-inner"
                             />
                         </div>
-                        <div className="flex gap-2">
-                            <div className="relative">
-                                <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <div className="flex gap-4">
+                            <div className="relative min-w-[200px]">
+                                <Filter className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                                 <select
                                     value={filterRole}
                                     onChange={(e) => setFilterRole(e.target.value)}
-                                    className="px-5 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-100 font-bold text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 h-full"
+                                    className="w-full px-5 pr-12 py-5 rounded-2xl bg-[#0d1326] border-2 border-slate-800/80 font-black text-white text-sm focus:border-amber-500 outline-none appearance-none cursor-pointer transition-all"
                                 >
                                     <option>הכל</option>
                                     <option value="admin">מנהלים</option>
                                     <option value="agent">סוכנים</option>
                                     <option value="client">לקוחות</option>
                                 </select>
+                                <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600">▼</div>
                             </div>
                         </div>
                     </div>
-                </Card>
+                </NeonCard>
 
                 {/* Users Table */}
-                <Card className="border-none shadow-xl bg-white overflow-hidden min-h-[400px]">
+                <NeonCard className="overflow-hidden min-h-[400px] p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-right">
-                            <thead className="bg-slate-50">
-                                <tr className="border-b border-slate-100">
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">משתמש</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">תפקיד</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">סטטוס</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">כניסה אחרונה</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">פעולות</th>
+                            <thead className="bg-slate-900/50">
+                                <tr className="border-b border-slate-800">
+                                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">משתמש</th>
+                                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">תפקיד</th>
+                                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">סטטוס</th>
+                                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">כניסה אחרונה</th>
+                                    <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">פעולות</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50">
+                            <tbody className="divide-y divide-slate-800/50">
                                 {filteredUsers.map((user) => (
                                     <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
@@ -699,7 +701,7 @@ export default function UserManagementPage() {
                             </tbody>
                         </table>
                     </div>
-                </Card>
+                </NeonCard>
                     </>
                 ) : (
                     /* Collaborations Tab Content */
@@ -707,65 +709,59 @@ export default function UserManagementPage() {
                         {/* Collaboration Stats */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                             {[
-                                { label: "סה״כ שיתופים", value: collaborations.length, icon: "🤝", color: "from-indigo-600 to-purple-700" },
-                                { label: "טיוטות", value: collaborations.filter(c => c.status === 'טיוטה').length, icon: "📝", color: "from-slate-500 to-slate-600" },
-                                { label: "חוזים שנשלחו", value: collaborations.filter(c => c.status === 'נשלח חוזה').length, icon: "📧", color: "from-amber-500 to-orange-600" },
-                                { label: "פעילים", value: collaborations.filter(c => c.status === 'פעיל').length, icon: "✅", color: "from-emerald-500 to-teal-600" }
+                                { label: "סה״כ שיתופים", value: collaborations.length, icon: "🤝", color: "from-indigo-600/20 to-purple-700/20", border: "border-indigo-500/30" },
+                                { label: "טיוטות", value: collaborations.filter(c => c.status === 'טיוטה').length, icon: "📝", color: "from-slate-500/20 to-slate-600/20", border: "border-slate-500/30" },
+                                { label: "חוזים שנשלחו", value: collaborations.filter(c => c.status === 'נשלח חוזה').length, icon: "📧", color: "from-amber-500/20 to-orange-600/20", border: "border-amber-500/30" },
+                                { label: "פעילים", value: collaborations.filter(c => c.status === 'פעיל').length, icon: "✅", color: "from-emerald-500/20 to-teal-600/20", border: "border-emerald-500/30" }
                             ].map((stat, i) => (
-                                <Card key={i} className={`border-none p-6 text-white bg-linear-to-br ${stat.color} shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform`}>
-                                    <div className="absolute -left-4 -bottom-4 text-white/5 text-7xl font-black group-hover:scale-125 transition-transform duration-700">{stat.icon}</div>
-                                    <div className="relative z-10">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">{stat.label}</p>
-                                        <h4 className="text-4xl font-black tracking-tighter font-display">{stat.value}</h4>
+                                <NeonCard key={i} className={`p-6 border-2 ${stat.border}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">{stat.label}</p>
+                                            <h4 className="text-4xl font-black tracking-tighter text-white font-display italic">{stat.value}</h4>
+                                        </div>
+                                        <div className="text-3xl grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">{stat.icon}</div>
                                     </div>
-                                </Card>
+                                </NeonCard>
                             ))}
                         </div>
 
                         {/* Collaborations Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {collaborations.map((collab) => (
-                                <Card key={collab.id} className="border-none shadow-lg bg-white p-6 group hover:-translate-y-1 transition-all">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-12 w-12 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-md">
-                                                <Handshake size={24} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-black text-slate-900">{collab.name}</h4>
-                                                <p className="text-xs font-medium text-slate-400">{collab.type}</p>
-                                            </div>
-                                        </div>
-                                        <Badge className={`${getCollabStatusBadge(collab.status).color} border`}>
+                                <NeonCard key={collab.id} title={collab.name}>
+                                    <div className="flex items-start justify-between -mt-4 mb-4">
+                                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{collab.type}</p>
+                                        <Badge className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-900 border ${getCollabStatusBadge(collab.status).color.split(' ').filter(c => c.includes('text') || c.includes('border')).join(' ')}`}>
                                             {collab.status}
                                         </Badge>
                                     </div>
                                     
-                                    <div className="space-y-2 mb-4">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-slate-400">📧</span>
-                                            <span className="font-medium text-slate-600">{collab.email}</span>
+                                    <div className="space-y-3 mb-6">
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <span className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-800 text-amber-500">📧</span>
+                                            <span className="font-bold text-slate-300">{collab.email}</span>
                                         </div>
-                                        {collab.phone ? <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-slate-400">📱</span>
-                                                <span className="font-medium text-slate-600">{collab.phone}</span>
+                                        {collab.phone ? <div className="flex items-center gap-3 text-sm">
+                                                <span className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-800 text-amber-500">📱</span>
+                                                <span className="font-bold text-slate-300" dir="ltr">{collab.phone}</span>
                                             </div> : null}
-                                        {collab.idNumber ? <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-slate-400">🪪</span>
-                                                <span className="font-medium text-slate-600">{collab.idNumber}</span>
+                                        {collab.idNumber ? <div className="flex items-center gap-3 text-sm">
+                                                <span className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-800 text-amber-500">🪪</span>
+                                                <span className="font-bold text-slate-300">{collab.idNumber}</span>
                                             </div> : null}
-                                        {collab.terms ? <div className="mt-3 p-3 bg-slate-50 rounded-xl">
-                                                <p className="text-xs font-bold text-slate-500 mb-1">תנאי ההסכם:</p>
-                                                <p className="text-sm text-slate-600 whitespace-pre-wrap line-clamp-3">{collab.terms}</p>
+                                        {collab.terms ? <div className="mt-4 p-4 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 italic">תנאי ההסכם</p>
+                                                <p className="text-sm font-medium text-slate-400 whitespace-pre-wrap line-clamp-3 leading-relaxed">{collab.terms}</p>
                                             </div> : null}
                                         
                                         {/* Referral Code Badge */}
-                                        {collab.referralCode ? <div className="mt-3 p-3 bg-indigo-50 rounded-xl flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <QrCode size={16} className="text-indigo-600" />
-                                                    <span className="text-xs font-bold text-indigo-600">קוד הפניה פעיל</span>
+                                        {collab.referralCode ? <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex items-center justify-between group/code cursor-copy transition-all hover:bg-amber-500/10" onClick={() => copyToClipboard(collab.referralCode!)}>
+                                                <div className="flex items-center gap-3">
+                                                    <QrCode size={18} className="text-amber-500" />
+                                                    <span className="text-xs font-black text-amber-500 uppercase tracking-widest">קוד הפניה פעיל</span>
                                                 </div>
-                                                <span className="text-xs font-mono bg-indigo-100 px-2 py-1 rounded text-indigo-700">{collab.referralCode}</span>
+                                                <span className="text-xs font-black font-mono text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg group-hover/code:border-amber-500/50 transition-all">{collab.referralCode}</span>
                                             </div> : null}
                                     </div>
 
@@ -818,23 +814,23 @@ export default function UserManagementPage() {
                                             <Trash2 size={14} />
                                         </Button>
                                     </div>
-                                </Card>
+                                </NeonCard>
                             ))}
 
                             {/* Empty State */}
                             {collaborations.length === 0 && (
-                                <Card className="border-none shadow-lg bg-white p-12 col-span-full text-center">
-                                    <div className="text-6xl mb-4">🤝</div>
-                                    <h3 className="text-xl font-black text-slate-900 mb-2">אין שיתופי פעולה עדיין</h3>
-                                    <p className="text-slate-500 mb-6">התחל להוסיף שיתופי פעולה חדשים</p>
+                                <NeonCard className="p-16 col-span-full text-center">
+                                    <div className="text-8xl mb-6 grayscale opacity-20">🤝</div>
+                                    <h3 className="text-2xl font-black text-white mb-3 italic tracking-tighter uppercase">אין שיתופי פעולה עדיין</h3>
+                                    <p className="text-slate-500 mb-10 max-w-md mx-auto font-bold">הצטרף למהפכה הפיננסית והתחל לחבר שותפים עסקיים למערכת מגן זהב</p>
                                     <Button 
-                                        className="bg-linear-to-r from-indigo-600 to-purple-600 text-white shadow-lg gap-2"
+                                        className="bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 font-black px-10 py-6 rounded-2xl shadow-xl shadow-amber-500/20 gap-3"
                                         onClick={() => openCollabModal()}
                                     >
-                                        <Handshake size={18} />
+                                        <Handshake size={24} />
                                         הוסף שיתוף פעולה ראשון
                                     </Button>
-                                </Card>
+                                </NeonCard>
                             )}
                         </div>
                     </>
@@ -842,434 +838,318 @@ export default function UserManagementPage() {
             </div>
 
             {/* Add/Edit Modal */}
-            {isModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-linear-to-r from-purple-500 to-indigo-500" />
-                        <h3 className="text-2xl font-black font-display text-slate-900 mb-6">
-                            {editingUser ? "עריכת משתמש" : "הוספת משתמש חדש"}
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">שם פרטי</label>
-                                    <input
-                                        type="text"
-                                        value={formData.firstName}
-                                        onChange={e => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        placeholder="ישראל"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">שם משפחה</label>
-                                    <input
-                                        type="text"
-                                        value={formData.lastName}
-                                        onChange={e => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        placeholder="ישראלי"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-black text-slate-500 mb-1 block">אימייל</label>
-                                <input
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    placeholder="email@example.com"
-                                />
-                            </div>
-                            <div className="hidden">
-                                <label className="text-xs font-black text-slate-500 mb-1 block">סוכנות</label>
-                                <input
-                                    type="text"
-                                    value={formData.agency}
-                                    onChange={e => setFormData({ ...formData, agency: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    placeholder="שם הסוכנות (אופציונלי)"
-                                    disabled
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">תפקיד</label>
-                                    <select
-                                        value={formData.role}
-                                        onChange={e => setFormData({ ...formData, role: e.target.value as any })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    >
-                                        <option value="admin">מנהל</option>
-                                        <option value="agent">סוכן</option>
-                                        <option value="client">לקוח</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">סטטוס</label>
-                                    <select
-                                        value={formData.status}
-                                        onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    >
-                                        <option value="פעיל">פעיל</option>
-                                        <option value="לא פעיל">לא פעיל</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 mt-8">
-                            <Button variant="ghost" onClick={closeModal}>ביטול</Button>
-                            <Button onClick={handleSaveUser} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200">
-                                {editingUser ? "שמור שינויים" : "צור משתמש"}
-                            </Button>
-                        </div>
+            <NeonModal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                title={editingUser ? "עריכת משתמש" : "הוספת משתמש חדש"}
+                onSave={handleSaveUser}
+                saveLabel={editingUser ? "שמור שינויים" : "צור משתמש"}
+            >
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <NeonInput 
+                            label="שם פרטי"
+                            value={formData.firstName}
+                            onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+                            placeholder="ישראל"
+                        />
+                        <NeonInput 
+                            label="שם משפחה"
+                            value={formData.lastName}
+                            onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+                            placeholder="ישראלי"
+                        />
                     </div>
-                </div> : null}
+                    <NeonInput 
+                        label="אימייל"
+                        type="email"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="email@example.com"
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <NeonSelect 
+                            label="תפקיד"
+                            value={formData.role}
+                            onChange={e => setFormData({ ...formData, role: e.target.value as any })}
+                        >
+                            <option value="admin">מנהל</option>
+                            <option value="agent">סוכן</option>
+                            <option value="client">לקוח</option>
+                        </NeonSelect>
+                        <NeonSelect 
+                            label="סטטוס"
+                            value={formData.status}
+                            onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                        >
+                            <option value="פעיל">פעיל</option>
+                            <option value="לא פעיל">לא פעיל</option>
+                        </NeonSelect>
+                    </div>
+                </div>
+            </NeonModal>
 
             {/* Collaboration Modal */}
-            {isCollabModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                        <div className="absolute top-0 right-0 w-full h-2 bg-linear-to-r from-indigo-500 to-purple-500" />
-                        
-                        <button 
-                            onClick={closeCollabModal}
-                            className="absolute top-4 left-4 p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            <NeonModal
+                isOpen={isCollabModalOpen}
+                onClose={closeCollabModal}
+                title={editingCollab ? "עריכת שיתוף פעולה" : "שיתוף פעולה חדש"}
+                onSave={handleSaveCollab}
+                saveLabel={editingCollab ? "שמור שינויים" : "צור שיתוף פעולה"}
+                maxWidth="max-w-2xl"
+            >
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <NeonInput 
+                            label="שם מלא *"
+                            value={collabFormData.name}
+                            onChange={e => setCollabFormData({ ...collabFormData, name: e.target.value })}
+                            placeholder="ישראל ישראלי"
+                        />
+                        <NeonSelect 
+                            label="סוג שיתוף"
+                            value={collabFormData.type}
+                            onChange={e => setCollabFormData({ ...collabFormData, type: e.target.value as any })}
                         >
-                            <X size={20} className="text-slate-400" />
-                        </button>
+                            <option value="סוכן">סוכן</option>
+                            <option value="נציג">נציג</option>
+                            <option value="שיתוף פעולה">שיתוף פעולה</option>
+                        </NeonSelect>
+                    </div>
 
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="h-12 w-12 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
-                                <Handshake size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-black font-display text-slate-900">
-                                    {editingCollab ? "עריכת שיתוף פעולה" : "שיתוף פעולה חדש"}
-                                </h3>
-                                <p className="text-sm text-slate-500">מלא את הפרטים ליצירת הסכם</p>
-                            </div>
-                        </div>
+                    <NeonInput 
+                        label="אימייל *"
+                        type="email"
+                        value={collabFormData.email}
+                        onChange={e => setCollabFormData({ ...collabFormData, email: e.target.value })}
+                        placeholder="email@example.com"
+                    />
 
-                        <div className="space-y-4">
-                            {/* Basic Info */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">שם מלא *</label>
-                                    <input
-                                        type="text"
-                                        value={collabFormData.name}
-                                        onChange={e => setCollabFormData({ ...collabFormData, name: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        placeholder="ישראל ישראלי"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">סוג שיתוף</label>
-                                    <select
-                                        value={collabFormData.type}
-                                        onChange={e => setCollabFormData({ ...collabFormData, type: e.target.value as any })}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    >
-                                        <option value="סוכן">סוכן</option>
-                                        <option value="נציג">נציג</option>
-                                        <option value="שיתוף פעולה">שיתוף פעולה</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-black text-slate-500 mb-1 block">אימייל *</label>
-                                <input
-                                    type="email"
-                                    value={collabFormData.email}
-                                    onChange={e => setCollabFormData({ ...collabFormData, email: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    placeholder="email@example.com"
-                                />
-                            </div>
-
-                            {/* Contact Info for Contract */}
-                            <div className="border-t border-slate-100 pt-4 mt-4">
-                                <h4 className="text-sm font-black text-slate-700 mb-3 flex items-center gap-2">
-                                    <FileText size={16} className="text-indigo-500" />
-                                    פרטים להפקת חוזה
-                                </h4>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-black text-slate-500 mb-1 flex items-center gap-1">
-                                            <Phone size={12} />
-                                            טלפון נייד *
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            value={collabFormData.phone}
-                                            onChange={e => setCollabFormData({ ...collabFormData, phone: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="050-1234567"
-                                            dir="ltr"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-black text-slate-500 mb-1 flex items-center gap-1">
-                                            <CreditCard size={12} />
-                                            תעודת זהות *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={collabFormData.idNumber}
-                                            onChange={e => setCollabFormData({ ...collabFormData, idNumber: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="123456789"
-                                            dir="ltr"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Terms */}
-                            <div>
-                                <label className="text-xs font-black text-slate-500 mb-1 flex items-center gap-1">
-                                    <FileText size={12} />
-                                    תנאי ההסכם *
-                                </label>
-                                <p className="text-xs text-slate-400 mb-2">פרט את התנאים שסוכמו עם השותף - אחוזי עמלה, תחומי אחריות וכו׳</p>
-                                <textarea
-                                    value={collabFormData.terms}
-                                    onChange={e => setCollabFormData({ ...collabFormData, terms: e.target.value })}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none min-h-[150px] resize-y"
-                                    placeholder={`לדוגמה:
-• עמלת הפניה: 10% מהעמלה על כל לקוח שמופנה
-• תחום פעילות: ביטוח חיים ופנסיה
-• תקופת ההסכם: שנה עם אפשרות הארכה
-• תנאי תשלום: העברה בנקאית עד ל-10 לכל חודש`}
-                                />
-                            </div>
-
-                            {editingCollab ? <div className="bg-slate-50 rounded-xl p-4 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500">סטטוס נוכחי</p>
-                                        <Badge className={`${getCollabStatusBadge(editingCollab.status).color} border mt-1`}>
-                                            {editingCollab.status}
-                                        </Badge>
-                                    </div>
-                                    {editingCollab.contractSentAt ? <div className="text-left">
-                                            <p className="text-xs font-bold text-slate-500">חוזה נשלח בתאריך</p>
-                                            <p className="text-sm font-bold text-slate-700">
-                                                {new Date(editingCollab.contractSentAt).toLocaleDateString('he-IL')}
-                                            </p>
-                                        </div> : null}
-                                </div> : null}
-                        </div>
-
-                        <div className="flex justify-end gap-3 mt-8 border-t border-slate-100 pt-6">
-                            <Button variant="ghost" onClick={closeCollabModal}>ביטול</Button>
-                            <Button 
-                                onClick={handleSaveCollab} 
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 gap-2"
-                            >
-                                {editingCollab ? "שמור שינויים" : "צור שיתוף פעולה"}
-                            </Button>
+                    <div className="pt-4 border-t border-slate-800">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                             <FileText size={14} className="text-amber-500" />
+                             פרטים להפקת חוזה
+                        </h4>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <NeonInput 
+                                label="טלפון נייד *"
+                                type="tel"
+                                value={collabFormData.phone}
+                                onChange={e => setCollabFormData({ ...collabFormData, phone: e.target.value })}
+                                placeholder="050-1234567"
+                                dir="ltr"
+                            />
+                            <NeonInput 
+                                label="תעודת זהות *"
+                                value={collabFormData.idNumber}
+                                onChange={e => setCollabFormData({ ...collabFormData, idNumber: e.target.value })}
+                                placeholder="123456789"
+                                dir="ltr"
+                            />
                         </div>
                     </div>
-                </div> : null}
+
+                    <NeonTextarea 
+                        label="תנאי ההסכם *"
+                        value={collabFormData.terms}
+                        onChange={e => setCollabFormData({ ...collabFormData, terms: e.target.value })}
+                        className="min-h-[150px]"
+                        placeholder="פרט את התנאים שסוכמו..."
+                    />
+
+                    {editingCollab ? <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 italic">סטטוס נוכחי</p>
+                                <Badge className={`${getCollabStatusBadge(editingCollab.status).color.split(' ').filter(c => c.includes('text') || c.includes('border')).join(' ')} border text-[10px] px-3 py-1 font-black bg-slate-800 rounded-full mt-1`}>
+                                    {editingCollab.status}
+                                </Badge>
+                            </div>
+                            {editingCollab.contractSentAt ? <div className="text-left font-bold">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 italic">חוזה נשלח</p>
+                                    <p className="text-sm text-amber-500">
+                                        {new Date(editingCollab.contractSentAt).toLocaleDateString('he-IL')}
+                                    </p>
+                                </div> : null}
+                        </div> : null}
+                </div>
+            </NeonModal>
 
             {/* QR Code Modal */}
-            {qrModalCollab ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
-                        <button 
-                            onClick={() => setQrModalCollab(null)}
-                            className="absolute top-4 left-4 p-2 rounded-xl hover:bg-slate-100 transition-colors"
-                        >
-                            <X size={20} className="text-slate-400" />
-                        </button>
+            <NeonModal
+                isOpen={!!qrModalCollab}
+                onClose={() => setQrModalCollab(null)}
+                title="קוד הפניה"
+                maxWidth="max-w-md"
+                hideFooter
+            >
+                {qrModalCollab && (
+                    <div className="text-center">
+                        <div className="h-20 w-20 rounded-[2rem] bg-linear-to-br from-amber-500 to-orange-600 flex items-center justify-center text-slate-900 mx-auto mb-6 shadow-xl shadow-amber-500/20">
+                            <QrCode size={40} />
+                        </div>
+                        <p className="text-slate-400 mb-8 font-bold italic">שתף את הקוד עם <span className="text-amber-500">{qrModalCollab.name}</span></p>
 
-                        <div className="text-center">
-                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white mx-auto mb-4">
-                                <QrCode size={32} />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900 mb-2">קוד הפניה</h3>
-                            <p className="text-slate-500 mb-6">שתף את הקוד עם {qrModalCollab.name}</p>
+                        {/* QR Code */}
+                        <div className="bg-white border-8 border-slate-900 rounded-[2.5rem] p-8 inline-block mb-10 shadow-inner group transition-all hover:scale-[1.02] cursor-none relative">
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(getReferralUrl(qrModalCollab.referralCode || ''))}`}
+                                alt="QR Code"
+                                className="w-56 h-56"
+                            />
+                        </div>
 
-                            {/* QR Code */}
-                            <div className="bg-white border-4 border-slate-100 rounded-2xl p-6 inline-block mb-6">
-                                <img 
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getReferralUrl(qrModalCollab.referralCode || ''))}`}
-                                    alt="QR Code"
-                                    className="w-48 h-48"
+                        {/* URL */}
+                        <div className="bg-[#0d1326] border-2 border-slate-800 rounded-[2rem] p-6 mb-8">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">קישור ישיר להפניה</p>
+                            <div className="flex items-center gap-3">
+                                <input 
+                                    type="text" 
+                                    value={getReferralUrl(qrModalCollab.referralCode || '')}
+                                    readOnly
+                                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs font-mono text-amber-500 outline-none"
+                                    dir="ltr"
                                 />
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => copyToClipboard(getReferralUrl(qrModalCollab.referralCode || ''))}
+                                    className="h-11 px-5 rounded-xl border-slate-800 hover:bg-amber-500 hover:text-slate-900 gap-2 transition-all"
+                                >
+                                    <Copy size={16} />
+                                    העתק
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Code */}
+                        <div className="flex items-center justify-center gap-4 bg-amber-500/10 border border-amber-500/20 rounded-[2.5rem] p-6 group cursor-copy active:scale-95 transition-all" onClick={() => copyToClipboard(qrModalCollab.referralCode || '')}>
+                            <span className="text-xs font-black text-amber-500 uppercase tracking-widest">קוד אישי:</span>
+                            <span className="font-mono text-3xl font-black text-white tracking-widest">{qrModalCollab.referralCode}</span>
+                            <div className="p-3 bg-slate-900 rounded-2xl group-hover:bg-amber-500 group-hover:text-slate-900 transition-colors">
+                                <Copy size={20} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </NeonModal>
+
+            {/* Collaborator Details Modal - Leads & Stats */}
+            <NeonModal
+                isOpen={!!detailsCollab}
+                onClose={() => setDetailsCollab(null)}
+                title={detailsCollab?.name || ""}
+                maxWidth="max-w-4xl"
+                hideFooter
+            >
+                {detailsCollab && (() => {
+                    const stats = getCollabStats(detailsCollab);
+                    return (
+                        <div className="space-y-8">
+                            {/* Stats Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <NeonCard className="border-blue-500/30 p-6">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">סה״כ לידים</p>
+                                    <p className="text-4xl font-black text-white italic font-display">{stats.totalLeads}</p>
+                                </NeonCard>
+                                <NeonCard className="border-emerald-500/30 p-6">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">נסגרו בהצלחה</p>
+                                    <p className="text-4xl font-black text-emerald-500 italic font-display">{stats.closedLeads}</p>
+                                </NeonCard>
+                                <NeonCard className="border-amber-500/30 p-6">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">סה״כ פרמיה</p>
+                                    <p className="text-4xl font-black text-amber-500 italic font-display">₪{stats.totalPremium.toLocaleString()}</p>
+                                </NeonCard>
                             </div>
 
-                            {/* URL */}
-                            <div className="bg-slate-50 rounded-xl p-4 mb-6">
-                                <p className="text-xs font-bold text-slate-500 mb-2">קישור להפניה:</p>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        type="text" 
-                                        value={getReferralUrl(qrModalCollab.referralCode || '')}
-                                        readOnly
-                                        className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-600"
-                                        dir="ltr"
-                                    />
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => copyToClipboard(getReferralUrl(qrModalCollab.referralCode || ''))}
-                                        className="gap-1"
-                                    >
-                                        <Copy size={14} />
-                                        העתק
-                                    </Button>
+                            {/* Analytics Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* By Month */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                                        <TrendingUp size={16} className="text-blue-500" />
+                                        ביצועים לפי חודש
+                                    </h4>
+                                    {Object.keys(stats.byMonth).length > 0 ? (
+                                        <div className="space-y-3">
+                                            {Object.entries(stats.byMonth).map(([month, data]) => (
+                                                <div key={month} className="flex items-center justify-between p-5 bg-slate-900/50 border border-slate-800 rounded-[1.5rem] group hover:border-blue-500/30 transition-all">
+                                                    <span className="font-black text-slate-200">{month}</span>
+                                                    <div className="flex items-center gap-6">
+                                                        <span className="text-xs font-bold text-slate-500">{data.count} לידים</span>
+                                                        <span className="font-black text-emerald-500">₪{data.premium.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-center text-slate-600 bg-slate-900/30 py-10 rounded-[1.5rem] border border-dashed border-slate-800 font-bold">אין נתוני חודשים</p>
+                                    )}
+                                </div>
+
+                                {/* By Company */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                                        <Building2 size={16} className="text-purple-500" />
+                                        התפלגות לפי חברה
+                                    </h4>
+                                    {Object.keys(stats.byCompany).length > 0 ? (
+                                        <div className="space-y-3">
+                                            {Object.entries(stats.byCompany).map(([company, data]) => (
+                                                <div key={company} className="flex items-center justify-between p-5 bg-slate-900/50 border border-slate-800 rounded-[1.5rem] group hover:border-purple-500/30 transition-all">
+                                                    <span className="font-black text-slate-200">{company}</span>
+                                                    <div className="flex items-center gap-6">
+                                                        <span className="text-xs font-bold text-slate-500">{data.count} עסקאות</span>
+                                                        <span className="font-black text-emerald-500">₪{data.premium.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-center text-slate-600 bg-slate-900/30 py-10 rounded-[1.5rem] border border-dashed border-slate-800 font-bold">אין נתוני חברות</p>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Code */}
-                            <div className="flex items-center justify-center gap-3 bg-indigo-50 rounded-xl p-4">
-                                <span className="text-sm font-bold text-indigo-600">קוד:</span>
-                                <span className="font-mono text-lg font-black text-indigo-700">{qrModalCollab.referralCode}</span>
-                                <button 
-                                    onClick={() => copyToClipboard(qrModalCollab.referralCode || '')}
-                                    className="p-1.5 rounded-lg hover:bg-indigo-100 text-indigo-600"
-                                >
-                                    <Copy size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div> : null}
-
-            {/* Collaborator Details Modal - Leads & Stats */}
-            {detailsCollab ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-8 relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                        <button 
-                            onClick={() => setDetailsCollab(null)}
-                            className="absolute top-4 left-4 p-2 rounded-xl hover:bg-slate-100 transition-colors"
-                        >
-                            <X size={20} className="text-slate-400" />
-                        </button>
-
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="h-16 w-16 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg">
-                                <Users size={32} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-black text-slate-900">{detailsCollab.name}</h3>
-                                <p className="text-slate-500">לידים והפניות</p>
-                            </div>
-                        </div>
-
-                        {(() => {
-                            const stats = getCollabStats(detailsCollab);
-                            return (
-                                <>
-                                    {/* Stats Cards */}
-                                    <div className="grid grid-cols-3 gap-4 mb-8">
-                                        <Card className="border-none bg-linear-to-br from-blue-500 to-indigo-600 p-5 text-white">
-                                            <p className="text-xs font-bold text-white/70 mb-1">סה״כ לידים</p>
-                                            <p className="text-3xl font-black">{stats.totalLeads}</p>
-                                        </Card>
-                                        <Card className="border-none bg-linear-to-br from-emerald-500 to-teal-600 p-5 text-white">
-                                            <p className="text-xs font-bold text-white/70 mb-1">נסגרו בהצלחה</p>
-                                            <p className="text-3xl font-black">{stats.closedLeads}</p>
-                                        </Card>
-                                        <Card className="border-none bg-linear-to-br from-amber-500 to-orange-600 p-5 text-white">
-                                            <p className="text-xs font-bold text-white/70 mb-1">סה״כ פרמיה</p>
-                                            <p className="text-3xl font-black">₪{stats.totalPremium.toLocaleString()}</p>
-                                        </Card>
-                                    </div>
-
-                                    {/* By Month & Company */}
-                                    <div className="grid grid-cols-2 gap-6 mb-8">
-                                        {/* By Month */}
-                                        <Card className="border-none shadow-md bg-white p-5">
-                                            <h4 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-                                                <TrendingUp size={18} className="text-indigo-600" />
-                                                לפי חודש
-                                            </h4>
-                                            {Object.keys(stats.byMonth).length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {Object.entries(stats.byMonth).map(([month, data]) => (
-                                                        <div key={month} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                                            <span className="font-bold text-slate-700">{month}</span>
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="text-sm text-slate-500">{data.count} לידים</span>
-                                                                <span className="font-bold text-emerald-600">₪{data.premium.toLocaleString()}</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-center text-slate-400 py-4">אין נתונים</p>
-                                            )}
-                                        </Card>
-
-                                        {/* By Company */}
-                                        <Card className="border-none shadow-md bg-white p-5">
-                                            <h4 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-                                                <Building2 size={18} className="text-purple-600" />
-                                                לפי חברה
-                                            </h4>
-                                            {Object.keys(stats.byCompany).length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {Object.entries(stats.byCompany).map(([company, data]) => (
-                                                        <div key={company} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                                            <span className="font-bold text-slate-700">{company}</span>
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="text-sm text-slate-500">{data.count} עסקאות</span>
-                                                                <span className="font-bold text-emerald-600">₪{data.premium.toLocaleString()}</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-center text-slate-400 py-4">אין נתונים</p>
-                                            )}
-                                        </Card>
-                                    </div>
-
-                                    {/* Leads List */}
-                                    <Card className="border-none shadow-md bg-white p-5">
-                                        <h4 className="font-black text-slate-900 mb-4">כל הלידים</h4>
-                                        {(detailsCollab.referredLeads?.length || 0) > 0 ? (
-                                            <div className="space-y-3">
-                                                {detailsCollab.referredLeads?.map(lead => (
-                                                    <div key={lead.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-black">
-                                                                {lead.name.charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-slate-900">{lead.name}</p>
-                                                                <p className="text-xs text-slate-400">
-                                                                    {new Date(lead.createdAt).toLocaleDateString('he-IL')}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                            <Badge className={lead.status === 'נסגר בהצלחה' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}>
-                                                                {lead.status}
-                                                            </Badge>
-                                                            {lead.closedPremium ? <span className="font-bold text-emerald-600">₪{lead.closedPremium.toLocaleString()}</span> : null}
-                                                            {lead.company ? <span className="text-sm text-slate-500">{lead.company}</span> : null}
-                                                        </div>
+                            {/* Leads List */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest">רשימת לידים מלאה</h4>
+                                {(detailsCollab.referredLeads?.length || 0) > 0 ? (
+                                    <div className="space-y-3">
+                                        {detailsCollab.referredLeads?.map(lead => (
+                                            <div key={lead.id} className="flex items-center justify-between p-6 bg-slate-900/50 border border-slate-800 rounded-3xl hover:border-amber-500/30 hover:bg-slate-900 transition-all group">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="h-14 w-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-black text-xl italic font-display">
+                                                        {lead.name.charAt(0)}
                                                     </div>
-                                                ))}
+                                                    <div>
+                                                        <p className="font-black text-white text-lg tracking-tight">{lead.name}</p>
+                                                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-1">
+                                                            {new Date(lead.createdAt).toLocaleDateString('he-IL')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-6">
+                                                    <Badge className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${lead.status === 'נסגר בהצלחה' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                                        {lead.status}
+                                                    </Badge>
+                                                    {lead.closedPremium ? <span className="font-black text-emerald-500 text-lg">₪{lead.closedPremium.toLocaleString()}</span> : null}
+                                                    {lead.company ? <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{lead.company}</span> : null}
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="text-center py-10 text-slate-400">
-                                                <Users size={48} className="mx-auto mb-4 opacity-30" />
-                                                <p className="font-bold">עדיין אין לידים משותף זה</p>
-                                            </div>
-                                        )}
-                                    </Card>
-                                </>
-                            );
-                        })()}
-                    </div>
-                </div> : null}
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-20 bg-slate-900/30 border border-dashed border-slate-800 rounded-[2.5rem]">
+                                        <Users size={64} className="mx-auto mb-6 opacity-10" />
+                                        <p className="font-black text-slate-600 uppercase tracking-[0.2em]">עדיין אין לידים משותף זה</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
+            </NeonModal>
         </DashboardShell>
     );
 }

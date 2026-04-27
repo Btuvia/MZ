@@ -29,7 +29,7 @@ export function SubjectSelector({
         <div className="relative">
             <label className="block text-sm font-bold text-amber-200 mb-2">
                 נושא
-                {value! && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
+                {value! ? <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span> : null}
             </label>
 
             <button

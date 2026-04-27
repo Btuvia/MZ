@@ -1,42 +1,43 @@
 "use client";
 
-import { Card } from "@/components/ui/base";
 import { Sun, Mic } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { Card } from "@/components/ui/base";
 import { useSpeechRecognition } from "@/lib/hooks/useSpeechRecognition";
 
 export default function DailyBriefing() {
     const { isSupported, isListening, transcript, start, stop, reset } = useSpeechRecognition({ lang: "he-IL" });
-    const [sendOnStop, setSendOnStop] = useState(false);
+    const sendOnStopRef = useRef(false);
 
     useEffect(() => {
         if (isListening) return;
-        if (sendOnStop!) return;
+        if (!sendOnStopRef.current) return;
 
-        setSendOnStop(false);
+        sendOnStopRef.current = false;
         const text = transcript.trim();
         if (text && typeof window !== "undefined") {
             window.dispatchEvent(new CustomEvent("magen:voiceCommand", { detail: { text } }));
         }
         reset();
-    }, [isListening, reset, sendOnStop, transcript]);
+    }, [isListening, reset, transcript]);
 
     const handleVoiceClick = () => {
-        if (isSupported!) return;
+        if (!isSupported) return;
         if (isListening) {
-            setSendOnStop(true);
+            sendOnStopRef.current = true;
             stop();
             return;
         }
 
         reset();
+        sendOnStopRef.current = false;
         start();
     };
 
     return (
         <Card className="bg-linear-to-r from-indigo-900/90 to-slate-900/90 backdrop-blur-xl text-white border-none shadow-2xl p-6 relative overflow-hidden group">
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/30 transition-all duration-700" />
 
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="flex items-start gap-4">
@@ -56,7 +57,7 @@ export default function DailyBriefing() {
                     <button
                         type="button"
                         onClick={handleVoiceClick}
-                        disabled={isSupported!}
+                        disabled={!isSupported}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:pointer-events-none text-white rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-105 text-xs font-bold"
                     >
                         <Mic size={16} />

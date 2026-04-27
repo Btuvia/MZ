@@ -1,11 +1,11 @@
 "use client";
 
 import { RefreshCw, Plus, Upload, Megaphone, Trash2, UserCheck, Edit3 } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import ImportLeadsModal from "@/components/leads/ImportLeadsModal";
 import CampaignAutomationModal from "@/components/leads/CampaignAutomationModal";
+import ImportLeadsModal from "@/components/leads/ImportLeadsModal";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { NeonCard, NeonButton, NeonInput, NeonModal, NeonSelect, NeonTextarea } from "@/components/ui/neon-form";
@@ -44,7 +44,7 @@ export default function LeadsPage() {
     });
 
     const handleAddLead = async () => {
-        if (newLead!.firstName || newLead!.phone) {
+        if (!newLead.firstName || !newLead.phone) {
             toast.error("אנא מלא שם וטלפון");
             return;
         }
@@ -70,7 +70,7 @@ export default function LeadsPage() {
     };
 
     const handleUpdateLead = async () => {
-        if (editingLead!) return;
+        if (!editingLead) return;
 
         try {
             await updateLead.mutateAsync({
@@ -122,7 +122,7 @@ export default function LeadsPage() {
 
     const convertToClient = async (lead: Lead) => {
         const fullName = `${lead.firstName} ${lead.lastName}`.trim();
-        if (confirm!(`האם להפוך את הליד ${fullName} ללקוח פעיל?`)) return;
+        if (!confirm(`האם להפוך את הליד ${fullName} ללקוח פעיל?`)) return;
 
         try {
             await updateLead.mutateAsync({
@@ -138,7 +138,7 @@ export default function LeadsPage() {
     };
 
     const handleDeleteLead = async (id: string) => {
-        if (confirm!("האם למחוק ליד זה?")) return;
+        if (!confirm("האם למחוק ליד זה?")) return;
 
         try {
             await deleteLead.mutateAsync(id);
@@ -418,9 +418,9 @@ export default function LeadsPage() {
                     <NeonTextarea label="הערות" value={newLead.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewLead({ ...newLead, notes: e.target.value })} rows={4} />
                 </NeonModal>
 
-                {showImportModal && <ImportLeadsModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onSuccess={() => { refetch(); setShowImportModal(false); }} />}
+                {showImportModal ? <ImportLeadsModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} onSuccess={() => { refetch(); setShowImportModal(false); }} /> : null}
                 
-                {showAutomationModal && <CampaignAutomationModal isOpen={showAutomationModal} onClose={() => setShowAutomationModal(false)} />}
+                {showAutomationModal ? <CampaignAutomationModal isOpen={showAutomationModal} onClose={() => setShowAutomationModal(false)} /> : null}
             </div>
         </DashboardShell>
     );

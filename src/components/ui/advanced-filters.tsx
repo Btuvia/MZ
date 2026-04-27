@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { TaskType, TaskStatus, TaskPriority } from "@/types";
-import { TaskSubject } from "@/types/subject";
-import { Workflow } from "@/types/workflow";
-import { Employee } from "@/types";
-import { Card, Button } from "./base";
 import { Filter, X, ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { TASK_TYPES, TASK_STATUSES, TASK_PRIORITIES } from "@/lib/task-constants";
+import { type TaskType, type TaskStatus, type TaskPriority } from "@/types";
+import { type Employee } from "@/types";
+import { type TaskSubject } from "@/types/subject";
+import { type Workflow } from "@/types/workflow";
+import { Card, Button } from "./base";
 
 export interface TaskFilters {
     status: TaskStatus | 'all';
@@ -78,21 +78,18 @@ export function AdvancedFilters({
                     className="flex-1 px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-indigo-300 focus:outline-none"
                 />
 
-                {hasActiveFilters && (
-                    <Button
+                {hasActiveFilters ? <Button
                         onClick={onClear}
                         variant="outline"
                         size="sm"
                         className="text-slate-600"
                     >
                         נקה הכל
-                    </Button>
-                )}
+                    </Button> : null}
             </div>
 
             {/* Active Filters Badges */}
-            {hasActiveFilters && (
-                <div className="flex gap-2 flex-wrap mt-3">
+            {hasActiveFilters ? <div className="flex gap-2 flex-wrap mt-3">
                     {filters.type !== 'all' && (
                         <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                             סוג: {TASK_TYPES.find(t => t.value === filters.type)?.labelHe}
@@ -141,20 +138,16 @@ export function AdvancedFilters({
                             </button>
                         </span>
                     )}
-                    {filters.searchTerm && (
-                        <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                    {filters.searchTerm ? <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                             חיפוש: "{filters.searchTerm}"
                             <button onClick={() => updateFilter('searchTerm', '')} className="hover:bg-slate-200 rounded-full p-0.5">
                                 <X size={12} />
                             </button>
-                        </span>
-                    )}
-                </div>
-            )}
+                        </span> : null}
+                </div> : null}
 
             {/* Dropdown Panel */}
-            {isOpen && (
-                <>
+            {isOpen ? <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
                     <Card className="absolute z-20 top-full mt-2 w-full md:w-auto md:min-w-[600px] shadow-2xl border-2 border-slate-200">
                         <div className="p-6 grid grid-cols-2 gap-4">
@@ -262,8 +255,7 @@ export function AdvancedFilters({
                             </div>
                         </div>
                     </Card>
-                </>
-            )}
+                </> : null}
         </div>
     );
 }

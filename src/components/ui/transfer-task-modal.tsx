@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import { Task } from '@/types';
-import { Employee } from '@/types';
-import { Card, Button } from './base';
 import { X, ArrowRight, User, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { type Task } from '@/types';
+import { type Employee } from '@/types';
+import { Card, Button } from './base';
 
 interface TransferTaskModalProps {
     task: Task;
@@ -30,7 +30,7 @@ export function TransferTaskModal({
     const selectedUser = availableUsers.find(u => u.id === selectedUserId);
 
     const handleSubmit = async () => {
-        if (selectedUserId! || selectedUser!) return;
+        if (!selectedUserId || !selectedUser) return;
 
         setIsSubmitting(true);
         try {
@@ -67,13 +67,11 @@ export function TransferTaskModal({
                     <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                         <div className="text-xs text-slate-500 mb-1">משימה להעברה</div>
                         <div className="font-bold text-slate-900">{task.title}</div>
-                        {task.description && (
-                            <div className="text-sm text-slate-600 mt-1">{task.description}</div>
-                        )}
+                        {task.description ? <div className="text-sm text-slate-600 mt-1">{task.description}</div> : null}
                         <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
                             <span>📅 {task.date}</span>
                             <span>⏰ {task.time}</span>
-                            {task.clientName && <span>👤 {task.clientName}</span>}
+                            {task.clientName ? <span>👤 {task.clientName}</span> : null}
                         </div>
                     </div>
 
@@ -162,7 +160,7 @@ export function TransferTaskModal({
                 <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex gap-3">
                     <Button
                         onClick={handleSubmit}
-                        disabled={selectedUserId! || isSubmitting}
+                        disabled={!selectedUserId || isSubmitting}
                         className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-slate-300 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'מעביר...' : 'העבר משימה'}

@@ -7,7 +7,7 @@ import {
     Clock, ArrowRight, Bot, User, Sparkles, FileText,
     Camera, Mic, X, ChevronDown
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
@@ -30,32 +30,35 @@ interface QuickReply {
 }
 
 export default function ChatPage() {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            content: 'שלום! אני דני, הסוכן שלך במגן זהב. איך אוכל לעזור לך היום? 😊',
-            sender: 'agent',
-            timestamp: new Date(Date.now() - 3600000),
-            status: 'read',
-            type: 'text'
-        },
-        {
-            id: '2',
-            content: 'היי דני! רציתי לשאול לגבי הפוליסה שלי',
-            sender: 'client',
-            timestamp: new Date(Date.now() - 3500000),
-            status: 'read',
-            type: 'text'
-        },
-        {
-            id: '3',
-            content: 'בטח! איזו פוליסה - ביטוח הבריאות או ביטוח הרכב?',
-            sender: 'agent',
-            timestamp: new Date(Date.now() - 3400000),
-            status: 'read',
-            type: 'text'
-        }
-    ]);
+    const [messages, setMessages] = useState<Message[]>(() => {
+        const now = typeof Date !== 'undefined' ? Date.now() : 0;
+        return [
+            {
+                id: '1',
+                content: 'שלום! אני דני, הסוכן שלך במגן זהב. איך אוכל לעזור לך היום? 😊',
+                sender: 'agent',
+                timestamp: new Date(now - 3600000),
+                status: 'read',
+                type: 'text'
+            },
+            {
+                id: '2',
+                content: 'היי דני! רציתי לשאול לגבי הפוליסה שלי',
+                sender: 'client',
+                timestamp: new Date(now - 3500000),
+                status: 'read',
+                type: 'text'
+            },
+            {
+                id: '3',
+                content: 'בטח! איזו פוליסה - ביטוח הבריאות או ביטוח הרכב?',
+                sender: 'agent',
+                timestamp: new Date(now - 3400000),
+                status: 'read',
+                type: 'text'
+            }
+        ];
+    });
     
     const [inputMessage, setInputMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -79,22 +82,23 @@ export default function ChatPage() {
         responseTime: 'בדרך כלל עונה תוך דקות'
     };
 
+    const scrollToBottom = useCallback(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, []);
+
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    }, [messages, scrollToBottom]);
 
     const handleSendMessage = async () => {
-        if (inputMessage!.trim()) return;
+        if (!inputMessage.trim()) return;
 
+        const sentAt = new Date();
         const newMessage: Message = {
-            id: Date.now().toString(),
+            id: sentAt.getTime().toString(),
             content: inputMessage,
             sender: 'client',
-            timestamp: new Date(),
+            timestamp: sentAt,
             status: 'sending',
             type: 'text'
         };
@@ -123,11 +127,12 @@ export default function ChatPage() {
                 'מצוין! אני מטפל בזה. יש לך שאלות נוספות?'
             ];
             
+            const responseAt = new Date();
             const agentResponse: Message = {
-                id: (Date.now() + 1).toString(),
+                id: responseAt.getTime().toString(),
                 content: responses[Math.floor(Math.random() * responses.length)],
                 sender: 'agent',
-                timestamp: new Date(),
+                timestamp: responseAt,
                 status: 'read',
                 type: 'text'
             };
@@ -306,7 +311,7 @@ export default function ChatPage() {
                         {/* Attachment Button */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowAttachMenu(showAttachMenu!)}
+                                onClick={() => setShowAttachMenu(!showAttachMenu)}
                                 className="p-2.5 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-slate-400 hover:text-amber-400 transition-all"
                             >
                                 <Paperclip size={20} />
@@ -358,7 +363,7 @@ export default function ChatPage() {
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && e!.shiftKey) {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
                                         handleSendMessage();
                                     }
@@ -372,7 +377,7 @@ export default function ChatPage() {
                         {/* Send Button */}
                         <button
                             onClick={handleSendMessage}
-                            disabled={inputMessage!.trim()}
+                            disabled={!inputMessage.trim()}
                             className={`p-3 rounded-xl transition-all ${
                                 inputMessage.trim()
                                     ? 'bg-amber-500 hover:bg-amber-600 text-slate-900'

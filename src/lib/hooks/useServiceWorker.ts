@@ -23,10 +23,14 @@ interface UseServiceWorkerReturn {
 }
 
 export function useServiceWorker(): UseServiceWorkerReturn {
-    const [isSupported, setIsSupported] = useState(false);
+    const [isSupported, setIsSupported] = useState(() => 
+        typeof window !== 'undefined' ? 'serviceWorker' in navigator : false
+    );
     const [isRegistered, setIsRegistered] = useState(false);
     const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
-    const [isOffline, setIsOffline] = useState(false);
+    const [isOffline, setIsOffline] = useState(() => 
+        typeof window !== 'undefined' ? !navigator.onLine : false
+    );
     const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
     const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
@@ -34,11 +38,7 @@ export function useServiceWorker(): UseServiceWorkerReturn {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        const supported = 'serviceWorker' in navigator;
-        setIsSupported(supported);
-        setIsOffline(!navigator.onLine);
-
-        if (!supported) return;
+        if (!isSupported) return;
 
         // Register service worker
         const registerSW = async () => {

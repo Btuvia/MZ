@@ -1,7 +1,8 @@
 "use client";
 
-import { Calendar as CalendarIcon, Clock, X, User, CheckCircle2, AlertTriangle, Sparkles, BrainCircuit, Search, Paperclip, FileText } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, X, User, CheckCircle2, AlertTriangle, Sparkles, BrainCircuit, Search, Paperclip, FileText, Timer, Pause } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Button, Badge } from "@/components/ui/base";
 import { SubjectSelector } from "@/components/ui/subject-selector";
 import { TaskTypeSelector } from "@/components/ui/task-type-selector";
@@ -28,6 +29,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
     const [location, setLocation] = useState("");
     const [endDate, setEndDate] = useState("");
     const [endTime, setEndTime] = useState("11:00");
+    const [isReminder, setIsReminder] = useState(false);
+    const [estimatedDuration, setEstimatedDuration] = useState<number>(30); // דקות
+    const [urgency, setUrgency] = useState<"low" | "medium" | "high" | "urgent">("medium"); // דחיפות
 
     // Client linking
     const [isLinkedToClient, setIsLinkedToClient] = useState(false);
@@ -86,7 +90,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 setTime(existingTask.time);
                 setPriority(existingTask.priority || "medium");
                 setTaskType(existingTask.type || "task");
-                setIsLinkedToClient(!existingTask!.client);
+                setIsLinkedToClient(!!existingTask.client);
                 setSelectedClient(existingTask.client ? { id: existingTask.clientId, name: existingTask.client } : null);
                 setAssignee(existingTask.assignedTo || existingTask.assignee || "admin");
                 setSubtasks(existingTask.subtasks || []);
@@ -95,10 +99,14 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 setIdNumber(existingTask.idNumber || "");
                 setEmployerName(existingTask.employerName || "");
                 setAgentName(existingTask.agentName || "");
+                setUrgency(existingTask.urgency || "medium");
+                setIsReminder(existingTask.isReminder || false);
                 setNotes(existingTask.notes || "");
                 setLocation(existingTask.location || "");
                 setEndDate(existingTask.endDate || existingTask.date || "");
                 setEndTime(existingTask.endTime || "11:00");
+                setIsReminder(existingTask?.isReminder || false);
+                setEstimatedDuration(existingTask?.estimatedDuration || 30);
             } else {
                 // Reset form for new task
                 setTitle("");
@@ -120,6 +128,8 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                 setLocation("");
                 setEndDate(initialDate.toISOString().split('T')[0]);
                 setEndTime("11:00");
+                setIsReminder(false);
+                setEstimatedDuration(30);
             }
         }
     }, [isOpen, existingTask, initialDate]);
@@ -145,7 +155,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
     }, [clientSearchTerm]);
 
     const handleGenerateSubtasks = () => {
-        if (title!) return;
+        if (!title) return;
         setIsGeneratingAI(true);
 
         // Simulation of AI generation based on title keywords
@@ -197,7 +207,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
     };
 
     const handleSave = () => {
-        if (title! || date! || time! || endDate! || endTime! || location! || description!) {
+        if (!title || !date || !time || !endDate || !endTime || !location || !description) {
             toast.error("אנא מלא את כל שדות החובה: כותרת, מועדי התחלה וסיום, מיקום ותיאור");
             return;
         }
@@ -235,6 +245,9 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
             createdAt: existingTask?.createdAt || new Date(),
             updatedAt: new Date(),
             createdBy: existingTask?.createdBy || "admin",
+            isReminder,
+            estimatedDuration: Number(estimatedDuration),
+            urgency,
         });
         onClose();
     };
@@ -275,6 +288,44 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                     {template}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Reminder & Duration Toggle */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="glass-card border border-amber-500/20 rounded-2xl p-4 flex items-center justify-between">
+                            <div>
+                                <h4 className="font-black text-amber-200 text-sm">הגדר כתזכורת</h4>
+                                <p className="text-[10px] text-slate-500 font-bold">המערכת תשלח התראה במועד שנקבע</p>
+                            </div>
+                            <button
+                                onClick={() => setIsReminder(!isReminder)}
+                                className={`w-12 h-6 rounded-full transition-all relative ${isReminder ? 'bg-amber-500' : 'bg-slate-700'}`}
+                            >
+                                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isReminder ? 'right-7' : 'right-1'}`} />
+                            </button>
+                        </div>
+
+                        <div className="glass-card border border-amber-500/20 rounded-2xl p-4">
+                            <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">זמן מוערך (דקות)</label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="number"
+                                    value={estimatedDuration}
+                                    onChange={(e) => setEstimatedDuration(Number(e.target.value))}
+                                    className="w-20 glass-card border-amber-500/20 rounded-xl px-3 py-2 text-sm font-bold text-slate-200 focus:ring-2 focus:ring-amber-500/30 outline-none"
+                                />
+                                {existingTask && (
+                                    <div className="flex-1 flex items-center justify-end gap-2">
+                                        <div className="text-right">
+                                            <p className="text-[9px] text-slate-500 font-bold uppercase">זמן בפועל</p>
+                                            <p className={`text-xs font-mono font-black ${existingTask.timerStatus === 'running' ? 'text-amber-400 animate-pulse' : 'text-slate-300'}`}>
+                                                {existingTask.totalTimeSpent ? Math.floor(existingTask.totalTimeSpent / 60) : 0} דקות
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -350,7 +401,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                 size="sm"
                                 className="glass-card text-amber-400 hover:bg-slate-700/50 border border-amber-500/30 text-xs gap-2"
                                 onClick={handleGenerateSubtasks}
-                                disabled={isGeneratingAI || title!}
+                                disabled={isGeneratingAI || !title}
                             >
                                 {isGeneratingAI ? <span className="animate-spin">✨</span> : <Sparkles size={12} />}
                                 {isGeneratingAI ? "מנתח..." : "פרק למשימות משנה"}
@@ -398,7 +449,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">מועד סיום (חובה)</label>
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2 italic">🎯 שעת יעד ומועד סיום</label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <input
@@ -444,7 +495,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                     >כן</button>
                                     <button
                                         onClick={() => { setIsLinkedToClient(false); setSelectedClient(null); }}
-                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${isLinkedToClient! ? 'bg-slate-700 text-slate-200 border-slate-600' : 'glass-card text-slate-400 border-amber-500/20 hover:bg-slate-700/50'}`}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-black border transition-all ${isLinkedToClient ? 'bg-slate-700 text-slate-200 border-slate-600' : 'glass-card text-slate-400 border-amber-500/20 hover:bg-slate-700/50'}`}
                                     >לא</button>
                                 </div>
 
@@ -463,7 +514,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                                             className="w-full glass-card border-2 border-amber-500/30 rounded-xl pl-4 pr-10 py-3 font-bold text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50 outline-none text-slate-200 placeholder:text-slate-500"
                                         />
 
-                                        {showClientResults && selectedClient! ? <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
+                                        {showClientResults && !selectedClient ? <div className="absolute top-full left-0 right-0 mt-1 glass-card border border-amber-500/20 rounded-xl shadow-xl max-h-40 overflow-y-auto z-10">
                                                 {searchResults.length > 0 ? searchResults.map(client => (
                                                     <div
                                                         key={client.id}
@@ -485,18 +536,34 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">דחיפות (Priority)</label>
-                                <div className="flex glass-card rounded-xl p-1 border border-amber-500/20">
+                                <label className="block text-xs font-black text-amber-200 uppercase tracking-wider mb-2">תיעדוף (Priority)</label>
+                                <div className="flex glass-card rounded-xl p-1 border border-amber-500/20 mb-4">
                                     {(["low", "medium", "high", "urgent"] as const).map((p) => (
                                         <button
                                             key={p}
                                             onClick={() => setPriority(p)}
                                             className={`flex-1 text-[10px] font-black py-2 rounded-lg transition-all ${priority === p
-                                                ? (p === 'urgent' ? 'bg-red-600 text-white shadow-md' : p === 'high' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : p === 'medium' ? 'bg-amber-500 text-slate-900 shadow-md shadow-amber-500/30' : 'bg-blue-500 text-white shadow-md shadow-blue-500/30')
+                                                ? (p === 'urgent' ? 'bg-indigo-600 text-white shadow-md' : p === 'high' ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/30' : p === 'medium' ? 'bg-amber-500 text-slate-900 shadow-md shadow-amber-500/30' : 'bg-blue-500 text-white shadow-md shadow-blue-500/30')
                                                 : 'text-slate-400 hover:bg-slate-700/50'
                                                 }`}
                                         >
                                             {p === 'urgent' ? 'קריטי' : p === 'high' ? 'גבוה' : p === 'medium' ? 'בינוני' : 'נמוך'}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <label className="block text-xs font-black text-red-400 uppercase tracking-wider mb-2">דחיפות (Urgency)</label>
+                                <div className="flex glass-card rounded-xl p-1 border border-red-500/10">
+                                    {(["low", "medium", "high", "urgent"] as const).map((u) => (
+                                        <button
+                                            key={u}
+                                            onClick={() => setUrgency(u)}
+                                            className={`flex-1 text-[10px] font-black py-2 rounded-lg transition-all ${urgency === u
+                                                ? (u === 'urgent' ? 'bg-red-600 text-white shadow-md' : u === 'high' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : u === 'medium' ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30' : 'bg-slate-600 text-white shadow-md shadow-slate-500/30')
+                                                : 'text-slate-400 hover:bg-slate-700/50'
+                                                }`}
+                                        >
+                                            {u === 'urgent' ? 'דחוף מאוד' : u === 'high' ? 'דחוף' : u === 'medium' ? 'רגיל' : 'לא דחוף'}
                                         </button>
                                     ))}
                                 </div>
@@ -563,7 +630,7 @@ export function SmartTaskModal({ isOpen, onClose, onSave, initialDate, existingT
                     </p>
                     <div className="flex gap-3">
                         <Button variant="ghost" onClick={onClose} className="text-slate-400 hover:text-slate-200">ביטול</Button>
-                        <Button onClick={handleSave} className="bg-amber-500 text-slate-900 shadow-xl shadow-amber-500/30 font-black px-8 hover:bg-amber-400">שמור משימה</Button>
+                        <Button variant="gold" size="lg" onClick={handleSave}>שמור משימה</Button>
                     </div>
                 </div>
 

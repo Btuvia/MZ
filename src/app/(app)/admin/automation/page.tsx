@@ -1,10 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import {
     Bot,
     Play,
@@ -20,6 +15,11 @@ import {
     ArrowRight,
     Layers
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function AutomationHubPage() {
     const [activeTab, setActiveTab] = useState("overview");
@@ -99,7 +99,7 @@ export default function AutomationHubPage() {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="border-none shadow-lg p-6 flex items-center gap-4 relative overflow-hidden group">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-emerald-500"></div>
+                        <div className="absolute right-0 top-0 h-full w-1 bg-emerald-500" />
                         <div className="h-12 w-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
                             <Activity />
                         </div>
@@ -110,7 +110,7 @@ export default function AutomationHubPage() {
                     </Card>
 
                     <Card className="border-none shadow-lg p-6 flex items-center gap-4 relative overflow-hidden group">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
+                        <div className="absolute right-0 top-0 h-full w-1 bg-blue-500" />
                         <div className="h-12 w-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
                             <Zap />
                         </div>
@@ -121,7 +121,7 @@ export default function AutomationHubPage() {
                     </Card>
 
                     <Card className="border-none shadow-lg p-6 flex items-center gap-4 relative overflow-hidden group">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-indigo-500"></div>
+                        <div className="absolute right-0 top-0 h-full w-1 bg-indigo-500" />
                         <div className="h-12 w-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
                             <CheckCircle2 />
                         </div>
@@ -132,7 +132,7 @@ export default function AutomationHubPage() {
                     </Card>
 
                     <Card className="border-none shadow-lg p-6 flex items-center gap-4 relative overflow-hidden group">
-                        <div className="absolute right-0 top-0 h-full w-1 bg-amber-500"></div>
+                        <div className="absolute right-0 top-0 h-full w-1 bg-amber-500" />
                         <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
                             <Clock />
                         </div>
@@ -222,7 +222,7 @@ export default function AutomationHubPage() {
                                     </div>
                                 ))}
                                 <div className="text-center pt-4">
-                                    <span className="loading loading-dots loading-xs opacity-30"></span>
+                                    <span className="loading loading-dots loading-xs opacity-30" />
                                 </div>
                             </div>
                         </Card>

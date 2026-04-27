@@ -1,6 +1,5 @@
 "use client";
 
-import StatsOverview from "@/components/admin/dashboard/StatsOverview";
 import {
     Users,
     ShieldCheck,
@@ -24,11 +23,12 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { getGeminiStatus } from "@/app/actions/gemini";
+import StatsOverview from "@/components/admin/dashboard/StatsOverview";
 import { Card, Button, Badge, Skeleton } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { useAuth } from "@/lib/contexts/AuthContext";
 import type {
     Client,
     ClientStatus,
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
                     firestoreService.getTasksCount()
                 ]);
 
-                if (mounted!) return;
+                if (!mounted) return;
 
                 setStats({
                     total,
@@ -235,10 +235,10 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-2">
                              מרכז שליטה פרימיום <Zap size={14} className="text-amber-500 fill-amber-500" />
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none italic">
+                        <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-none italic">
                             שלום, {user?.displayName || "מנהל מערכת"}
                         </h1>
-                        <p className="text-slate-500 font-medium">המערכת מעודכנת. הנה תמונת מצב של העסק שלך נכון להיום.</p>
+                        <p className="text-slate-400 font-medium">המערכת מעודכנת. הנה תמונת מצב של העסק שלך נכון להיום.</p>
                     </div>
 
                     <div className="flex flex-wrap gap-3">
@@ -269,17 +269,17 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* INTELLIGENCE */}
                     <div className="lg:col-span-8 space-y-8">
-                        <Card className="border-none shadow-2xl bg-white overflow-hidden rounded-[2.5rem]">
-                            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                        <Card className="border-none shadow-2xl bg-white/5 backdrop-blur-xl overflow-hidden rounded-[2.5rem] border border-white/10">
+                            <div className="p-8 border-b border-white/5 flex justify-between items-center">
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                                        <Layers size={20} className="text-indigo-600" />
+                                    <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                                        <Layers size={20} className="text-amber-500" />
                                         ניתוח תיק חכם (AI Intelligence)
                                     </h2>
                                 </div>
-                                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-                                    <input type="text" placeholder="חיפוש..." className="bg-transparent border-none focus:ring-0 text-sm font-medium w-32" value={donutSearch} onChange={e => setDonutSearch(e.target.value)} />
-                                    <Search size={14} className="text-slate-400" />
+                                <div className="flex items-center gap-2 bg-white/10 p-1.5 rounded-2xl border border-white/20">
+                                    <input type="text" placeholder="חיפוש..." className="bg-transparent border-none focus:ring-0 text-sm font-medium w-32 text-white placeholder:text-slate-400" value={donutSearch} onChange={e => setDonutSearch(e.target.value)} />
+                                    <Search size={14} className="text-amber-500" />
                                 </div>
                             </div>
                             
@@ -288,8 +288,8 @@ export default function AdminDashboard() {
                                     <div key={i} className="flex flex-col items-center group cursor-pointer" onClick={() => setSelectedSegment({ title: card.title, label: card.label, clients: recentClients })}>
                                         <div className="relative h-40 w-40 mb-6 group-hover:scale-110 transition-transform duration-700">
                                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                                <span className="text-3xl font-black text-slate-900">{card.segments.reduce((acc, s) => acc + s.value, 0)}</span>
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{card.label}</span>
+                                                <span className="text-3xl font-black text-white drop-shadow-lg">{card.segments.reduce((acc, s) => acc + s.value, 0)}</span>
+                                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{card.label}</span>
                                             </div>
                                             <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                                                 {card.segments.map((seg, idx) => {
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
                                                 })}
                                             </svg>
                                         </div>
-                                        <h4 className="font-black text-slate-800 text-lg">{card.title}</h4>
+                                        <h4 className="font-black text-slate-200 text-lg">{card.title}</h4>
                                     </div>
                                 ))}
                             </div>
@@ -350,26 +350,26 @@ export default function AdminDashboard() {
                             </div>
                         </Card>
 
-                        <Card className="bg-white rounded-[2.5rem] p-8 border-none shadow-2xl">
-                            <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                                <Clock size={18} className="text-amber-600" />
+                        <Card className="bg-white/5 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/10 shadow-2xl">
+                            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-3">
+                                <Clock size={18} className="text-amber-500" />
                                 מעקב תפעולי
                             </h2>
                             <div className="space-y-6">
-                                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                    <div className="h-10 w-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500 font-black">!</div>
+                                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                                    <div className="h-10 w-10 bg-rose-500/20 rounded-xl shadow-sm flex items-center justify-center text-rose-500 font-black">!</div>
                                     <div className="flex-1">
-                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">תביעות</p>
-                                        <p className="text-sm font-bold">4 תביעות בהשהיה</p>
-                                        <button className="text-[10px] text-indigo-600 font-black mt-2" onClick={handleClaimsFollowup}>הפעלת מעקב &rarr;</button>
+                                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">תביעות</p>
+                                        <p className="text-sm font-bold text-white">4 תביעות בהשהיה</p>
+                                        <button className="text-[10px] text-amber-500 font-black mt-2" onClick={handleClaimsFollowup}>הפעלת מעקב &rarr;</button>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                    <div className="h-10 w-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-amber-500 font-black">₪</div>
+                                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                                    <div className="h-10 w-10 bg-amber-500/20 rounded-xl shadow-sm flex items-center justify-center text-amber-500 font-black">₪</div>
                                     <div className="flex-1">
-                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">גבייה</p>
-                                        <p className="text-sm font-bold">חובות פתוחים</p>
-                                        <button className="text-[10px] text-indigo-600 font-black mt-2" onClick={handleCollectionsReminder}>שליחת תזכורות &rarr;</button>
+                                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">גבייה</p>
+                                        <p className="text-sm font-bold text-white">חובות פתוחים</p>
+                                        <button className="text-[10px] text-amber-500 font-black mt-2" onClick={handleCollectionsReminder}>שליחת תזכורות &rarr;</button>
                                     </div>
                                 </div>
                             </div>
@@ -378,8 +378,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* MODAL */}
-                {selectedSegment && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {selectedSegment ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" onClick={() => setSelectedSegment(null)} />
                         <Card className="w-full max-w-4xl max-h-[80vh] bg-white relative z-10 shadow-3xl overflow-hidden rounded-[3rem] flex flex-col border-none">
                             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -398,8 +397,7 @@ export default function AdminDashboard() {
                                 ))}
                             </div>
                         </Card>
-                    </div>
-                )}
+                    </div> : null}
 
             </div>
         </DashboardShell>

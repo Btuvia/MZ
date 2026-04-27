@@ -1,12 +1,12 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState, useEffect } from "react";
-import { firestoreService } from "@/lib/firebase/firestore-service";
-import { PENSION_OPERATIONS_STATUSES } from "@/lib/pension-statuses";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { firestoreService } from "@/lib/firebase/firestore-service";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
+import { PENSION_OPERATIONS_STATUSES } from "@/lib/pension-statuses";
 
 export default function SavingsPage() {
     const [selectedPension, setSelectedPension] = useState<number | null>(null);
@@ -17,7 +17,7 @@ export default function SavingsPage() {
 
     useEffect(() => {
         const fetchProducts = async () => {
-            if (user!?.uid) return;
+            if (!user?.uid) return;
             setLoading(true);
             try {
                 const data = await firestoreService.getFinancialProducts(user.uid);
@@ -38,7 +38,7 @@ export default function SavingsPage() {
     }, [user?.uid]);
 
     const handleCreateDemoData = async () => {
-        if (user!?.uid) return;
+        if (!user?.uid) return;
         setLoading(true);
         const demoProducts = [
             {
@@ -115,7 +115,7 @@ export default function SavingsPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">החיסכון הפנסיוני שלי</h1>
                         <p className="text-sm font-medium text-white/80 max-w-2xl">
@@ -158,7 +158,7 @@ export default function SavingsPage() {
                 <div className="space-y-6">
                     {loading ? (
                         <div className="text-center py-20 opacity-50">
-                            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
                             <p>טוען נתונים...</p>
                         </div>
                     ) : pensionAccounts.length === 0 ? (
@@ -173,7 +173,7 @@ export default function SavingsPage() {
                     ) : (
                         pensionAccounts.map((account) => (
                             <Card key={account.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all">
-                                <div className={`h-2 w-full bg-linear-to-r ${account.color}`}></div>
+                                <div className={`h-2 w-full bg-linear-to-r ${account.color}`} />
                                 <div className="p-8">
                                     <div className="flex items-start justify-between mb-6">
                                         <div className="flex items-center gap-4">
@@ -239,7 +239,7 @@ export default function SavingsPage() {
                                                                     <span className="text-sm font-black text-primary">{asset.percentage}%</span>
                                                                 </div>
                                                                 <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                                                                    <div className={`h-full ${asset.color} rounded-full transition-all duration-500`} style={{ width: `${asset.percentage}%` }}></div>
+                                                                    <div className={`h-full ${asset.color} rounded-full transition-all duration-500`} style={{ width: `${asset.percentage}%` }} />
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -261,7 +261,7 @@ export default function SavingsPage() {
                                                             onClick={async () => {
                                                                 setStatusLoading(account.id + status.value);
                                                                 try {
-                                                                    await firestoreService.updateFinancialProduct(account.id, { operationsStatus: status.value });
+                                                                    await firestoreService.updateFinancialProduct(account.id, { operationsStatus: status.value as any });
                                                                     setPensionAccounts((prev: any[]) => prev.map((a: any) => a.id === account.id ? { ...a, operationsStatus: status.value } : a));
                                                                 } finally {
                                                                     setStatusLoading(null);
@@ -301,7 +301,7 @@ export default function SavingsPage() {
 
                 {/* Recommendations */}
                 <Card className="border-none shadow-xl bg-slate-900 text-white p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 h-full w-1 bg-accent"></div>
+                    <div className="absolute top-0 right-0 h-full w-1 bg-accent" />
                     <div className="flex items-start gap-4">
                         <div className="h-12 w-12 rounded-xl bg-accent/20 flex items-center justify-center text-accent text-xl animate-pulse">
                             ✨

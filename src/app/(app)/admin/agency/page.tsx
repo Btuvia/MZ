@@ -246,20 +246,20 @@ Required JSON format:
             
             // Find JSON object in the response
             const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-            if (jsonMatch!) {
+            if (!jsonMatch) {
                 throw new Error("לא נמצא JSON תקין בתגובה");
             }
             
             const parsedField = JSON.parse(jsonMatch[0]);
             
             // Validate required fields
-            if (parsedField!.label || parsedField!.type || parsedField!.description) {
+            if (!parsedField.label || !parsedField.type || !parsedField.description) {
                 throw new Error("השדה שנוצר חסר שדות נדרשים");
             }
             
             // Validate type
             const validTypes = ['text', 'number', 'select', 'date'];
-            if (validTypes!.includes(parsedField.type)) {
+            if (!validTypes.includes(parsedField.type)) {
                 parsedField.type = 'text'; // fallback
             }
             
@@ -333,14 +333,14 @@ Required JSON format:
             
             // Find JSON object
             const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-            if (jsonMatch!) {
+            if (!jsonMatch) {
                 throw new Error("לא נמצא JSON תקין בתגובה");
             }
             
             const newAuto = JSON.parse(jsonMatch[0]);
             
             // Validate
-            if (newAuto!.title || newAuto!.desc) {
+            if (!newAuto.title || !newAuto.desc) {
                 throw new Error("האוטומציה חסרה שדות נדרשים");
             }
             

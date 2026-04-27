@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from 'react';
 import Image from "next/image";
+import { useEffect, useMemo } from 'react';
 
 type RainElement = {
     id: number;
@@ -12,30 +12,28 @@ type RainElement = {
 };
 
 export function CommissionsRain({ isActive, onComplete }: { isActive: boolean; onComplete: () => void }) {
-    const [elements, setElements] = useState<RainElement[]>([]);
+    const elements = useMemo(() => {
+        if (!isActive) return [];
+        return Array.from({ length: 50 }).map((_, i) => ({
+            id: i,
+            left: (i * 7) % 100,
+            duration: 2 + ((i * 3) % 3),
+            delay: (i * 11) % 2,
+            type: (i % 3 === 0) ? 'shield' : 'coin' as const
+        }));
+    }, [isActive]);
 
     useEffect(() => {
-        if (isActive!) return;
-
-        const newElements: RainElement[] = Array.from({ length: 50 }).map((_, i) => ({
-            id: i,
-            left: Math.random() * 100,
-            duration: 2 + Math.random() * 3,
-            delay: Math.random() * 2,
-            type: Math.random() > 0.3 ? 'coin' : 'shield'
-        }));
-
-        setElements(newElements);
+        if (!isActive) return;
 
         const timer = setTimeout(() => {
-            setElements([]);
             onComplete();
         }, 5000);
 
         return () => clearTimeout(timer);
     }, [isActive, onComplete]);
 
-    if (isActive!) return null;
+    if (!isActive) return null;
 
     return (
         <div className="fixed inset-0 z-[60] pointer-events-none overflow-hidden">

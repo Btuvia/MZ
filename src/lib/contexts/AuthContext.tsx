@@ -36,11 +36,14 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [role, setRole] = useState<UserRole | null>(() => {
-        if (typeof window === "undefined") return null;
-        return window.localStorage.getItem("crm_role") as UserRole | null;
-    });
+    const [role, setRole] = useState<UserRole | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Hydration-safe role initialization
+    useEffect(() => {
+        const savedRole = window.localStorage.getItem("crm_role") as UserRole | null;
+        if (savedRole) setRole(savedRole);
+    }, []);
     const [calendarStatus, setCalendarStatus] = useState<CalendarSyncStatus | null>(null);
     const [calendarSyncing, setCalendarSyncing] = useState(false);
     const router = useRouter();
@@ -181,7 +184,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             calendarSyncing,
             syncCalendar
         }}>
-            {loading! && children}
+            {children}
         </AuthContext.Provider>
     );
 };

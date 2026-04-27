@@ -49,14 +49,8 @@ export default function ReferralPage() {
         notes: "",
         
         // מה מעניין אותו
-        interests: {
-            pension: false,
-            lifeInsurance: false,
-            healthInsurance: false,
-            savings: false,
-            mortgage: false,
-            other: false
-        }
+        interestArea: "הכל" as "פנסיוני" | "פיננסי" | "ביטוח" | "הכל",
+        idIssueDate: ""
     });
 
     useEffect(() => {
@@ -131,7 +125,8 @@ export default function ReferralPage() {
                 priority: "critical",
                 
                 // Interests
-                interests: formData.interests,
+                interestArea: formData.interestArea,
+                idIssueDate: formData.idIssueDate,
                 
                 // Initial data
                 policies: [],
@@ -267,7 +262,7 @@ export default function ReferralPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 <div>
                                     <label className="text-xs font-black text-slate-500 mb-1 block">תעודת זהות</label>
                                     <input
@@ -278,14 +273,25 @@ export default function ReferralPage() {
                                         dir="ltr"
                                     />
                                 </div>
-                                <div>
-                                    <label className="text-xs font-black text-slate-500 mb-1 block">תאריך לידה</label>
-                                    <input
-                                        type="date"
-                                        value={formData.birthDate}
-                                        onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-black text-slate-500 mb-1 block">תאריך לידה</label>
+                                        <input
+                                            type="date"
+                                            value={formData.birthDate}
+                                            onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none px-2!"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-black text-slate-500 mb-1 block">תאריך הנפקה</label>
+                                        <input
+                                            type="date"
+                                            value={formData.idIssueDate}
+                                            onChange={e => setFormData({ ...formData, idIssueDate: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none px-2!"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -408,40 +414,39 @@ export default function ReferralPage() {
                             </div>
                         </div>
 
-                        {/* Interests */}
                         <div>
                             <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
                                 <Building2 size={20} className="text-purple-600" />
-                                במה אתה מעוניין?
+                                באיזה ענף הנך מתעניין?
                             </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 {[
-                                    { key: 'pension', label: 'פנסיה', icon: '🏦' },
-                                    { key: 'lifeInsurance', label: 'ביטוח חיים', icon: '🛡️' },
-                                    { key: 'healthInsurance', label: 'ביטוח בריאות', icon: '🏥' },
-                                    { key: 'savings', label: 'חיסכון', icon: '💰' },
-                                    { key: 'mortgage', label: 'משכנתא', icon: '🏠' },
-                                    { key: 'other', label: 'אחר', icon: '📋' },
+                                    { value: 'פנסיוני', label: 'פנסיוני', icon: '🏦' },
+                                    { value: 'פיננסי', label: 'פיננסי', icon: '💰' },
+                                    { value: 'ביטוח', label: 'ביטוח', icon: '🛡️' },
+                                    { value: 'הכל', label: 'הכל', icon: '✨' },
                                 ].map(item => (
                                     <label 
-                                        key={item.key}
-                                        className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border-2 ${
-                                            formData.interests[item.key as keyof typeof formData.interests]
-                                                ? 'border-indigo-500 bg-indigo-50'
+                                        key={item.value}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all border-2 ${
+                                            formData.interestArea === item.value
+                                                ? 'border-indigo-500 bg-indigo-50 shadow-md'
                                                 : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                                         }`}
                                     >
                                         <input
-                                            type="checkbox"
-                                            checked={formData.interests[item.key as keyof typeof formData.interests]}
+                                            type="radio"
+                                            name="interestArea"
+                                            value={item.value}
+                                            checked={formData.interestArea === item.value}
                                             onChange={e => setFormData({
                                                 ...formData,
-                                                interests: { ...formData.interests, [item.key]: e.target.checked }
+                                                interestArea: e.target.value as any
                                             })}
                                             className="sr-only"
                                         />
-                                        <span className="text-xl">{item.icon}</span>
-                                        <span className="font-bold text-slate-700">{item.label}</span>
+                                        <span className="text-2xl">{item.icon}</span>
+                                        <span className="font-bold text-slate-700 text-sm">{item.label}</span>
                                     </label>
                                 ))}
                             </div>

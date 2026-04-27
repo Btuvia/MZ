@@ -300,6 +300,7 @@ export interface Client {
     idType?: string;
     isSmoker?: boolean;
     idIssueDate?: string;
+    interestArea?: string;
     paymentTerms?: string;
     address?: any;
     birthDate?: string;
@@ -433,6 +434,7 @@ export interface Task {
     type: TaskType;
     status: TaskStatus;
     priority: TaskPriority;
+    isReminder?: boolean;            // האם זו תזכורת
 
     // Dates and Times
     date: string;                    // ISO date YYYY-MM-DD
@@ -443,6 +445,11 @@ export interface Task {
     createdAt: Date;
     updatedAt: Date;
     completedAt?: Date;
+    estimatedDuration?: number;      // זמן מוערך בדקות
+    totalTimeSpent?: number;         // זמן בפועל בשניות
+    timerStartTime?: string;         // מתי התחיל הטיימר (ISO string)
+    timerStatus?: 'idle' | 'running' | 'paused';
+    urgency?: "low" | "medium" | "high" | "urgent"; // דחיפות
 
     // Links to other entities
     clientId?: string;

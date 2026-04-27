@@ -19,21 +19,17 @@ interface BeforeInstallPromptEvent extends Event {
 export function PWAInstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
-    const [isIOS, setIsIOS] = useState(false);
-    const [isStandalone, setIsStandalone] = useState(false);
+    const [isIOS, setIsIOS] = useState(() => 
+        typeof window !== 'undefined' ? /iPad|iPhone|iPod/.test(navigator.userAgent) : false
+    );
+    const [isStandalone, setIsStandalone] = useState(() => 
+        typeof window !== 'undefined' ? (window.matchMedia('(display-mode: standalone)').matches ||
+                          (window.navigator as any).standalone === true) : false
+    );
 
     useEffect(() => {
-        // Check if already installed (standalone mode)
-        const standalone = window.matchMedia('(display-mode: standalone)').matches ||
-                          (window.navigator as any).standalone === true;
-        setIsStandalone(standalone);
-
-        // Check if iOS
-        const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        setIsIOS(ios);
-
         // Don't show if already installed
-        if (standalone) return;
+        if (isStandalone) return;
 
         // Check if user dismissed before (don't show for 7 days)
         const dismissed = localStorage.getItem('pwa_install_dismissed');
@@ -55,7 +51,7 @@ export function PWAInstallPrompt() {
         window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
         // For iOS, show after delay since there's no event
-        if (ios && standalone!) {
+        if (isIOS && !isStandalone) {
             setTimeout(() => setShowPrompt(true), 5000);
         }
 
@@ -65,7 +61,7 @@ export function PWAInstallPrompt() {
     }, []);
 
     const handleInstall = async () => {
-        if (deferredPrompt!) {
+        if (!deferredPrompt) {
             // For iOS, we can only show instructions
             return;
         }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import { TaskType } from '@/types';
-import { TASK_TYPES } from '@/lib/task-constants';
-import { Card } from './base';
 import { Check } from 'lucide-react';
+import { useState } from 'react';
+import { TASK_TYPES } from '@/lib/task-constants';
+import { type TaskType } from '@/types';
+import { Card } from './base';
 
 interface TaskTypeSelectorProps {
     value: TaskType;
@@ -64,8 +64,7 @@ export function TaskTypeSelector({ value, onChange, disabled }: TaskTypeSelector
                 </svg>
             </button>
 
-            {isOpen && disabled! && (
-                <>
+            {isOpen && disabled! ? <>
                     {/* Backdrop */}
                     <div
                         className="fixed inset-0 z-10"
@@ -112,8 +111,7 @@ export function TaskTypeSelector({ value, onChange, disabled }: TaskTypeSelector
                             ))}
                         </div>
                     </Card>
-                </>
-            )}
+                </> : null}
         </div>
     );
 }

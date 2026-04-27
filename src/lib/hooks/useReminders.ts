@@ -19,6 +19,9 @@ interface Reminder {
     reminderTime: Date;
     itemType?: string;
     itemId?: string;
+    type: 'reminder' | 'task';
+    urgency?: 'urgent' | 'regular';
+    priority?: 'low' | 'medium' | 'high';
 }
 
 export function useReminders(checkInterval = 60000) { // Default: check every minute
@@ -39,42 +42,106 @@ export function useReminders(checkInterval = 60000) { // Default: check every mi
         if (!user) return;
 
         try {
-            const userReminders = await firestoreService.getReminders(user.uid);
+            const [userReminders, userTasks] = await Promise.all([
+                firestoreService.getReminders(user.uid),
+                firestoreService.getTasks() // Ideally filter by assignee but for now all
+            ]);
+
             const now = new Date();
             
-            // Find reminders that are due
-            const dueReminders = userReminders.filter(r => r.reminderTime <= now);
-            
-            // Show notifications for due reminders
-            for (const reminder of dueReminders) {
-                // Show toast notification
-                const toastMessage = reminder.description 
-                    ? `⏰ ${reminder.title}: ${reminder.description}`
-                    : `⏰ תזכורת: ${reminder.title}`;
-                
-                toast(toastMessage, {
-                    duration: 10000,
-                    action: {
-                        label: "הבנתי",
-                        onClick: () => handleDismiss(reminder.id),
-                    },
-                });
+            // Combine both sources
+            const allItems: Reminder[] = [
+                ...userReminders.map(r => ({ ...r, type: 'reminder' as const })),
+                ...userTasks
+                    .filter(t => (t.isReminder || t.status === 'pending') && t.date && t.time)
+                    .map(t => {
+                        const [year, month, day] = t.date.split('-').map(Number);
+                        const [hours, minutes] = t.time.split(':').map(Number);
+                        return {
+                            id: t.id,
+                            title: t.title,
+                            description: t.description,
+                            reminderTime: new Date(year, month - 1, day, hours, minutes),
+                            itemType: 'task',
+                            itemId: t.id,
+                            type: 'task' as const,
+                            urgency: t.urgency || 'regular',
+                            priority: t.priority
+                        };
+                    })
+            ];
 
-                // Try browser notification
-                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                    new Notification('⏰ תזכורת', {
-                        body: reminder.title,
-                        icon: '/icons/icon-192x192.png',
-                        tag: `reminder-${reminder.id}`,
+            // Find items that are due (and haven't been notified yet)
+            const dueItems = allItems.filter(item => {
+                const isDue = item.reminderTime <= now;
+                // Add some logic to prevent duplicate toasts for the same item in one session
+                // We could use a set of notified ids
+                return isDue;
+            });
+            
+            // Show notifications for due items
+            for (const item of dueItems) {
+                // Check if already notified in this session to avoid spam
+                const sessionKey = `notified_${item.id}_${item.reminderTime.getTime()}`;
+                if (sessionStorage.getItem(sessionKey)) continue;
+
+                // Show toast notification
+                const isUrgent = item.urgency === 'urgent' || item.priority === 'high';
+                const toastMessage = item.description 
+                    ? `⏰ ${item.title}: ${item.description}`
+                    : `⏰ תזכורת: ${item.title}`;
+                
+                if (isUrgent) {
+                    toast.error(toastMessage, {
+                        duration: Infinity,
+                        description: 'משימה דחופה לביצוע!',
+                        className: 'bg-red-500 text-white border-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)]',
+                        action: {
+                            label: "טופל",
+                            onClick: async () => {
+                                if (item.type === 'reminder') {
+                                    await handleDismiss(item.id);
+                                } else {
+                                    sessionStorage.setItem(sessionKey, 'true');
+                                }
+                            },
+                        },
+                    });
+                } else {
+                    toast(toastMessage, {
+                        duration: Infinity, // Stay until closed
+                        description: item.type === 'task' ? 'משימה לביצוע' : 'תזכורת',
+                        action: {
+                            label: "הבנתי",
+                            onClick: async () => {
+                                if (item.type === 'reminder') {
+                                    await handleDismiss(item.id);
+                                } else {
+                                    sessionStorage.setItem(sessionKey, 'true');
+                                }
+                            },
+                        },
                     });
                 }
 
-                // Mark as sent
-                await firestoreService.updateReminderStatus(reminder.id, 'sent');
+                // Mark as notified in session
+                sessionStorage.setItem(sessionKey, 'true');
+
+                // Try browser notification
+                if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification(item.type === 'task' ? '📋 משימה לביצוע' : '⏰ תזכורת', {
+                        body: item.title,
+                        tag: `${item.type}-${item.id}`,
+                    });
+                }
+
+                // If it's a dedicated reminder object, mark as sent in DB
+                if (item.type === 'reminder') {
+                    await firestoreService.updateReminderStatus(item.id, 'sent');
+                }
             }
 
-            // Update reminders list (excluding sent ones)
-            setReminders(userReminders.filter(r => r.reminderTime > now));
+            setReminders(allItems.filter(r => r.reminderTime > now));
             setLastCheck(now);
         } catch (error) {
             console.error('Error checking reminders:', error);
@@ -85,13 +152,18 @@ export function useReminders(checkInterval = 60000) { // Default: check every mi
     useEffect(() => {
         if (!user) return;
 
-        // Check immediately on mount
-        checkReminders();
+        // Check immediately on mount (after a tick to avoid cascading render)
+        const timeout = setTimeout(() => {
+            checkReminders();
+        }, 0);
 
         // Set up interval
         const interval = setInterval(checkReminders, checkInterval);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+        };
     }, [user, checkInterval, checkReminders]);
 
     return {

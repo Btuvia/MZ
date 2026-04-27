@@ -2,7 +2,6 @@
 // TASK CONSTANTS & HELPERS
 // ============================================
 
-import { TaskType, TaskStatus, TaskPriority } from '@/types';
 import {
     Phone,
     CheckSquare,
@@ -16,6 +15,7 @@ import {
     Printer,
     type LucideIcon
 } from 'lucide-react';
+import { type TaskType, type TaskStatus, type TaskPriority } from '@/types';
 
 /**
  * Task Type Metadata

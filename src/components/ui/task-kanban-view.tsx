@@ -1,9 +1,10 @@
 "use client";
 
-import { Task, TaskStatus } from "@/types";
-import { Card } from "./base";
 import { Plus, Clock, User, Tag } from "lucide-react";
+import Link from "next/link";
 import { getTaskTypeMetadata, getTaskStatusMetadata, getTaskPriorityMetadata, TASK_STATUSES } from "@/lib/task-constants";
+import { type Task, type TaskStatus } from "@/types";
+import { Card } from "./base";
 
 interface TaskKanbanViewProps {
     tasks: Task[];
@@ -38,9 +39,9 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                             }}
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-black text-slate-900 flex items-center gap-2">
+                                <h3 className="font-black text-white flex items-center gap-2">
                                     <div
-                                        className="w-3 h-3 rounded-full"
+                                        className="w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]"
                                         style={{ backgroundColor: status.color }}
                                     />
                                     {status.labelHe}
@@ -55,15 +56,15 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                                     {statusTasks.length}
                                 </div>
                             </div>
-                            <p className="text-xs text-slate-500">{status.description}</p>
+                            <p className="text-xs text-slate-400 font-medium">{status.description}</p>
                         </div>
 
                         {/* Column Body */}
-                        <div className="bg-slate-50 rounded-b-xl p-3 min-h-[500px] space-y-3">
+                        <div className="bg-slate-900/40 backdrop-blur-md rounded-b-xl p-3 min-h-[500px] space-y-3 border border-white/5">
                             {/* Add Task Button */}
                             <button
                                 onClick={() => onAddTask(status.value)}
-                                className="w-full p-3 border-2 border-dashed border-slate-300 rounded-xl hover:border-indigo-400 hover:bg-white transition-all text-slate-400 hover:text-indigo-600 flex items-center justify-center gap-2 text-sm font-bold"
+                                className="w-full p-3 border-2 border-dashed border-white/10 rounded-xl hover:border-amber-500/50 hover:bg-white/5 transition-all text-slate-500 hover:text-amber-400 flex items-center justify-center gap-2 text-sm font-bold"
                             >
                                 <Plus size={16} />
                                 הוסף משימה
@@ -83,7 +84,7 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                                         onClick={() => onTaskClick(task)}
                                     >
                                         {/* Title */}
-                                        <h4 className="font-bold text-slate-900 text-sm mb-2 line-clamp-2">
+                                        <h4 className="font-bold text-white text-sm mb-2 line-clamp-2">
                                             {task.title}
                                         </h4>
 
@@ -91,19 +92,17 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                                         <div className="space-y-2 text-xs">
                                             {/* Type & Time */}
                                             <div className="flex items-center gap-2">
-                                                {TypeIcon && (
-                                                    <div
+                                                {TypeIcon ? <div
                                                         className="w-6 h-6 rounded flex items-center justify-center"
                                                         style={{ backgroundColor: `${typeMetadata.color}20` }}
                                                     >
                                                         <TypeIcon size={12} style={{ color: typeMetadata.color }} />
-                                                    </div>
-                                                )}
+                                                    </div> : null}
                                                 <span className="text-slate-500">{typeMetadata?.labelHe}</span>
                                             </div>
 
                                             {/* Date & Time */}
-                                            <div className="flex items-center gap-1 text-slate-600">
+                                            <div className="flex items-center gap-1 text-slate-400">
                                                 <Clock size={12} />
                                                 <span>{task.date}</span>
                                                 <span>•</span>
@@ -111,20 +110,29 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                                             </div>
 
                                             {/* Client */}
-                                            {task.clientName && (
-                                                <div className="flex items-center gap-1 text-slate-600">
-                                                    <User size={12} />
-                                                    <span className="truncate">{task.clientName}</span>
-                                                </div>
-                                            )}
+                                             {task.clientName ? (
+                                                task.clientId ? (
+                                                    <Link 
+                                                        href={`/admin/clients/${task.clientId}`}
+                                                        className="flex items-center gap-1 text-indigo-600 hover:text-indigo-500 hover:underline font-bold"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <User size={12} />
+                                                        <span className="truncate">{task.clientName}</span>
+                                                    </Link>
+                                                ) : (
+                                                    <div className="flex items-center gap-1 text-slate-400">
+                                                        <User size={12} />
+                                                        <span className="truncate">{task.clientName}</span>
+                                                    </div>
+                                                )
+                                            ) : null}
 
                                             {/* Subject */}
-                                            {task.subjectName && (
-                                                <div className="flex items-center gap-1">
+                                            {task.subjectName ? <div className="flex items-center gap-1">
                                                     <Tag size={12} className="text-indigo-500" />
                                                     <span className="text-indigo-600 truncate">{task.subjectName}</span>
-                                                </div>
-                                            )}
+                                                </div> : null}
 
                                             {/* Priority Badge */}
                                             <div
@@ -138,8 +146,7 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                                             </div>
 
                                             {/* Subtasks Progress */}
-                                            {task.subtasks && task.subtasks.length > 0 && (
-                                                <div className="pt-2 border-t border-slate-100">
+                                            {task.subtasks && task.subtasks.length > 0 ? <div className="pt-2 border-t border-slate-100">
                                                     <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
                                                         <span>תתי-משימות</span>
                                                         <span>
@@ -154,8 +161,7 @@ export function TaskKanbanView({ tasks, onTaskClick, onStatusChange, onAddTask }
                                                             }}
                                                         />
                                                     </div>
-                                                </div>
-                                            )}
+                                                </div> : null}
                                         </div>
                                     </Card>
                                 );

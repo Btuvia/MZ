@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
 import { Plus, Edit2, Trash2, Tag, Save, X, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { TaskSubject } from "@/types/subject";
+import { type TaskSubject } from "@/types/subject";
 import { DEFAULT_SUBJECTS } from "@/types/subject";
 
 export default function SubjectsPage() {
@@ -252,32 +252,20 @@ export default function SubjectsPage() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-slate-900">{subject.name}</h3>
-                                                {subject.isSystem && (
-                                                    <Badge variant="outline" className="text-xs">מערכת</Badge>
-                                                )}
-                                                {subject!.isActive && (
-                                                    <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge>
-                                                )}
+                                                {subject.isSystem ? <Badge variant="outline" className="text-xs">מערכת</Badge> : null}
+                                                {subject!.isActive ? <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge> : null}
                                             </div>
-                                            {subject.description && (
-                                                <p className="text-sm text-slate-500">{subject.description}</p>
-                                            )}
+                                            {subject.description ? <p className="text-sm text-slate-500">{subject.description}</p> : null}
                                             <div className="flex items-center gap-3 mt-2">
-                                                {subject.relatedToPolicy && (
-                                                    <span className="inline-flex items-center whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                                {subject.relatedToPolicy ? <span className="inline-flex items-center whitespace-nowrap text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                                                         📋 קשור לפוליסה
-                                                    </span>
-                                                )}
-                                                {subject.isFutureLead && (
-                                                    <span className="inline-flex items-center whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                                    </span> : null}
+                                                {subject.isFutureLead ? <span className="inline-flex items-center whitespace-nowrap text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                                                         🎯 לקוח עתידי
-                                                    </span>
-                                                )}
-                                                {subject.defaultWorkflowId && (
-                                                    <span className="inline-flex items-center whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                                    </span> : null}
+                                                {subject.defaultWorkflowId ? <span className="inline-flex items-center whitespace-nowrap text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
                                                         🔄 תהליך ברירת מחדל
-                                                    </span>
-                                                )}
+                                                    </span> : null}
                                             </div>
                                         </div>
                                     </div>
@@ -299,14 +287,12 @@ export default function SubjectsPage() {
                                         >
                                             <Edit2 size={18} />
                                         </button>
-                                        {subject!.isSystem && (
-                                            <button
+                                        {subject!.isSystem ? <button
                                                 onClick={() => handleDelete(subject)}
                                                 className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
                                             >
                                                 <Trash2 size={18} />
-                                            </button>
-                                        )}
+                                            </button> : null}
                                     </div>
                                 </div>
                             ))}
@@ -315,8 +301,7 @@ export default function SubjectsPage() {
                 </Card>
 
                 {/* Modal */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                {isModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             {/* Header */}
                             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
@@ -463,8 +448,7 @@ export default function SubjectsPage() {
                                 </Button>
                             </div>
                         </Card>
-                    </div>
-                )}
+                    </div> : null}
             </div>
         </DashboardShell>
     );

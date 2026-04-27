@@ -56,7 +56,7 @@ export function ActionButtonGroup({
         return (
             <div className={`relative ${className}`}>
                 <button
-                    onClick={() => setIsDropdownOpen(isDropdownOpen!)}
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300"
                 >
                     <span>⚡</span>
@@ -64,8 +64,7 @@ export function ActionButtonGroup({
                     <span className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
                 </button>
 
-                {isDropdownOpen && (
-                    <>
+                {isDropdownOpen ? <>
                         <div
                             className="fixed inset-0 z-10"
                             onClick={() => setIsDropdownOpen(false)}
@@ -88,8 +87,7 @@ export function ActionButtonGroup({
                                 ))}
                             </div>
                         </div>
-                    </>
-                )}
+                    </> : null}
             </div>
         );
     }

@@ -451,50 +451,8 @@ export const firestoreService = {
         await deleteDoc(doc(db, "tasks", id));
     },
 
-    /**
-     * Get tasks with pagination support
-     */
-    async getTasksPaginated(options: PaginationOptions = {}): Promise<PaginatedResult<Task>> {
-        const {
-            pageSize = DEFAULT_PAGE_SIZE,
-            lastDoc = null,
-            orderByField = 'createdAt',
-            orderDirection = 'desc'
-        } = options;
-
-        try {
-            let q = query(
-                collection(db, "tasks"),
-                orderBy(orderByField, orderDirection),
-                limit(pageSize + 1)
-            );
-
-            if (lastDoc) {
-                q = query(
-                    collection(db, "tasks"),
-                    orderBy(orderByField, orderDirection),
-                    startAfter(lastDoc),
-                    limit(pageSize + 1)
-                );
-            }
-
-            const querySnapshot = await getDocs(q);
-            const docs = querySnapshot.docs;
-            const hasMore = docs.length > pageSize;
-            const resultDocs = hasMore ? docs.slice(0, pageSize) : docs;
-
-            return {
-                data: resultDocs.map(doc => ({ id: doc.id, ...doc.data() } as Task)),
-                lastDoc: resultDocs.length > 0 ? resultDocs[resultDocs.length - 1] : null,
-                hasMore
-            };
-        } catch (error) {
-            console.error("Error fetching paginated tasks:", error);
-            return { data: [], lastDoc: null, hasMore: false };
-        }
-    },
-
     // --- Leads ---
+
 
     async getLeads(): Promise<Lead[]> {
         const querySnapshot = await getDocs(collection(db, "leads"));
@@ -580,49 +538,6 @@ export const firestoreService = {
         await deleteDoc(doc(db, "leads", id));
     },
 
-    /**
-     * Get leads with pagination support
-     */
-    async getLeadsPaginated(options: PaginationOptions = {}): Promise<PaginatedResult<Lead>> {
-        const {
-            pageSize = DEFAULT_PAGE_SIZE,
-            lastDoc = null,
-            orderByField = 'createdAt',
-            orderDirection = 'desc'
-        } = options;
-
-        try {
-            let q = query(
-                collection(db, "leads"),
-                orderBy(orderByField, orderDirection),
-                limit(pageSize + 1)
-            );
-
-            if (lastDoc) {
-                q = query(
-                    collection(db, "leads"),
-                    orderBy(orderByField, orderDirection),
-                    startAfter(lastDoc),
-                    limit(pageSize + 1)
-                );
-            }
-
-            const querySnapshot = await getDocs(q);
-            const docs = querySnapshot.docs;
-            const hasMore = docs.length > pageSize;
-            const resultDocs = hasMore ? docs.slice(0, pageSize) : docs;
-
-            return {
-                data: resultDocs.map(doc => ({ id: doc.id, ...doc.data() } as Lead)),
-                lastDoc: resultDocs.length > 0 ? resultDocs[resultDocs.length - 1] : null,
-                hasMore
-            };
-        } catch (error) {
-            console.error("Error fetching paginated leads:", error);
-            return { data: [], lastDoc: null, hasMore: false };
-        }
-    },
-
     // --- Create Sales/Deals ---
 
     async getDeals(): Promise<Deal[]> {
@@ -688,6 +603,22 @@ export const firestoreService = {
             ...data,
             updatedAt: Timestamp.now()
         });
+    },
+
+    // --- Pension Analysis ---
+    async addPensionAnalysis(clientId: string, data: any) {
+        const docRef = await addDoc(collection(db, "pension_analyses"), {
+            clientId,
+            ...data,
+            createdAt: Timestamp.now()
+        });
+        return docRef.id;
+    },
+
+    async getPensionAnalyses(clientId: string) {
+        const q = query(collection(db, "pension_analyses"), where("clientId", "==", clientId));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
 
     // --- Lead Statuses ---
@@ -1586,18 +1517,4 @@ export const firestoreService = {
         });
         return docRef.id;
     },
-
-    /**
-     * Get recent activity logs
-     */
-    async getActivityLog(): Promise<ActivityLogEntry[]> {
-        try {
-            const q = query(collection(db, "activity_logs"), orderBy("createdAt", "desc"), limit(50));
-            const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLogEntry));
-        } catch (error) {
-            console.error("Error fetching activity logs:", error);
-            return [];
-        }
-    }
 };

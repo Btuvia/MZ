@@ -28,7 +28,7 @@ function initAdmin() {
 
         try {
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
+                credential: admin.credential.cert(serviceAccount as any),
                 projectId: serviceAccount.project_id,
             });
         } catch (error) {

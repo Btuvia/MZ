@@ -1,6 +1,6 @@
 
-import { firestoreService } from "@/lib/firebase/firestore-service";
 import { toast } from "sonner";
+import { firestoreService } from "@/lib/firebase/firestore-service";
 
 export interface SyncResult {
     success: boolean;

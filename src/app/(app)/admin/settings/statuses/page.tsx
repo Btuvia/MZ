@@ -77,7 +77,7 @@ export default function StatusesPage() {
     };
 
     const handleSave = async () => {
-        if (editingStatus! || editingStatus!.name) return;
+        if (!editingStatus || !editingStatus.name) return;
 
         try {
             if ('id' in editingStatus && editingStatus.id) {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Phone,
@@ -19,6 +18,7 @@ import {
     X,
     Check
 } from "lucide-react";
+import { useState } from "react";
 import { Card } from "@/components/ui/base";
 
 export const SALES_STATUSES = [
@@ -115,7 +115,7 @@ export default function LifecycleTracker({ client, onUpdate, readOnly = false }:
                                 }}
                                 transition={{ type: "spring", stiffness: 50, damping: 20 }}
                             />
-                            <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/30 to-white/0 animate-shimmer"></div>
+                            <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/30 to-white/0 animate-shimmer" />
                         </div>
 
                         {/* Steps Grid */}
@@ -156,12 +156,10 @@ export default function LifecycleTracker({ client, onUpdate, readOnly = false }:
                                             {status.label}
                                         </span>
 
-                                        {isActive && (
-                                            <motion.div
+                                        {isActive ? <motion.div
                                                 layoutId="activeIndicator"
                                                 className="absolute -bottom-3 w-8 h-1 bg-linear-to-r from-indigo-500 to-purple-500 rounded-full shadow-lg"
-                                            />
-                                        )}
+                                            /> : null}
                                     </button>
                                 );
                             })}
@@ -175,8 +173,7 @@ export default function LifecycleTracker({ client, onUpdate, readOnly = false }:
                         exit={{ opacity: 0, y: -10 }}
                     >
                         {/* הודעה אם התפעול נעול */}
-                        {isOpsLocked && (
-                            <div className="mb-6 p-5 bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-100">
+                        {isOpsLocked ? <div className="mb-6 p-5 bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-100">
                                 <div className="h-14 w-14 bg-linear-to-br from-amber-500 to-orange-500 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg">
                                     🔒
                                 </div>
@@ -184,8 +181,7 @@ export default function LifecycleTracker({ client, onUpdate, readOnly = false }:
                                     <p className="font-black text-amber-800 text-base">סטטוס התפעול נעול</p>
                                     <p className="text-sm text-amber-600 mt-1">יש לסגור את המכירה בהצלחה קודם. לאחר הסגירה יישלח מייל לתפעול והסטטוס ייפתח לעריכה.</p>
                                 </div>
-                            </div>
-                        )}
+                            </div> : null}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {OPS_STATUSES.map((status, index) => {
                                 const isActive = status.id === currentOpsStatus;
@@ -221,7 +217,7 @@ export default function LifecycleTracker({ client, onUpdate, readOnly = false }:
                                             <span className={`text-sm font-bold ${isActive ? 'text-indigo-900' : 'text-slate-600'}`}>
                                                 {status.label}
                                             </span>
-                                            {isActive && <span className="text-[10px] text-indigo-500 font-bold mt-0.5">✓ סטטוס נוכחי</span>}
+                                            {isActive ? <span className="text-[10px] text-indigo-500 font-bold mt-0.5">✓ סטטוס נוכחי</span> : null}
                                         </div>
                                     </button>
                                 );

@@ -1,10 +1,10 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
 import { PolicyTimeline } from "@/components/client/PolicyTimeline";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function PoliciesPage() {
     const [selectedPolicy, setSelectedPolicy] = useState<number | null>(null);
@@ -101,7 +101,7 @@ export default function PoliciesPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-accent via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">הפוליסות שלי</h1>
                         <p className="text-sm font-medium text-white/80 max-w-2xl">
@@ -140,7 +140,7 @@ export default function PoliciesPage() {
                 <div className="grid gap-6">
                     {policies.map((policy) => (
                         <Card key={policy.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all">
-                            <div className={`h-2 w-full bg-linear-to-r ${policy.color}`}></div>
+                            <div className={`h-2 w-full bg-linear-to-r ${policy.color}`} />
                             <div className="p-8">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
@@ -184,7 +184,7 @@ export default function PoliciesPage() {
                                         <ul className="space-y-2">
                                             {policy.benefits.map((benefit, i) => (
                                                 <li key={i} className="flex items-center gap-3 text-sm font-medium text-slate-600">
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-accent"></span>
+                                                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                                                     {benefit}
                                                 </li>
                                             ))}

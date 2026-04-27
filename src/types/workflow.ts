@@ -2,7 +2,7 @@
 // WORKFLOW TYPES
 // ============================================
 
-import { TaskType, UserRole } from './index';
+import { type TaskType, type UserRole } from './index';
 
 /**
  * Workflow - תהליך עבודה עם שלבים מוגדרים

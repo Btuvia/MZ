@@ -42,7 +42,7 @@ export function StatusBadge({
                 border: `1px solid ${status.color}40`,
             }}
         >
-            {status.icon && <span className="text-current">{status.icon}</span>}
+            {status.icon ? <span className="text-current">{status.icon}</span> : null}
             <span>{displayName}</span>
         </span>
     );
@@ -51,13 +51,13 @@ export function StatusBadge({
 // Preset status badges for common use cases
 export function LeadStatusBadge({ statusId, statuses }: { statusId: string; statuses: any[] }) {
     const status = statuses.find(s => s.id === statusId);
-    if (status!) return null;
+    if (!status) return null;
     return <StatusBadge status={status} />;
 }
 
 export function TaskStatusBadge({ statusId, statuses }: { statusId: string; statuses: any[] }) {
     const status = statuses.find(s => s.id === statusId);
-    if (status!) return null;
+    if (!status) return null;
     return <StatusBadge status={status} />;
 }
 

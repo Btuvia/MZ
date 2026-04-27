@@ -13,7 +13,7 @@ export default function LeadsLoading() {
                         key={i}
                         initial={{ 
                             y: -200, 
-                            x: Math.random() * 2000 - 500,
+                            x: (i * 83) % 2000 - 500,
                             rotate: 0,
                             opacity: 0 
                         }}
@@ -23,14 +23,14 @@ export default function LeadsLoading() {
                             opacity: [0, 0.3, 0.3, 0]
                         }}
                         transition={{ 
-                            duration: Math.random() * 3 + 2, 
+                            duration: ((i * 13) % 3) + 2, 
                             repeat: Infinity,
-                            delay: Math.random() * 5,
+                            delay: (i * 7) % 5,
                             ease: "linear"
                         }}
                         className="absolute text-amber-500/20"
                     >
-                        <DollarSign size={Math.random() * 40 + 20} />
+                        <DollarSign size={((i * 17) % 40) + 20} />
                     </motion.div>
                 ))}
             </div>

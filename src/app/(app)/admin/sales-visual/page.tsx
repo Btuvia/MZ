@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import { Card, Button, Badge } from "@/components/ui/base";
+import { NeonModal, NeonInput, NeonSelect, NeonButton } from "@/components/ui/neon-form";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { useDeals, useUsers, useCreateDeal } from "@/lib/hooks/useQueryHooks";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
@@ -71,11 +72,20 @@ export default function SalesVisualPage() {
     const router = useRouter();
     const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [newDeal, setNewDeal] = useState({
+        clientName: '',
+        product: '',
+        value: 0,
+        stage: 'discovery' as DealStage,
+        probability: 50,
+        agentId: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
     
     // Fetch real data
     const { data: rawDeals = [], isLoading: dealsLoading, refetch: refetchDeals } = useDeals();
     const { data: users = [], isLoading: usersLoading } = useUsers();
-    const createDeal = useCreateDeal();
+    const createDealMutation = useCreateDeal();
 
     const isLoading = dealsLoading || usersLoading;
 
@@ -197,8 +207,39 @@ export default function SalesVisualPage() {
 
     // Handle deal click - navigate to client or lead
     const handleDealClick = (deal: Deal) => {
-        // Could navigate to deal detail or client page
         router.push(`/admin/sales`);
+    };
+
+    const handleCreateDeal = async () => {
+        if (!newDeal.clientName || !newDeal.product) return;
+        
+        setIsSaving(true);
+        try {
+            await createDealMutation.mutateAsync({
+                title: newDeal.product,
+                clientName: newDeal.clientName,
+                value: Number(newDeal.value),
+                stage: newDeal.stage,
+                probability: Number(newDeal.probability),
+                assignedTo: newDeal.agentId,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+            setShowAddModal(false);
+            setNewDeal({
+                clientName: '',
+                product: '',
+                value: 0,
+                stage: 'discovery',
+                probability: 50,
+                agentId: ''
+            });
+            refetchDeals();
+        } catch (error) {
+            console.error("Error creating deal:", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -214,11 +255,11 @@ export default function SalesVisualPage() {
                             <ArrowRight size={20} className="text-slate-400 group-hover:text-amber-400 transition-colors" />
                         </button>
                         <div>
-                            <h1 className="text-3xl font-black text-amber-100 flex items-center gap-3">
-                                <Briefcase className="text-amber-400" />
+                            <h1 className="text-4xl font-black text-white flex items-center gap-4 drop-shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+                                <Briefcase className="text-amber-400" size={32} />
                                 תצוגת מכירות
                             </h1>
-                            <p className="text-slate-400 mt-1">ניתוח ויזואלי של ביצועי המכירות</p>
+                            <p className="text-amber-200/60 font-bold mt-2 text-lg">ניתוח ויזואלי של ביצועי המכירות</p>
                         </div>
                     </div>
 
@@ -242,16 +283,17 @@ export default function SalesVisualPage() {
                             ))}
                         </div>
 
-                        <Button variant="outline" onClick={() => refetchDeals()}>
+                        <Button variant="outline" onClick={() => refetchDeals()} className="border-amber-500/40 text-amber-400 bg-amber-500/5 hover:bg-amber-500/10">
                             <RefreshCw size={16} className="ml-2" />
                             רענן
                         </Button>
 
                         <Button 
                             onClick={() => setShowAddModal(true)}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+                            variant="gold"
+                            className="scale-110 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
                         >
-                            <Plus size={16} className="ml-2" />
+                            <Plus size={18} className="ml-2" />
                             עסקה חדשה
                         </Button>
                     </div>
@@ -259,17 +301,19 @@ export default function SalesVisualPage() {
 
                 {/* Empty State */}
                 {!isLoading && deals.length === 0 ? (
-                    <Card className="p-12 text-center">
-                        <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
-                            <Briefcase size={32} className="text-amber-400" />
+                    <Card className="p-16 text-center border-amber-500/30 bg-slate-900/50 backdrop-blur-2xl rounded-[3rem] shadow-2xl">
+                        <div className="w-24 h-24 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                            <Briefcase size={48} className="text-amber-400 animate-pulse" />
                         </div>
-                        <h3 className="text-xl font-black text-amber-100 mb-2">אין עסקאות עדיין</h3>
-                        <p className="text-slate-400 mb-6">התחל להוסיף עסקאות כדי לראות את הנתונים כאן</p>
+                        <h3 className="text-3xl font-black text-white mb-4 italic tracking-tight">אין עסקאות עדיין</h3>
+                        <p className="text-slate-300 text-lg mb-10 max-w-md mx-auto leading-relaxed">התחל להוסיף עסקאות כדי לראות את הנתונים ולקבל תובנות חכמות על המערכת</p>
                         <Button 
                             onClick={() => setShowAddModal(true)}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+                            variant="gold"
+                            size="lg"
+                            className="px-12 py-6 rounded-[2rem] shadow-[0_0_40px_rgba(245,158,11,0.3)] scale-105"
                         >
-                            <Plus size={16} className="ml-2" />
+                            <Plus size={24} className="ml-3" />
                             צור עסקה ראשונה
                         </Button>
                     </Card>
@@ -674,6 +718,73 @@ export default function SalesVisualPage() {
                     </>
                 )}
             </div>
+
+            {/* New Deal Modal */}
+            <NeonModal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title="יצירת עסקה חדשה"
+                onSave={handleCreateDeal}
+                saveLabel="צור עסקה"
+                isSaving={isSaving}
+            >
+                <div className="space-y-6">
+                    <NeonInput 
+                        label="שם הלקוח" 
+                        placeholder="הכנס שם לקוח..." 
+                        value={newDeal.clientName}
+                        onChange={(e) => setNewDeal({...newDeal, clientName: e.target.value})}
+                    />
+                    <NeonInput 
+                        label="מוצר / שירות" 
+                        placeholder="מה המוצר הנמכר?" 
+                        value={newDeal.product}
+                        onChange={(e) => setNewDeal({...newDeal, product: e.target.value})}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <NeonInput 
+                            label="שווי משוער (₪)" 
+                            type="number"
+                            value={newDeal.value}
+                            onChange={(e) => setNewDeal({...newDeal, value: Number(e.target.value)})}
+                        />
+                        <NeonSelect 
+                            label="שלב נוכחי"
+                            value={newDeal.stage}
+                            onChange={(e) => setNewDeal({...newDeal, stage: e.target.value as DealStage})}
+                        >
+                            <option value="discovery">ליד חדש</option>
+                            <option value="proposal">הצעה נשלחה</option>
+                            <option value="negotiation">משא ומתן</option>
+                            <option value="contract">מוכן</option>
+                        </NeonSelect>
+                    </div>
+                    <NeonSelect 
+                        label="סוכן אחראי"
+                        value={newDeal.agentId}
+                        onChange={(e) => setNewDeal({...newDeal, agentId: e.target.value})}
+                    >
+                        <option value="">בחר סוכן...</option>
+                        {users.map(user => (
+                            <option key={user.id} value={user.id}>{user.displayName}</option>
+                        ))}
+                    </NeonSelect>
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mr-1">הסתברות סגירה</label>
+                            <span className="text-amber-400 font-black text-xs">{newDeal.probability}%</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="0" max="100" 
+                            step="5"
+                            className="w-full accent-amber-500 bg-slate-800 rounded-lg h-2"
+                            value={newDeal.probability}
+                            onChange={(e) => setNewDeal({...newDeal, probability: Number(e.target.value)})}
+                        />
+                    </div>
+                </div>
+            </NeonModal>
         </DashboardShell>
     );
 }

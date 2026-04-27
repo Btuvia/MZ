@@ -1,9 +1,9 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function DocumentsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -105,7 +105,7 @@ export default function DocumentsPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">המסמכים שלי</h1>
                         <p className="text-sm font-medium text-white/80 max-w-2xl">

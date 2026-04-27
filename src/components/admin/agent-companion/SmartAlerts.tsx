@@ -1,7 +1,7 @@
 "use client";
 
-import { Card } from "@/components/ui/base";
 import { Bell, Eye, DollarSign, MailOpen, Activity } from "lucide-react";
+import { Card } from "@/components/ui/base";
 
 export default function SmartAlerts() {
     const alerts = [
@@ -20,7 +20,7 @@ export default function SmartAlerts() {
 
             <div className="space-y-6 relative">
                 {/* Timeline line */}
-                <div className="absolute top-2 bottom-2 right-[7px] w-0.5 bg-slate-800"></div>
+                <div className="absolute top-2 bottom-2 right-[7px] w-0.5 bg-slate-800" />
 
                 {alerts.map((alert) => (
                     <div key={alert.id} className="relative flex items-start gap-4 animate-in slide-in-from-right-4 duration-500">
@@ -28,7 +28,7 @@ export default function SmartAlerts() {
                             relative z-10 w-4 h-4 rounded-full bg-slate-900 border-2 flex items-center justify-center shrink-0 mt-1
                             ${alert.color.replace('text-', 'border-')}
                         `}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${alert.color.replace('text-', 'bg-')}`}></div>
+                            <div className={`w-1.5 h-1.5 rounded-full ${alert.color.replace('text-', 'bg-')}`} />
                         </div>
 
                         <div>

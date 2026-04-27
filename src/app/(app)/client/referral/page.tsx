@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Heart, Send, Coins, Lock, Unlock, UserPlus, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { NeonCard, NeonInput, NeonSelect, NeonButton } from "@/components/ui/neon-form";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
-import { NeonCard, NeonInput, NeonSelect, NeonButton } from "@/components/ui/neon-form";
 
 export default function ReferralPage() {
     const { user } = useAuth();
@@ -390,11 +390,9 @@ function SecretGiftList({ currentCoins }: { currentCoins: number }) {
                                 </div>
                             </div>
                         </div>
-                        {isUnlocked && (
-                            <button className="bg-amber-500 text-slate-950 text-[10px] font-black px-5 py-2 rounded-xl hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 uppercase">
+                        {isUnlocked ? <button className="bg-amber-500 text-slate-950 text-[10px] font-black px-5 py-2 rounded-xl hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20 uppercase">
                                 הזמן עכשיו
-                            </button>
-                        )}
+                            </button> : null}
                     </motion.div>
                 ))}
 

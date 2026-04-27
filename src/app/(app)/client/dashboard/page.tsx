@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { 
     Shield, FileText, CheckCircle, AlertTriangle, Phone, MessageSquare, 
-    Calendar, ChevronLeft, ExternalLink, Clock, Bell
+    Calendar, ChevronLeft, ExternalLink, Clock, Bell, Share2, Copy
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +27,7 @@ export default function ClientDashboard() {
     const router = useRouter();
     const [client, setClient] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [showReferralModal, setShowReferralModal] = useState(false);
 
     useEffect(() => {
         const loadClient = async () => {
@@ -34,7 +35,7 @@ export default function ClientDashboard() {
             let clientId = storedId;
 
             // Demo fallback if no ID or phone number
-            if (clientId!) {
+            if (!clientId) {
                 // Try to find 'active' client or mock
                 clientId = "active";
             }
@@ -44,7 +45,7 @@ export default function ClientDashboard() {
                 // simpler for now: try direct get, if not found, use mock
                 let data = await firestoreService.getClient(clientId);
 
-                if (data! && clientId.length > 5) {
+                if (!data && clientId.length > 5) {
                     // It's likely a phone number, try to find client with this phone
                     // This is a client-side search simulation for the demo
                     const allClients = await firestoreService.getClients();
@@ -75,7 +76,7 @@ export default function ClientDashboard() {
 
     // Policy mapping helpers
     const getPolicyStatus = (type: string) => {
-        if (client! || client!.policies) return { exists: false };
+        if (!client || !client.policies) return { exists: false };
         const policy = client.policies.find((p: any) => p.type.includes(type) || p.productType?.includes(type));
         return policy ? { exists: true, label: policy.type || policy.productType } : { exists: false };
     };
@@ -173,6 +174,14 @@ export default function ClientDashboard() {
                             <p className="font-bold text-slate-200 text-sm">קביעת פגישה</p>
                         </Card>
                     </Link>
+                    <div onClick={() => setShowReferralModal(true)}>
+                        <Card className="p-4 text-center hover:border-amber-500/50 transition-all cursor-pointer group">
+                            <div className="w-12 h-12 mx-auto mb-3 bg-amber-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Share2 size={24} className="text-amber-400" />
+                            </div>
+                            <p className="font-bold text-slate-200 text-sm">הפנה חבר/ה</p>
+                        </Card>
+                    </div>
                 </div>
 
                 {/* Shield Grid */}
@@ -209,7 +218,7 @@ export default function ClientDashboard() {
                                         </span>
                                     </div>
 
-                                    {status!.exists && (
+                                    {!status.exists && (
                                         <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-4 opacity-0 hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm border border-amber-500/30 rounded-3xl">
                                             <p className="text-slate-300 text-[10px] mb-2 leading-tight">{info.reason}</p>
                                             <Button size="sm" variant="gold" className="h-7 text-[10px] w-full font-bold">אני מעוניין</Button>
@@ -247,6 +256,74 @@ export default function ClientDashboard() {
                 </Card>
 
             </div>
+
+            {/* Referral Modal */}
+            {showReferralModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 transition-all duration-500" dir="rtl">
+                    <Card className="relative w-full max-w-lg bg-[#0a0e1a] border border-slate-800/50 p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[3rem] animate-in zoom-in-95 duration-300">
+                        {/* Neon Top Accent Line */}
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-amber-600 via-orange-500 to-amber-600 shadow-[0_4px_20px_rgba(245,158,11,0.5)] rounded-t-[3rem]" />
+                        
+                        <button 
+                            onClick={() => setShowReferralModal(false)}
+                            className="absolute top-8 left-8 text-slate-500 hover:text-white transition-all p-2 rounded-xl hover:bg-white/5"
+                        >
+                            <ChevronLeft size={28} />
+                        </button>
+
+                        <div className="text-center space-y-6 pt-4">
+                            <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/10 text-4xl shadow-inner border border-amber-500/20">
+                                🎁
+                            </div>
+                            
+                            <div>
+                                <h3 className="text-3xl font-black italic tracking-tighter text-amber-400 drop-shadow-md">שתף וקבל הטבות</h3>
+                                <p className="text-slate-400 font-bold text-sm mt-2">הפנה חברים למגן זהב וקבל הטבות מיוחדות כשהם מצטרפים!</p>
+                            </div>
+
+                            {/* QR Code Container */}
+                            <div className="bg-white p-4 rounded-3xl inline-block shadow-2xl shadow-amber-500/10 border-4 border-amber-500/20">
+                                <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(typeof window !== 'undefined' ? `${window.location.origin}/referral/${client?.phone || 'active'}` : '')}`}
+                                    alt="Referral QR"
+                                    className="w-40 h-40"
+                                />
+                            </div>
+
+                            {/* Link Box */}
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4 group">
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-right mb-1">לינק אישי להפצה</p>
+                                    <p className="text-blue-400 font-mono text-xs truncate dir-ltr">
+                                        {typeof window !== 'undefined' ? `${window.location.origin}/referral/${client?.phone || 'active'}` : ''}
+                                    </p>
+                                </div>
+                                <Button 
+                                    size="sm"
+                                    variant="outline"
+                                    className="bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-slate-900 shrink-0"
+                                    onClick={() => {
+                                        const url = `${window.location.origin}/referral/${client?.phone || 'active'}`;
+                                        navigator.clipboard.writeText(url);
+                                        toast.success("הלינק הועתק בהצלחה! 📋");
+                                    }}
+                                >
+                                    <Copy size={16} />
+                                </Button>
+                            </div>
+
+                            <div className="pt-4">
+                                <Button 
+                                    className="w-full bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black py-8 rounded-2.5xl text-xl shadow-xl shadow-amber-600/20"
+                                    onClick={() => setShowReferralModal(false)}
+                                >
+                                    מעולה, הבנתי! 🚀
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
         </DashboardShell>
     );
 }

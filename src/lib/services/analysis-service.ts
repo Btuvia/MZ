@@ -1,5 +1,5 @@
-import { generateGeminiContent } from "@/lib/gemini-client";
 import { generateWithGemini } from "@/app/actions/gemini";
+import { generateGeminiContent } from "@/lib/gemini-client";
 
 export interface Policy {
     id: string;

@@ -58,12 +58,12 @@ export default function DocumentAnalysisPage() {
     };
 
     const handleCreateLeadClick = () => {
-        if (results!) return;
+        if (!results) return;
         setShowLeadModal(true);
     };
 
     const handleConfirmLead = async (clientData: ClientProfile) => {
-        if (results!) return;
+        if (!results) return;
         setCreatingLead(true);
         setShowLeadModal(false); // Close modal while saving
 
@@ -266,7 +266,7 @@ export default function DocumentAnalysisPage() {
                                 </div>
                             </div>
                         ) : (
-                            analyzing! && (
+                            !analyzing && (
                                 <div className="h-full flex items-center justify-center p-12 text-center opacity-30 mt-12 lg:mt-0">
                                     <div>
                                         <div className="text-8xl mb-6 grayscale">📄</div>

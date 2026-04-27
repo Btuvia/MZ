@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 type LogoLoaderProps = {
     variant?: "splash" | "route";
@@ -11,25 +11,33 @@ type LogoLoaderProps = {
 export function LogoLoader({ variant = "splash", subtitle }: LogoLoaderProps) {
     const [progress, setProgress] = useState(0);
     const [visible, setVisible] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
 
+    // Immediate mount check
     useEffect(() => {
-        if (variant !== "splash") return;
-        // Simulate loading progress
+        setIsMounted(true);
+    }, []);
+
+    // Timer logic
+    useEffect(() => {
+        if (!isMounted || variant !== "splash") return;
+        
         const interval = setInterval(() => {
             setProgress((prev) => {
                 if (prev >= 100) {
                     clearInterval(interval);
-                    setTimeout(() => setVisible(false), 500); // Fade out after completion
+                    setTimeout(() => setVisible(false), 300); // Shorter fade delay
                     return 100;
                 }
-                return prev + 2; // Speed of loading
+                return prev + 2.5; // Faster increment
             });
-        }, 30);
+        }, 20); // Faster interval for snappier feel
 
         return () => clearInterval(interval);
-    }, [variant]);
+    }, [isMounted, variant]);
 
-    if (variant === "splash" && visible!) return null;
+    if (!isMounted) return null;
+    if (variant === "splash" && !visible) return null;
 
     return (
         <div

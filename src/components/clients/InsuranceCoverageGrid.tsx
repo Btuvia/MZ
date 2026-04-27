@@ -256,14 +256,14 @@ export default function InsuranceCoverageGrid({
 
     const getCoverage = (insurance: typeof INSURANCE_CATALOG[0]) => {
         const match = allProducts.find((p) => insurance.match(p as Policy | InsuranceProduct | PensionProduct));
-        if (match!) return null;
+        if (!match) return null;
         // Get company name
         const company = (match as Policy).company || "";
         return { company };
     };
 
     const active = INSURANCE_CATALOG.filter((ins) => getCoverage(ins));
-    const missing = INSURANCE_CATALOG.filter((ins) => getCoverage!(ins));
+    const missing = INSURANCE_CATALOG.filter((ins) => !getCoverage(ins));
 
     return (
         <div className="space-y-6">
@@ -300,7 +300,7 @@ export default function InsuranceCoverageGrid({
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 {INSURANCE_CATALOG.map((insurance) => {
                     const coverage = getCoverage(insurance);
-                    const hasIt = !coverage!;
+                    const hasIt = !!coverage;
                     const isHovered = hoveredKey === insurance.key;
 
                     return (
@@ -322,9 +322,7 @@ export default function InsuranceCoverageGrid({
                                 `}
                             >
                                 {/* Neon glow layer for active */}
-                                {hasIt && (
-                                    <div className={`absolute inset-0 rounded-2xl bg-linear-to-br ${insurance.color} opacity-20 blur-sm -z-10`} />
-                                )}
+                                {hasIt ? <div className={`absolute inset-0 rounded-2xl bg-linear-to-br ${insurance.color} opacity-20 blur-sm -z-10`} /> : null}
 
                                 {/* Status indicator */}
                                 <div className={`
@@ -346,16 +344,13 @@ export default function InsuranceCoverageGrid({
                                 </p>
 
                                 {/* Company if active */}
-                                {hasIt && coverage && (
-                                    <p className="text-[9px] text-white/60 mt-1 font-bold truncate">
+                                {hasIt && coverage ? <p className="text-[9px] text-white/60 mt-1 font-bold truncate">
                                         {coverage.company}
-                                    </p>
-                                )}
+                                    </p> : null}
                             </div>
 
                             {/* Hover Tooltip */}
-                            {isHovered && (
-                                <div
+                            {isHovered ? <div
                                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50 w-64 animate-in fade-in zoom-in-95 duration-200"
                                     dir="rtl"
                                 >
@@ -407,8 +402,7 @@ export default function InsuranceCoverageGrid({
                                         w-3 h-3 rotate-45 mx-auto -mt-1.5
                                         ${hasIt ? `bg-linear-to-br ${insurance.color}` : "bg-slate-900"}
                                     `} />
-                                </div>
-                            )}
+                                </div> : null}
                         </div>
                     );
                 })}

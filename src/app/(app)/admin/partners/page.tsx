@@ -1,10 +1,10 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { useState, useEffect } from "react";
 import { Plus, Search, Phone, Mail, Edit2, Trash2, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface Partner {
     id: number;
@@ -109,7 +109,7 @@ export default function PartnersPage() {
     };
 
     const handleSavePartner = () => {
-        if (editingPartner!?.name) return;
+        if (!editingPartner || !editingPartner.name) return;
 
         if (editingPartner.id) {
             // Update
@@ -141,7 +141,7 @@ export default function PartnersPage() {
 
                 {/* Header Section */}
                 <div className="bg-linear-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4">שותפים עסקיים</h1>
@@ -282,8 +282,7 @@ export default function PartnersPage() {
                 </div>
 
                 {/* Edit/Create Modal */}
-                {isEditModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                {isEditModalOpen ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                         <div className="bg-white rounded-[2rem] p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-300 relative max-h-[90vh] overflow-y-auto">
                             <button
                                 onClick={() => setIsEditModalOpen(false)}
@@ -389,8 +388,7 @@ export default function PartnersPage() {
                                 </Button>
                             </div>
                         </div>
-                    </div>
-                )}
+                    </div> : null}
             </div>
         </DashboardShell>
     );

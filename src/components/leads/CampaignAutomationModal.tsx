@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { NeonModal, NeonCard, NeonButton, NeonInput, NeonSelect } from '@/components/ui/neon-form';
 import { Facebook, Instagram, Search, CheckCircle2, AlertCircle, Sparkles, MessageSquare, Zap } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { NeonModal, NeonCard, NeonButton, NeonInput, NeonSelect } from '@/components/ui/neon-form';
 
 interface CampaignAutomationModalProps {
     isOpen: boolean;

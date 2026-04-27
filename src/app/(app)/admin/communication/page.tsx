@@ -44,7 +44,7 @@ export default function CommunicationCenter() {
             };
         }).filter(conv => {
             // Search filter
-            if (searchQuery && conv!.name.includes(searchQuery)) return false;
+            if (searchQuery && !conv.name.includes(searchQuery)) return false;
             // Channel filter
             if (channelFilter === 'unread' && conv.unread === 0) return false;
             if (channelFilter === 'whatsapp' && conv.channel !== 'whatsapp') return false;
@@ -56,7 +56,7 @@ export default function CommunicationCenter() {
 
     // Auto-select first client if none selected
     useEffect(() => {
-        if (selectedClientId! && conversations.length > 0) {
+        if (!selectedClientId && conversations.length > 0) {
             setSelectedClientId(conversations[0].id);
         }
     }, [conversations, selectedClientId]);
@@ -89,7 +89,7 @@ export default function CommunicationCenter() {
     }
 
     const handleSendMessage = async () => {
-        if (messageInput!.trim() || selectedClientId!) return;
+        if (!messageInput.trim() || !selectedClientId) return;
 
         setSending(true);
 
@@ -97,7 +97,7 @@ export default function CommunicationCenter() {
             // Handle email specifically
             if (activeChannel === 'email' && selectedClient?.email) {
                 const res = await sendEmail(selectedClient.email, "הודעה מ-InsurCRM", messageInput);
-                if (res!.success) {
+                if (!res.success) {
                     alert("שגיאה בשליחת מייל: " + res.error);
                     setSending(false);
                     return;
@@ -345,7 +345,7 @@ export default function CommunicationCenter() {
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && e!.shiftKey) {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
                                                 e.preventDefault();
                                                 handleSendMessage();
                                             }
@@ -359,7 +359,7 @@ export default function CommunicationCenter() {
                                         size="sm"
                                         className={`rounded-xl h-10 w-10 p-0 flex items-center justify-center transition-all ${messageInput.trim() ? 'bg-accent shadow-lg shadow-accent/30 scale-100' : 'bg-slate-300 scale-90 opacity-70'
                                             }`}
-                                        disabled={messageInput!.trim() || sending}
+                                        disabled={!messageInput.trim() || sending}
                                     >
                                         {sending ? (
                                             <Loader2 size={18} className="animate-spin" />

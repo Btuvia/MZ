@@ -1,9 +1,9 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 import { useState } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function TrainingPage() {
     const [selectedCategory, setSelectedCategory] = useState("הכל");
@@ -101,7 +101,7 @@ export default function TrainingPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">מרכז הדרכה</h1>
                         <p className="text-sm font-medium text-white/80 max-w-2xl">
@@ -150,7 +150,7 @@ export default function TrainingPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                     {filteredCourses.map((course) => (
                         <Card key={course.id} className="border-none shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all group">
-                            <div className={`h-2 w-full bg-linear-to-r ${course.color}`}></div>
+                            <div className={`h-2 w-full bg-linear-to-r ${course.color}`} />
                             <div className="p-6">
                                 <div className="flex items-start gap-4 mb-4">
                                     <div className={`h-14 w-14 rounded-2xl bg-linear-to-br ${course.color} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform`}>
@@ -180,7 +180,7 @@ export default function TrainingPage() {
                                         <div
                                             className={`h-full bg-linear-to-r ${course.color} rounded-full transition-all duration-500`}
                                             style={{ width: `${course.progress}%` }}
-                                        ></div>
+                                         />
                                     </div>
                                 </div>
 

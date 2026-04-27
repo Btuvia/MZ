@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { X } from 'lucide-react';
 import { Card } from './base';
 
 interface NeonModalProps {
@@ -10,6 +11,7 @@ interface NeonModalProps {
     saveLabel?: string;
     isSaving?: boolean;
     maxWidth?: string;
+    hideFooter?: boolean;
 }
 
 export const NeonModal = memo(function NeonModal({
@@ -20,7 +22,8 @@ export const NeonModal = memo(function NeonModal({
     onSave,
     saveLabel = "שמור ועדכן",
     isSaving = false,
-    maxWidth = "max-w-lg"
+    maxWidth = "max-w-lg",
+    hideFooter = false
 }: NeonModalProps) {
     if (!isOpen) return null;
 
@@ -38,25 +41,33 @@ export const NeonModal = memo(function NeonModal({
                     {title}
                 </h3>
 
+                {/* Close Button */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-8 left-8 text-slate-500 hover:text-white transition-all p-2 rounded-xl hover:bg-white/5 z-20"
+                >
+                    <X size={28} />
+                </button>
+
                 <div className="space-y-6 max-h-[70vh] overflow-y-auto px-2 custom-scrollbar">
                     {children}
                 </div>
 
-                <div className="pt-8 flex items-center justify-between gap-6">
-                    {onSave && (
+                {!hideFooter && (
+                    <div className="pt-8 flex items-center justify-between gap-6">
+                        {onSave ? <button 
+                                onClick={onSave} 
+                                disabled={isSaving}
+                                className="flex-1 bg-slate-900 border-2 border-amber-500/30 text-amber-200 font-black rounded-2xl py-5 text-lg hover:border-amber-500 hover:text-white hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] transition-all active:scale-[0.98] disabled:opacity-50">
+                                {isSaving ? "מעבד..." : saveLabel}
+                            </button> : null}
                         <button 
-                            onClick={onSave} 
-                            disabled={isSaving}
-                            className="flex-1 bg-slate-900 border-2 border-amber-500/30 text-amber-200 font-black rounded-2xl py-5 text-lg hover:border-amber-500 hover:text-white hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] transition-all active:scale-[0.98] disabled:opacity-50">
-                            {isSaving ? "מעבד..." : saveLabel}
+                            onClick={onClose} 
+                            className="px-8 py-2 text-slate-400 font-bold hover:text-white transition-all underline decoration-slate-800 underline-offset-8 decoration-2 hover:decoration-amber-500">
+                            ביטול
                         </button>
-                    )}
-                    <button 
-                        onClick={onClose} 
-                        className="px-8 py-2 text-slate-400 font-bold hover:text-white transition-all underline decoration-slate-800 underline-offset-8 decoration-2 hover:decoration-amber-500">
-                        ביטול
-                    </button>
-                </div>
+                    </div>
+                )}
             </Card>
         </div>
     );
@@ -68,7 +79,7 @@ export const NeonInput = memo(function NeonInput({
 }: { label?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
     return (
         <div className="space-y-2">
-            {label && <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">{label}</label>}
+            {label ? <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">{label}</label> : null}
             <input
                 {...props}
                 className={`w-full bg-[#0d1326] border-2 border-slate-800/80 rounded-[1.5rem] px-6 py-4 text-sm font-bold text-white placeholder-slate-700 focus:border-amber-500 outline-none transition-all duration-300 shadow-inner ${props.className || ''}`}
@@ -84,7 +95,7 @@ export const NeonSelect = memo(function NeonSelect({
 }: { label?: string; children: React.ReactNode } & React.SelectHTMLAttributes<HTMLSelectElement>) {
     return (
         <div className="space-y-2">
-            {label && <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">{label}</label>}
+            {label ? <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">{label}</label> : null}
             <div className="relative">
                 <select
                     {...props}
@@ -104,7 +115,7 @@ export const NeonTextarea = memo(function NeonTextarea({
 }: { label?: string } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     return (
         <div className="space-y-2">
-            {label && <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">{label}</label>}
+            {label ? <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">{label}</label> : null}
             <textarea
                 {...props}
                 className={`w-full bg-[#0d1326] border-2 border-slate-800/80 rounded-[1.5rem] px-6 py-4 text-sm font-bold text-white placeholder-slate-700 focus:border-amber-500 outline-none transition-all duration-300 shadow-inner resize-none ${props.className || ''}`}
@@ -127,16 +138,12 @@ export const NeonCard = memo(function NeonCard({
             {/* Glowing Orbs */}
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-amber-500/10 transition-all duration-1000" />
             
-            {(title || action) && (
-                <div className="flex items-center justify-between mb-6">
-                    {action && <div className="shrink-0">{action}</div>}
-                    {title && (
-                        <h4 className="text-2xl font-black italic tracking-tighter text-amber-400 text-right drop-shadow-md">
+            {(title || action) ? <div className="flex items-center justify-between mb-6">
+                    {action ? <div className="shrink-0">{action}</div> : null}
+                    {title ? <h4 className="text-2xl font-black italic tracking-tighter text-amber-400 text-right drop-shadow-md">
                             {title}
-                        </h4>
-                    )}
-                </div>
-            )}
+                        </h4> : null}
+                </div> : null}
             
             <div className="relative z-10 space-y-6">
                 {children}

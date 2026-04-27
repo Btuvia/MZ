@@ -64,8 +64,7 @@ export function PolicyTimeline({ status }: PolicyTimelineProps) {
                             </p>
 
                             {/* "Magen Character" Animation - Only on Active Step */}
-                            {isActive && (
-                                <motion.div
+                            {isActive ? <motion.div
                                     layoutId="magen-character"
                                     className="absolute -top-16 left-1/2 -translate-x-1/2 flex flex-col items-center"
                                     initial={{ y: 20, opacity: 0 }}
@@ -96,8 +95,7 @@ export function PolicyTimeline({ status }: PolicyTimelineProps) {
                                     >
                                         <Shield className="w-5 h-5 fill-current" />
                                     </motion.div>
-                                </motion.div>
-                            )}
+                                </motion.div> : null}
                         </div>
                     );
                 })}

@@ -17,7 +17,7 @@ export default function ReferralModal({ isOpen, onClose, partnerName }: Referral
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" dir="rtl">
             <Card className="max-w-md w-full rounded-[3.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 bg-white/95 border-none">
                 <header className="bg-slate-700 p-10 text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
                     <div className="relative z-10 space-y-4">
                         <div className="h-16 w-16 bg-white rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-xl border border-white/30">🛡️</div>
                         <h2 className="text-3xl font-black text-white italic tracking-tighter">קוד הפניה</h2>
@@ -33,7 +33,7 @@ export default function ReferralModal({ isOpen, onClose, partnerName }: Referral
                                 alt="QR Code"
                                 className="h-48 w-48 rounded-2xl grayscale group-hover:grayscale-0 transition-all shadow-lg border-8 border-white"
                             />
-                            <div className="absolute inset-0 border-2 border-amber-400/30 rounded-2xl pointer-events-none translate-x-2 translate-y-2"></div>
+                            <div className="absolute inset-0 border-2 border-amber-400/30 rounded-2xl pointer-events-none translate-x-2 translate-y-2" />
                         </div>
                         <div className="space-y-1">
                             <h4 className="text-lg font-black text-primary italic">מגן זהב</h4>

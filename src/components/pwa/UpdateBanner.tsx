@@ -14,7 +14,7 @@ import { useServiceWorker } from '@/lib/hooks/useServiceWorker';
 export function UpdateBanner() {
     const { isUpdateAvailable, skipWaiting } = useServiceWorker();
 
-    if (isUpdateAvailable!) return null;
+    if (!isUpdateAvailable) return null;
 
     return (
         <AnimatePresence>

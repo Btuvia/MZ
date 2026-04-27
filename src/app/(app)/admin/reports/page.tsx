@@ -8,7 +8,7 @@ import {
     FileSpreadsheet, FileDown, ArrowUpRight, ArrowDownRight,
     Building2, Phone, Mail, Zap, Award, Shield, Loader2
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { useClients, useLeads, useDeals, useUsers, useTasks, useCampaigns } from "@/lib/hooks/useQueryHooks";
@@ -66,8 +66,8 @@ export default function ReportsPage() {
     const isLoading = loadingClients || loadingLeads || loadingDeals || loadingUsers || loadingTasks || loadingCampaigns;
 
     // Filter data by date range
-    const filterByDateRange = (date: Date | undefined) => {
-        if (date!) return false;
+    const filterByDateRange = useCallback((date: Date | undefined) => {
+        if (!date) return false;
         const now = new Date();
         const itemDate = new Date(date);
         
@@ -93,32 +93,32 @@ export default function ReportsPage() {
             default:
                 return true;
         }
-    };
+    }, [dateRange]);
 
     // Filtered data
     const filteredDeals = useMemo(() => 
         deals.filter(d => filterByDateRange(d.createdAt)),
-    [deals, dateRange]);
+    [deals, filterByDateRange]);
 
     const filteredLeads = useMemo(() =>
         leads.filter(l => filterByDateRange(l.createdAt)),
-    [leads, dateRange]);
+    [leads, filterByDateRange]);
 
     const filteredTasks = useMemo(() =>
         tasks.filter(t => filterByDateRange(t.createdAt)),
-    [tasks, dateRange]);
+    [tasks, filterByDateRange]);
 
     // Calculate sales data by month
     const salesData = useMemo((): SalesData[] => {
         const monthlyData: Record<string, SalesData> = {};
         
         filteredDeals.forEach(deal => {
-            if (deal!.createdAt) return;
+            if (!deal.createdAt) return;
             const date = new Date(deal.createdAt);
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             const monthName = hebrewMonths[date.getMonth()];
             
-            if (monthlyData![monthKey]) {
+            if (!monthlyData[monthKey]) {
                 monthlyData[monthKey] = {
                     period: monthName,
                     pension: 0,
@@ -183,7 +183,7 @@ export default function ReportsPage() {
         
         filteredLeads.forEach(lead => {
             const source = lead.source || 'לא ידוע';
-            if (sourceMap![source]) {
+            if (!sourceMap[source]) {
                 sourceMap[source] = { leads: 0, conversions: 0, revenue: 0 };
             }
             sourceMap[source].leads += 1;
@@ -469,12 +469,12 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
     leadSources: LeadSource[];
 }) {
     const statCards = [
-        { label: 'הכנסות כוללות', value: `₪${(summaryStats.totalRevenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'amber' },
-        { label: 'עסקאות', value: summaryStats.totalDeals.toString(), icon: FileText, color: 'blue' },
-        { label: 'לידים חדשים', value: summaryStats.newLeads.toString(), icon: Users, color: 'emerald' },
-        { label: 'יחס המרה', value: `${summaryStats.conversionRate}%`, icon: Target, color: 'purple' },
-        { label: 'פוליסות פעילות', value: summaryStats.activePolicies.toLocaleString(), icon: Shield, color: 'cyan' },
-        { label: 'חידושים ממתינים', value: summaryStats.pendingRenewals.toString(), icon: AlertTriangle, color: 'red' },
+        { label: 'הכנסות כוללות', value: `₪${(summaryStats.totalRevenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'from-amber-500 to-orange-600', textColor: 'text-amber-400', glow: 'shadow-amber-500/30 border-amber-500/20' },
+        { label: 'עסקאות', value: summaryStats.totalDeals.toString(), icon: FileText, color: 'from-blue-500 to-indigo-600', textColor: 'text-blue-400', glow: 'shadow-blue-500/30 border-blue-500/20' },
+        { label: 'לידים חדשים', value: summaryStats.newLeads.toString(), icon: Users, color: 'from-emerald-500 to-teal-600', textColor: 'text-emerald-400', glow: 'shadow-emerald-500/30 border-emerald-500/20' },
+        { label: 'יחס המרה', value: `${summaryStats.conversionRate}%`, icon: Target, color: 'from-purple-500 to-pink-600', textColor: 'text-purple-400', glow: 'shadow-purple-500/30 border-purple-500/20' },
+        { label: 'פוליסות פעילות', value: summaryStats.activePolicies.toLocaleString(), icon: Shield, color: 'from-cyan-500 to-blue-600', textColor: 'text-cyan-400', glow: 'shadow-cyan-500/30 border-cyan-500/20' },
+        { label: 'חידושים ממתינים', value: summaryStats.pendingRenewals.toString(), icon: AlertTriangle, color: 'from-red-500 to-rose-600', textColor: 'text-red-400', glow: 'shadow-red-500/30 border-red-500/20' },
     ];
 
     return (
@@ -486,16 +486,17 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
                     return (
                         <motion.div
                             key={stat.label}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.05 }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: i * 0.05, type: 'spring' }}
                         >
-                            <Card className="p-4 text-center">
-                                <div className={`w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center bg-${stat.color}-500/20`}>
-                                    <Icon size={20} className={`text-${stat.color}-400`} />
+                            <Card className={`p-5 text-center group border-2 hover:border-white/20 transition-all duration-500 relative overflow-hidden bg-slate-900/80 backdrop-blur-xl ${stat.glow}`}>
+                                <div className={`absolute inset-0 bg-linear-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                                <div className={`w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-linear-to-br ${stat.color} shadow-lg shadow-black/40 group-hover:scale-110 transition-transform`}>
+                                    <Icon size={22} className="text-slate-900" />
                                 </div>
-                                <div className="text-2xl font-black text-amber-100">{stat.value}</div>
-                                <div className="text-xs text-slate-400 mt-1">{stat.label}</div>
+                                <div className={`text-3xl font-black ${stat.textColor} tracking-tight drop-shadow-glow`}>{stat.value}</div>
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 italic">{stat.label}</div>
                             </Card>
                         </motion.div>
                     );
@@ -519,12 +520,13 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
                                         <div key={data.period} className="flex-1 flex flex-col items-center gap-2">
                                             <div className="w-full flex flex-col gap-1" style={{ height: '200px' }}>
                                                 <div 
-                                                    className="w-full bg-linear-to-t from-amber-500 to-amber-400 rounded-t-lg transition-all hover:from-amber-400 hover:to-amber-300"
+                                                <div 
+                                                    className="w-full bg-linear-to-t from-amber-600 to-amber-400 rounded-t-xl transition-all hover:from-amber-400 hover:to-amber-300 shadow-lg shadow-amber-500/20"
                                                     style={{ height: `${(data.pension / maxTotal) * 100}%`, marginTop: 'auto' }}
                                                     title={`פנסיה: ₪${data.pension.toLocaleString()}`}
                                                 />
                                                 <div 
-                                                    className="w-full bg-linear-to-t from-blue-500 to-blue-400 rounded-b-lg transition-all hover:from-blue-400 hover:to-blue-300"
+                                                    className="w-full bg-linear-to-t from-blue-600 to-blue-400 rounded-b-xl transition-all hover:from-blue-400 hover:to-blue-300 shadow-lg shadow-blue-500/20"
                                                     style={{ height: `${(data.insurance / maxTotal) * 100}%` }}
                                                     title={`ביטוח: ₪${data.insurance.toLocaleString()}`}
                                                 />
@@ -568,8 +570,11 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
                                         <div className="w-20 text-xs text-slate-300 font-bold truncate">{source.source}</div>
                                         <div className="flex-1 h-6 glass-card rounded-full overflow-hidden">
                                             <div 
-                                                className="h-full rounded-full transition-all"
-                                                style={{ width: `${percentage}%`, backgroundColor: source.color }}
+                                                className="h-full rounded-full transition-all shadow-[0_0_15px_currentColor]"
+                                                style={{ 
+                                                    width: `${percentage}%`, 
+                                                    background: `linear-gradient(90deg, ${source.color}, ${source.color}88)`
+                                                }}
                                             />
                                         </div>
                                         <div className="w-16 text-left">
@@ -599,28 +604,43 @@ function OverviewReport({ summaryStats, salesData, agentPerformance, leadSources
                         {agentPerformance.slice(0, 3).map((agent, i) => (
                             <div 
                                 key={agent.id}
-                                className={`p-4 rounded-2xl border ${
-                                    i === 0 ? 'bg-amber-500/10 border-amber-500/30' :
-                                    i === 1 ? 'bg-slate-500/10 border-slate-500/30' :
-                                    'bg-orange-900/10 border-orange-900/30'
+                                className={`p-5 rounded-3xl border-2 transition-all relative overflow-hidden group ${
+                                    i === 0 ? 'bg-amber-500/10 border-amber-500/30 shadow-lg shadow-amber-500/10' :
+                                    i === 1 ? 'bg-blue-500/10 border-blue-500/30 shadow-lg shadow-blue-500/10' :
+                                    'bg-purple-500/10 border-purple-500/30 shadow-lg shadow-purple-500/10'
                                 }`}
                             >
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-black ${
-                                        i === 0 ? 'bg-amber-500 text-slate-900' :
-                                        i === 1 ? 'bg-slate-400 text-slate-900' :
-                                        'bg-orange-700 text-white'
+                                <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg ${
+                                        i === 0 ? 'bg-linear-to-br from-amber-400 to-amber-600 text-slate-900 neon-gold' :
+                                        i === 1 ? 'bg-linear-to-br from-blue-400 to-blue-600 text-white neon-blue' :
+                                        'bg-linear-to-br from-purple-400 to-purple-600 text-white'
                                     }`}>
                                         {i + 1}
                                     </div>
                                     <div>
-                                        <div className="font-black text-slate-200">{agent.name}</div>
-                                        <div className="text-xs text-slate-400">יחס המרה: {agent.conversionRate}%</div>
+                                        <div className="font-black text-white text-lg">{agent.name}</div>
+                                        <Badge variant={i === 0 ? 'gold' : i === 1 ? 'blue' : 'primary'} className="text-[8px]">
+                                            {i === 0 ? 'מצטיין החודש' : i === 1 ? 'ביצועים גבוהים' : 'מקום שלישי'}
+                                        </Badge>
                                     </div>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-400">הכנסות:</span>
-                                    <span className="font-black text-amber-400">₪{agent.revenue.toLocaleString()}</span>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-400 text-xs font-bold">הכנסות:</span>
+                                        <span className="font-black text-amber-400 text-lg">₪{agent.revenue.toLocaleString()}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full bg-linear-to-r ${i === 0 ? 'from-amber-500 to-orange-500' : 'from-blue-500 to-indigo-500'} rounded-full`}
+                                            style={{ width: `${Math.min(100, (agent.revenue / summaryStats.totalRevenue) * 500)}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                        <span>המרה: {agent.conversionRate}%</span>
+                                        <span>עסקאות: {agent.conversions}</span>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -645,22 +665,22 @@ function SalesReport({ salesData }: { salesData: SalesData[] }) {
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4">
-                    <div className="text-sm text-slate-400">סה"כ פנסיה</div>
-                    <div className="text-2xl font-black text-amber-400 mt-1">₪{totalPension.toLocaleString()}</div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-5 bg-linear-to-br from-amber-500/20 to-orange-500/10 border-amber-500/40 shadow-lg shadow-amber-500/10 group hover:scale-105 transition-all">
+                    <div className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1 italic">סה"כ פנסיה</div>
+                    <div className="text-3xl font-black text-amber-400 drop-shadow-glow">₪{totalPension.toLocaleString()}</div>
                 </Card>
-                <Card className="p-4">
-                    <div className="text-sm text-slate-400">סה"כ ביטוח</div>
-                    <div className="text-2xl font-black text-blue-400 mt-1">₪{totalInsurance.toLocaleString()}</div>
+                <Card className="p-5 bg-linear-to-br from-blue-500/20 to-indigo-500/10 border-blue-500/40 shadow-lg shadow-blue-500/10 group hover:scale-105 transition-all">
+                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1 italic">סה"כ ביטוח</div>
+                    <div className="text-3xl font-black text-blue-400 drop-shadow-glow">₪{totalInsurance.toLocaleString()}</div>
                 </Card>
-                <Card className="p-4">
-                    <div className="text-sm text-slate-400">עסקאות</div>
-                    <div className="text-2xl font-black text-emerald-400 mt-1">{totalDeals}</div>
+                <Card className="p-5 bg-linear-to-br from-emerald-500/20 to-teal-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10 group hover:scale-105 transition-all">
+                    <div className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 italic">עסקאות</div>
+                    <div className="text-3xl font-black text-emerald-400 drop-shadow-glow">{totalDeals}</div>
                 </Card>
-                <Card className="p-4">
-                    <div className="text-sm text-slate-400">ממוצע חודשי</div>
-                    <div className="text-2xl font-black text-purple-400 mt-1">₪{Math.round(avgMonthly).toLocaleString()}</div>
+                <Card className="p-5 bg-linear-to-br from-purple-500/20 to-pink-500/10 border-purple-500/40 shadow-lg shadow-purple-500/10 group hover:scale-105 transition-all">
+                    <div className="text-[10px] font-black text-purple-500 uppercase tracking-[0.2em] mb-1 italic">ממוצע חודשי</div>
+                    <div className="text-3xl font-black text-purple-400 drop-shadow-glow">₪{Math.round(avgMonthly).toLocaleString()}</div>
                 </Card>
             </div>
 
@@ -684,22 +704,49 @@ function SalesReport({ salesData }: { salesData: SalesData[] }) {
                             </thead>
                             <tbody>
                                 {salesData.map((data) => (
-                                    <tr key={data.period} className="border-t border-slate-700/50 hover:bg-slate-800/30 transition-colors">
-                                        <td className="p-4 font-bold text-slate-200">{data.period}</td>
-                                        <td className="p-4 text-amber-400 font-bold">₪{data.pension.toLocaleString()}</td>
-                                        <td className="p-4 text-blue-400 font-bold">₪{data.insurance.toLocaleString()}</td>
-                                        <td className="p-4 text-emerald-400 font-black">₪{data.total.toLocaleString()}</td>
-                                        <td className="p-4 text-slate-300">{data.deals}</td>
-                                        <td className="p-4 text-slate-400">₪{data.deals > 0 ? Math.round(data.total / data.deals).toLocaleString() : 0}</td>
+                                    <tr key={data.period} className="border-t border-slate-700/50 hover:bg-white/5 transition-all group">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 group-hover:bg-amber-500 group-hover:text-slate-900 transition-colors">
+                                                    {data.period.substring(0, 2)}
+                                                </div>
+                                                <span className="font-bold text-slate-200">{data.period}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-amber-400 font-bold">₪{data.pension.toLocaleString()}</span>
+                                                <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden max-w-[50px]">
+                                                    <div className="h-full bg-amber-500" style={{ width: `${Math.min(100, (data.pension / totalPension) * 500)}%` }} />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-blue-400 font-bold">₪{data.insurance.toLocaleString()}</span>
+                                                <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden max-w-[50px]">
+                                                    <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (data.insurance / totalInsurance) * 500)}%` }} />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg inline-block">
+                                                <span className="text-emerald-400 font-black">₪{data.total.toLocaleString()}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <Badge variant="outline" className="text-slate-400">{data.deals} עסקאות</Badge>
+                                        </td>
+                                        <td className="p-4 text-slate-400 font-bold">₪{data.deals > 0 ? Math.round(data.total / data.deals).toLocaleString() : 0}</td>
                                     </tr>
                                 ))}
                             </tbody>
-                            <tfoot className="bg-slate-800/80">
-                                <tr>
-                                    <td className="p-4 font-black text-amber-100">סה"כ</td>
-                                    <td className="p-4 text-amber-400 font-black">₪{totalPension.toLocaleString()}</td>
-                                    <td className="p-4 text-blue-400 font-black">₪{totalInsurance.toLocaleString()}</td>
-                                    <td className="p-4 text-emerald-400 font-black">₪{(totalPension + totalInsurance).toLocaleString()}</td>
+                            <tfoot className="bg-slate-900/80">
+                                <tr className="border-t-2 border-amber-500/30">
+                                    <td className="p-4 font-black text-amber-100">סה"כ שנתי</td>
+                                    <td className="p-4 text-amber-400 font-black text-lg">₪{totalPension.toLocaleString()}</td>
+                                    <td className="p-4 text-blue-400 font-black text-lg">₪{totalInsurance.toLocaleString()}</td>
+                                    <td className="p-4 text-emerald-400 font-black text-xl">₪{(totalPension + totalInsurance).toLocaleString()}</td>
                                     <td className="p-4 text-slate-200 font-black">{totalDeals}</td>
                                     <td className="p-4 text-slate-300 font-bold">₪{totalDeals > 0 ? Math.round((totalPension + totalInsurance) / totalDeals).toLocaleString() : 0}</td>
                                 </tr>
@@ -729,9 +776,9 @@ function AgentsReport({ agents }: { agents: AgentPerformance[] }) {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.05 }}
                         >
-                            <Card className="p-5">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-xl font-black text-slate-900">
+                            <Card className={`p-6 border-2 transition-all duration-500 bg-slate-900/60 backdrop-blur-xl hover:bg-slate-900/80 ${i === 0 ? 'border-amber-500/40 shadow-[0_0_30px_rgba(245,158,11,0.1)]' : 'border-slate-800'}`}>
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className={`w-16 h-16 rounded-2xl bg-linear-to-br ${i === 0 ? 'from-amber-400 to-orange-600' : 'from-slate-700 to-slate-800'} flex items-center justify-center text-2xl font-black text-slate-900 shadow-lg shadow-black/40`}>
                                         {agent.name.charAt(0)}
                                     </div>
                                     <div className="flex-1">
@@ -814,37 +861,37 @@ function RenewalsReport({ renewals }: { renewals: Array<{
     return (
         <div className="space-y-6">
             {/* Summary */}
-            <div className="grid grid-cols-3 gap-4">
-                <Card className="p-4 border-r-4 border-red-500">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
-                            <AlertTriangle className="text-red-400" size={24} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-6 border-r-4 border-red-500 bg-red-500/5 shadow-[0_0_20px_rgba(239,68,68,0.1)] group hover:bg-red-500/10 transition-all border-2 border-transparent hover:border-red-500/20">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
+                            <AlertTriangle className="text-slate-900" size={32} />
                         </div>
                         <div>
-                            <div className="text-3xl font-black text-red-400">{urgentCount}</div>
-                            <div className="text-xs text-slate-400">דחופים (פחות מ-14 יום)</div>
+                            <div className="text-[10px] text-red-500/70 font-black uppercase tracking-[0.2em] mb-1 italic">דחופים מאוד</div>
+                            <div className="text-4xl font-black text-red-400 drop-shadow-glow">{urgentCount} <span className="text-xs font-normal text-slate-500 mr-1">פוליסות</span></div>
                         </div>
                     </div>
                 </Card>
-                <Card className="p-4 border-r-4 border-amber-500">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                            <Clock className="text-amber-400" size={24} />
+                <Card className="p-6 border-r-4 border-amber-500 bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.1)] group hover:bg-amber-500/10 transition-all border-2 border-transparent hover:border-amber-500/20">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                            <Clock className="text-slate-900" size={32} />
                         </div>
                         <div>
-                            <div className="text-3xl font-black text-amber-400">{warningCount}</div>
-                            <div className="text-xs text-slate-400">בקרוב (14-30 יום)</div>
+                            <div className="text-[10px] text-amber-500/70 font-black uppercase tracking-[0.2em] mb-1 italic">טיפול בקרוב</div>
+                            <div className="text-4xl font-black text-amber-400 drop-shadow-glow">{warningCount} <span className="text-xs font-normal text-slate-500 mr-1">פוליסות</span></div>
                         </div>
                     </div>
                 </Card>
-                <Card className="p-4 border-r-4 border-emerald-500">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                            <DollarSign className="text-emerald-400" size={24} />
+                <Card className="p-6 border-r-4 border-emerald-500 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.1)] group hover:bg-emerald-500/10 transition-all border-2 border-transparent hover:border-emerald-500/20">
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                            <DollarSign className="text-slate-900" size={32} />
                         </div>
                         <div>
-                            <div className="text-3xl font-black text-emerald-400">₪{totalPremium.toLocaleString()}</div>
-                            <div className="text-xs text-slate-400">סה"כ פרמיות לחידוש</div>
+                            <div className="text-[10px] text-emerald-500/70 font-black uppercase tracking-[0.2em] mb-1 italic">פוטנציאל חידוש</div>
+                            <div className="text-4xl font-black text-emerald-400 drop-shadow-glow">₪{totalPremium.toLocaleString()}</div>
                         </div>
                     </div>
                 </Card>
@@ -924,22 +971,26 @@ function LeadsReport({ leadSources }: { leadSources: LeadSource[] }) {
     return (
         <div className="space-y-6">
             {/* Summary */}
-            <div className="grid grid-cols-4 gap-4">
-                <Card className="p-4 text-center">
-                    <div className="text-3xl font-black text-amber-400">{totalLeads}</div>
-                    <div className="text-xs text-slate-400 mt-1">סה"כ לידים</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-6 bg-linear-to-br from-amber-500/10 to-transparent border-amber-500/20 relative overflow-hidden group">
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                    <div className="text-4xl font-black text-amber-400 mb-1">{totalLeads}</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">סה"כ לידים</div>
                 </Card>
-                <Card className="p-4 text-center">
-                    <div className="text-3xl font-black text-emerald-400">{totalConversions}</div>
-                    <div className="text-xs text-slate-400 mt-1">המרות</div>
+                <Card className="p-6 bg-linear-to-br from-emerald-500/10 to-transparent border-emerald-500/20 relative overflow-hidden group">
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                    <div className="text-4xl font-black text-emerald-400 mb-1">{totalConversions}</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">המרות (WON)</div>
                 </Card>
-                <Card className="p-4 text-center">
-                    <div className="text-3xl font-black text-blue-400">{totalLeads > 0 ? ((totalConversions / totalLeads) * 100).toFixed(1) : 0}%</div>
-                    <div className="text-xs text-slate-400 mt-1">יחס המרה ממוצע</div>
+                <Card className="p-6 bg-linear-to-br from-blue-500/10 to-transparent border-blue-500/20 relative overflow-hidden group">
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-blue-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                    <div className="text-4xl font-black text-blue-400 mb-1">{totalLeads > 0 ? ((totalConversions / totalLeads) * 100).toFixed(1) : 0}%</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">יחס המרה ממוצע</div>
                 </Card>
-                <Card className="p-4 text-center">
-                    <div className="text-3xl font-black text-purple-400">₪{(totalRevenue / 1000).toFixed(0)}K</div>
-                    <div className="text-xs text-slate-400 mt-1">הכנסות מלידים</div>
+                <Card className="p-6 bg-linear-to-br from-purple-500/10 to-transparent border-purple-500/20 relative overflow-hidden group">
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-purple-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                    <div className="text-4xl font-black text-purple-400">₪{(totalRevenue / 1000).toFixed(0)}K</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">הכנסות מלידים</div>
                 </Card>
             </div>
 

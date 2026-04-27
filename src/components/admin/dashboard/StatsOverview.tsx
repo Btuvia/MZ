@@ -1,6 +1,6 @@
 
-import { Card } from "@/components/ui/base";
 import { Users, Target, Clock, AlertCircle, ArrowUpRight } from "lucide-react";
+import { Card } from "@/components/ui/base";
 
 interface StatsOverviewProps {
     totalClients: number;

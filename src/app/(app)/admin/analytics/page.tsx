@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import { Calendar, Download, TrendingUp, TrendingDown, Filter, RefreshCcw, Sparkles, BrainCircuit } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function AnalyticsPage() {
     const [timeRange, setTimeRange] = useState("month");
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                 {/* AI Executive Summary - NEW */}
                 <div className="relative overflow-hidden rounded-[2.5rem] p-1 bg-linear-to-r from-blue-600 via-indigo-500 to-purple-600 shadow-2xl">
                     <div className="bg-white rounded-[2.4rem] p-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
                         <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
                             <div className="h-16 w-16 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-200">
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     {currentData.kpis.map((kpi: any, i: number) => (
                         <Card key={i} className="border-none shadow-xl bg-white p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                            <div className={`absolute top-0 right-0 h-1 w-full bg-linear-to-l ${kpi.trend === 'up' ? 'from-emerald-500 to-emerald-300' : 'from-red-500 to-red-300'}`}></div>
+                            <div className={`absolute top-0 right-0 h-1 w-full bg-linear-to-l ${kpi.trend === 'up' ? 'from-emerald-500 to-emerald-300' : 'from-red-500 to-red-300'}`} />
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-4xl filter drop-shadow-md">{kpi.icon}</span>
                                 <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black ${kpi.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
                                             className="h-full bg-linear-to-l from-indigo-600 to-blue-400 rounded-full transition-all duration-1000 ease-out group-hover:from-indigo-500 group-hover:to-purple-500 relative"
                                             style={{ width: `${(item.value / item.max) * 100}%` }}
                                         >
-                                            <div className="absolute left-0 top-0 bottom-0 w-full bg-white/20 animate-pulse"></div>
+                                            <div className="absolute left-0 top-0 bottom-0 w-full bg-white/20 animate-pulse" />
                                         </div>
                                     </div>
                                 </div>
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
                                 <div key={i} className="hover:translate-x-1 transition-transform cursor-default">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
-                                            <div className={`h-3 w-3 rounded-full shadow-sm bg-${policy.color}-500 ring-2 ring-${policy.color}-100`}></div>
+                                            <div className={`h-3 w-3 rounded-full shadow-sm bg-${policy.color}-500 ring-2 ring-${policy.color}-100`} />
                                             <span className="text-sm font-bold text-slate-700">{policy.type}</span>
                                         </div>
                                         <span className="text-sm font-black text-slate-900">{policy.count}</span>
@@ -221,7 +221,7 @@ export default function AnalyticsPage() {
                                         <div
                                             className={`h-full bg-${policy.color}-500 rounded-full shadow-sm`}
                                             style={{ width: `${policy.percentage}%` }}
-                                        ></div>
+                                         />
                                     </div>
                                 </div>
                             ))}
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
                                                         key={j}
                                                         className={`w-1.5 rounded-t-sm transition-all duration-500 group-hover:h-full ${j < 3 ? 'bg-indigo-500 h-[60%]' : 'bg-slate-200 h-[30%]'
                                                             }`}
-                                                    ></div>
+                                                     />
                                                 ))}
                                             </div>
                                         </td>

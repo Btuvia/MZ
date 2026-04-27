@@ -78,6 +78,7 @@ class PushNotificationService {
             }
 
             // Initialize FCM
+            if (!app) return;
             this.messaging = getMessaging(app);
 
             // Listen for foreground messages

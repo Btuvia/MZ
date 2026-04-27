@@ -23,10 +23,15 @@ export function PWAProvider({ children }: PWAProviderProps) {
     const { isRegistered } = useServiceWorker();
     const { user, role } = useAuth();
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Show notification prompt after login for admin/agent
     useEffect(() => {
-        if (user! || role!) return;
+        if (!user || !role) return;
         if (role !== 'admin' && role !== 'agent') return;
 
         // Check if already dismissed
@@ -51,15 +56,21 @@ export function PWAProvider({ children }: PWAProviderProps) {
         <>
             {children}
             
-            {/* PWA UI Components */}
-            <UpdateBanner />
-            <OfflineIndicator />
-            <PWAInstallPrompt />
-            
-            {/* Notification prompt for admin/agent */}
-            {showNotificationPrompt ? <NotificationPrompt 
-                    onDismiss={() => setShowNotificationPrompt(false)} 
-                /> : null}
+            {/* PWA UI Components rendered only on client to avoid hydration mismatch */}
+            {isMounted && (
+                <>
+                    <UpdateBanner />
+                    <OfflineIndicator />
+                    <PWAInstallPrompt />
+                    
+                    {/* Notification prompt for admin/agent */}
+                    {showNotificationPrompt && (
+                        <NotificationPrompt 
+                            onDismiss={() => setShowNotificationPrompt(false)} 
+                        />
+                    )}
+                </>
+            )}
         </>
     );
 }

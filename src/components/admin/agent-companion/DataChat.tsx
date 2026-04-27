@@ -26,7 +26,7 @@ export default function DataChat() {
 
     const sendMessage = async (userMsg: string) => {
         const trimmed = userMsg.trim();
-        if (trimmed!) return;
+        if (!trimmed) return;
 
         setMessages(prev => [...prev, { role: 'user', content: trimmed }]);
         setIsLoading(true);
@@ -127,7 +127,7 @@ export default function DataChat() {
                     <Button
                         type="submit"
                         size="sm"
-                        disabled={isLoading || input!.trim()}
+                        disabled={isLoading || !input.trim()}
                         className="rounded-lg h-8 w-8 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shrink-0 p-0 flex items-center justify-center"
                     >
                         <Send size={14} />

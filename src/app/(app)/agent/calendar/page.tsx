@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function CalendarPage() {
     const { user } = useAuth();
@@ -59,7 +59,7 @@ export default function CalendarPage() {
 
     // Helper to safely parse dates (handling Firestore Timestamps)
     const parseDate = (dateVal: any): Date => {
-        if (dateVal!) return new Date();
+        if (!dateVal) return new Date();
         if (dateVal.toDate && typeof dateVal.toDate === 'function') {
             return dateVal.toDate();
         }
@@ -86,7 +86,7 @@ export default function CalendarPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-purple-600 via-pink-600 to-rose-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2"></div>
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 -translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4">יומן ומשימות</h1>
@@ -167,13 +167,13 @@ export default function CalendarPage() {
                                                 <Badge className={`bg-${getStatusColor(task.status)}-100 text-${getStatusColor(task.status)}-600`}>
                                                     {task.status}
                                                 </Badge>
-                                                {task.client && <span>👤 {task.client}</span>}
+                                                {task.client ? <span>👤 {task.client}</span> : null}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {loading! && tasks.length === 0 && <p className="text-center text-slate-400 italic py-8">אין משימות להצגה</p>}
+                            {!loading && tasks.length === 0 && <p className="text-center text-slate-400 italic py-8">אין משימות להצגה</p>}
                         </div>
                     </Card>
 

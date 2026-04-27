@@ -1,6 +1,7 @@
 "use client";
 
 import { Zap, Plug, ShieldCheck, Share2, Phone, Mail, Calendar as CalendarIcon, MessageCircle, CheckCircle } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -8,7 +9,6 @@ import IntegrationCard from "@/components/admin/integrations/IntegrationCard";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { useGoogleCalendar } from "@/lib/hooks/useGoogleCalendar";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
-import { Wallet } from "lucide-react";
 
 export default function IntegrationsPage() {
     const searchParams = useSearchParams();
@@ -17,14 +17,25 @@ export default function IntegrationsPage() {
 
     // Check for calendar connection callback
     useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        let closeTimeout: NodeJS.Timeout;
+
         if (searchParams.get('calendar') === 'connected') {
-            setShowCalendarSuccess(true);
-            toast.success('היומן חובר בהצלחה! הסנכרון יבוצע אוטומטית בכל התחברות.');
-            setTimeout(() => setShowCalendarSuccess(false), 5000);
+            timeout = setTimeout(() => {
+                setShowCalendarSuccess(true);
+                toast.success('היומן חובר בהצלחה! הסנכרון יבוצע אוטומטית בכל התחברות.');
+            }, 0);
+            closeTimeout = setTimeout(() => setShowCalendarSuccess(false), 5000);
         }
+        
         if (searchParams.get('error')) {
             toast.error(searchParams.get('error') || 'שגיאה בחיבור');
         }
+
+        return () => {
+            if (timeout) clearTimeout(timeout);
+            if (closeTimeout) clearTimeout(closeTimeout);
+        };
     }, [searchParams]);
 
     const handleCalendarAction = () => {

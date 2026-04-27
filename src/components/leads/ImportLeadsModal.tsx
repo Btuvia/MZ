@@ -66,7 +66,7 @@ async function parseXlsxBuffer(buffer: ArrayBuffer): Promise<{ headers: string[]
     await workbook.xlsx.load(buffer);
 
     const worksheet = workbook.worksheets[0];
-    if (worksheet!) return { headers: [], data: [] };
+    if (!worksheet) return { headers: [], data: [] };
 
     const headerRow = worksheet.getRow(1);
     const headerValues = (headerRow.values || []) as unknown[];
@@ -211,8 +211,8 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
             });
 
             // Defaults
-            if (leadData!.status) leadData.status = "חדש";
-            if (leadData!.source) leadData.source = "יבוא מקו";
+            if (!leadData.status) leadData.status = "חדש";
+            if (!leadData.source) leadData.source = "יבוא מקובץ";
 
             if (leadData.name && leadData.phone) {
                 try {
@@ -293,7 +293,7 @@ export default function ImportLeadsModal({ isOpen, onClose, onSuccess }: ImportL
                                     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
                                     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-                                    if (apiKey! || clientId!) {
+                                    if (!apiKey || !clientId) {
                                         toast.error("חסרים מפתחות API (נדרש Client ID ו-API Key)");
                                         return;
                                     }

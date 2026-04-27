@@ -26,7 +26,7 @@ const ConfirmationContext = createContext<ConfirmationContextType | null>(null);
 
 export function useConfirmation() {
     const context = useContext(ConfirmationContext);
-    if (context!) {
+    if (!context) {
         throw new Error('useConfirmation must be used within ConfirmationProvider');
     }
     return context;

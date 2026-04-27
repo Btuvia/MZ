@@ -1,7 +1,7 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
 import { Card } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 
 export default function AgentPlaceholderPage({ title }: { title: string }) {
     const navItems = [

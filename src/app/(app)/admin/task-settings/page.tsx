@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button } from "@/components/ui/base";
 import { Settings, Columns, Tag, GitBranch, ListChecks, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Card, Button } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
 import { AVAILABLE_TASK_COLUMNS, DEFAULT_VISIBLE_COLUMNS } from "@/lib/task-constants";
 
 type TabType = "columns" | "subjects" | "workflows" | "statuses";
@@ -105,16 +105,14 @@ export default function TaskSettingsPage() {
                                         >
                                             איפוס לברירת מחדל
                                         </Button>
-                                        {hasChanges && (
-                                            <Button
+                                        {hasChanges ? <Button
                                                 onClick={handleSaveColumns}
                                                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
                                                 size="sm"
                                             >
                                                 <Save size={16} className="ml-2" />
                                                 שמור שינויים
-                                            </Button>
-                                        )}
+                                            </Button> : null}
                                     </div>
                                 </div>
 
@@ -153,26 +151,22 @@ export default function TaskSettingsPage() {
                                                                 : "bg-white border-slate-300"
                                                             }`}
                                                     >
-                                                        {isSelected && (
-                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        {isSelected ? <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                            </svg>
-                                                        )}
+                                                            </svg> : null}
                                                     </div>
 
                                                     {/* Column Info */}
                                                     <div className="flex-1 text-right">
                                                         <div className="font-bold text-slate-900 flex items-center gap-2">
                                                             {column.labelHe}
-                                                            {isDefault && (
-                                                                <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                                                            {isDefault ? <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
                                                                     ברירת מחדל
-                                                                </span>
-                                                            )}
+                                                                </span> : null}
                                                         </div>
                                                         <div className="text-xs text-slate-500 mt-0.5">
                                                             {column.label}
-                                                            {column.sortable && " • ניתן למיון"}
+                                                            {column.sortable ? " • ניתן למיון" : null}
                                                         </div>
                                                     </div>
                                                 </div>

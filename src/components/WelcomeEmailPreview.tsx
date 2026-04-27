@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/base";
-import Image from "next/image";
 
 export function WelcomeEmailPreview({ isOpen, onClose, clientName }: { isOpen: boolean, onClose: () => void, clientName: string }) {
     if (!isOpen) return null;
@@ -13,9 +13,9 @@ export function WelcomeEmailPreview({ isOpen, onClose, clientName }: { isOpen: b
                 {/* Email Header */}
                 <div className="bg-slate-50 p-4 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="h-3 w-3 rounded-full bg-red-400"></div>
-                        <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
-                        <div className="h-3 w-3 rounded-full bg-green-400"></div>
+                        <div className="h-3 w-3 rounded-full bg-red-400" />
+                        <div className="h-3 w-3 rounded-full bg-yellow-400" />
+                        <div className="h-3 w-3 rounded-full bg-green-400" />
                     </div>
                     <div className="text-xs font-bold text-slate-400">New Message: Welcome to Magen Zahav</div>
                 </div>

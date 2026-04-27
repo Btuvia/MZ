@@ -16,9 +16,11 @@ import {
     Link2,
     ArrowLeft,
     ArrowRight,
+    Database,
+    Star,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { createClientAndSendCredentials } from '@/app/actions/client-credentials';
 import { sendEmail } from '@/app/actions/email';
@@ -34,6 +36,14 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { firestoreService } from '@/lib/firebase/firestore-service';
 import { useSpeechRecognition } from '@/lib/hooks/useSpeechRecognition';
 import { ADMIN_NAV_ITEMS } from '@/lib/navigation-config';
+import { InsuranceComparisonWizard } from '@/components/clients/InsuranceComparisonWizard';
+import { PensionAnalysisWizard } from '@/components/clients/PensionAnalysisWizard';
+import { insuranceReportService } from '@/lib/services/insurance-report-service';
+import { InsuranceImportModal } from '@/components/clients/InsuranceImportModal';
+import { ImportedPolicy } from '@/lib/services/insurance-import-service';
+import { GoldenShieldRiskAnalyzer } from '@/components/clients/GoldenShieldRiskAnalyzer';
+import { CancellationLetterModal } from '@/components/clients/CancellationLetterModal';
+import { getClientRating, getRatingColor } from '@/lib/client-utils';
 
 // --- Types & Interfaces ---
 
@@ -108,10 +118,12 @@ type Policy = {
 type Task = {
     id: string;
     title: string;
-    priority: 'נמוכה' | 'בינונית' | 'גבוהה';
-    dueDate: string;
-    status: 'ממתינה' | 'בתהליך' | 'הושלמה';
-    assignee: string;
+    priority: string;
+    dueDate?: string;
+    date?: string;
+    status: string;
+    assignee?: string;
+    assignedTo?: string;
     completedDate?: string;
 };
 
@@ -188,7 +200,9 @@ type PlatinumPaymentDetails = {
 type AiInsight = {
     riskScore: number;
     analysis: string;
-    opportunities: { text: string; impact: string }[];
+    opportunities: any[];
+    gaps: any[];
+    savings: any[];
 };
 
 // טבלת מחירי פלטינום לפי גיל
@@ -443,13 +457,28 @@ export default function ClientDetailsPage() {
     const params = useParams();
     const clientId = (params.id as string) || 'active';
     const { user } = useAuth(); // Get current user for agent name
-    const [activeTab, setActiveTab] = useState('סיכום'); // שינוי ברירת מחדל לסיכום
+    const [activeTab, setActiveTab] = useState('מבט על'); // שינוי ברירת מחדל לסיכום
 
     // Main Persisted State
     const [client, setClient] = useState<ClientData>(INITIAL_CLIENT);
+    const [loading, setLoading] = useState(true);
     const [clientTasks, setClientTasks] = useState<Task[]>([]); // New state for global tasks
     const [allClients, setAllClients] = useState<ClientData[]>([]); // לחיפוש לקוח מקושר
     const [clientSearchQuery, setClientSearchQuery] = useState('');
+
+    const totalPremium = useMemo(() => {
+        return client.policies.reduce((sum, p) => {
+            const val = parseInt(p.premium.replace(/[^\d]/g, '')) || 0;
+            return sum + val;
+        }, 0);
+    }, [client.policies]);
+
+    const clientRating = useMemo(() => {
+        if (totalPremium > 600) return { label: 'A+', color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500/30', shadow: 'shadow-fuchsia-500/20' };
+        if (totalPremium > 300) return { label: 'A', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', shadow: 'shadow-amber-500/20' };
+        if (totalPremium > 100) return { label: 'B', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', shadow: 'shadow-blue-500/20' };
+        return { label: 'C', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30', shadow: 'shadow-slate-500/20' };
+    }, [totalPremium]);
 
     // AI State
     const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
@@ -476,6 +505,9 @@ export default function ClientDetailsPage() {
     const [showPlatinumSelect, setShowPlatinumSelect] = useState(false);
     const [showReferralModal, setShowReferralModal] = useState(false);
     const [showMarketModal, setShowMarketModal] = useState(false);
+    const [showComparisonWizard, setShowComparisonWizard] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [showCancellationModal, setShowCancellationModal] = useState(false);
 
     // Elementary Form State
     const [elementaryForm, setElementaryForm] = useState<Partial<ElementaryInsurance>>({
@@ -507,18 +539,30 @@ export default function ClientDetailsPage() {
             try {
                 const data = await firestoreService.getClient(clientId);
                 if (data) {
-                    setClient(data as ClientData);
+                    // Map Firestore data to local ClientData type
+                    const mappedClient = {
+                        ...INITIAL_CLIENT,
+                        ...data,
+                        idNumber: (data as any).idNumber || (data as any).nationalId || INITIAL_CLIENT.idNumber,
+                        elementaryInsurances: (data as any).elementaryInsurances || INITIAL_CLIENT.elementaryInsurances || []
+                    } as unknown as ClientData;
+                    setClient(mappedClient);
                 } else if (clientId === 'active') {
                     setClient(INITIAL_CLIENT);
                 }
 
                 // Load tasks from global collection
                 const tasks = await firestoreService.getTasksForClient(clientId);
-                setClientTasks(tasks);
+                setClientTasks(tasks as any);
 
                 // Load all clients for linking feature
                 const clients = await firestoreService.getClients();
-                setAllClients(clients);
+                setAllClients(clients.map(c => ({
+                    ...INITIAL_CLIENT,
+                    ...c,
+                    idNumber: c.idNumber || c.nationalId || '',
+                    elementaryInsurances: (c as any).elementaryInsurances || []
+                })) as unknown as ClientData[]);
             } catch (error) {
                 console.error('Failed to load client', error);
             } finally {
@@ -527,6 +571,23 @@ export default function ClientDetailsPage() {
         };
         loadClient();
     }, [clientId]);
+
+    const handleSaveComparisonReport = async (report: any) => {
+        if (!client) return;
+
+        const newInteraction: Interaction = {
+            id: Date.now().toString(),
+            type: 'whatsapp',
+            direction: 'outbound',
+            date: new Date().toLocaleString('he-IL'),
+            summary: `הופק דוח השוואת ביטוח: ${report.comparison[0].company} (חיסכון של ₪${report.comparison[0].savings})`,
+            sentiment: 'positive',
+        };
+
+        const updatedInteractions = [newInteraction, ...(client.interactions || [])];
+        await saveData('interactions', updatedInteractions);
+        toast.success('הדוח נשמר בהיסטוריית הלקוח');
+    };
 
     // Save on changes? With Firestore we usually save explicitly, not on every render.
     // The previous code had a useEffect that saved to localStorage on every change.
@@ -544,6 +605,88 @@ export default function ClientDetailsPage() {
         // Persist to Firestore
         if (client.id && client.id !== 'new' && client.id !== 'active') {
             await firestoreService.updateClient(client.id, { [key]: data });
+        }
+    };
+
+    const triggerPolicyAutomations = async (policy: Policy) => {
+        if (!client.email) return;
+
+        // 1. Welcome Email (Trigger: status === 'נמכר')
+        if (policy.status === 'נמכר') {
+            const welcomeHtml = `
+                <div dir="rtl" style="font-family: Arial, sans-serif; padding: 40px; background-color: #f9fafb;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+                        <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); padding: 40px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 900;">ברוכים הבאים! 🛡️</h1>
+                        </div>
+                        <div style="padding: 40px;">
+                            <p style="font-size: 20px; color: #1f2937; font-weight: bold;">שלום ${client.name},</p>
+                            <p style="font-size: 18px; line-height: 1.8; color: #4b5563;">
+                                אנחנו כל כך מתרגשים ושמחים שהחלטת להצטרף למשפחת סוכנות הביטוח שלנו! 
+                                עבורנו, אתה לא רק לקוח - אתה חלק מהמשפחה. אנחנו מבטיחים להיות כאן עבורך בכל רגע, 
+                                עם המקצועיות, השירות והחיוך שתמיד מאפיינים אותנו.
+                            </p>
+                            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                <p style="font-size: 14px; color: #9ca3af; text-align: center;">נשמח לעמוד לשירותך בכל עת,</p>
+                                <p style="font-size: 18px; color: #4f46e5; font-weight: 900; text-align: center;">צוות מגן זהב</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            try {
+                await sendEmail({
+                    to: client.email,
+                    subject: `מרגש! הצטרפת למשפחת מגן זהב 🛡️`,
+                    html: welcomeHtml
+                });
+                toast.success('נשלח מייל Welcome מרגש ללקוח!');
+            } catch (err) {
+                console.error('Failed to send welcome email', err);
+            }
+        }
+
+        // 2. Issuance/Referral Reward (Trigger: status === 'פעיל')
+        if (policy.status === 'פעיל') {
+            const referralHtml = `
+                <div dir="rtl" style="font-family: Arial, sans-serif; padding: 40px; background-color: #fdf2f8;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 2px solid #ec4899;">
+                        <div style="background-color: #ec4899; padding: 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 900;">🎁 הטבה מיוחדת רק בשבילך!</h1>
+                        </div>
+                        <div style="padding: 40px;">
+                            <p style="font-size: 18px; color: #1f2937;">היי ${client.name}, הפוליסה שלך הופקה בהצלחה! 🎉</p>
+                            <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">
+                                כחלק מהחודש הראשון שלך איתנו, החלטנו לפנק אותך בהטבה מטורפת על הפניית לקוחות:
+                            </p>
+                            <ul style="list-style: none; padding: 0; margin: 20px 0;">
+                                <li style="padding: 15px; background: #f9fafb; border-radius: 12px; margin-bottom: 10px; border-right: 4px solid #ec4899;">
+                                    🤝 <strong>100 ש"ח BUYME</strong> על כל לקוח שתפנה ויסגור איתנו.
+                                </li>
+                                <li style="padding: 15px; background: #fdf2f8; border-radius: 12px; margin-bottom: 10px; border-right: 4px solid #ec4899;">
+                                    💎 <strong>150 ש"ח BUYME</strong> אם הפרמיה של הלקוח המופנה מעל 350 ש"ח.
+                                </li>
+                                <li style="padding: 15px; background: #fce7f3; border-radius: 12px; margin-bottom: 10px; border-right: 4px solid #ec4899;">
+                                    👑 <strong>200 ש"ח BUYME</strong> אם הפרמיה של הלקוח המופנה מעל 500 ש"ח.
+                                </li>
+                            </ul>
+                            <p style="font-weight: bold; color: #db2777; text-align: center; margin-top: 20px;">
+                                פשוט תעבירו לנו את הפרטים שלהם ואנחנו נדאג לכל השאר!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            try {
+                await sendEmail({
+                    to: client.email,
+                    subject: `הטבה בלעדית: מקבלים BUYME על כל חבר שמצטרף! 🎁`,
+                    html: referralHtml
+                });
+                toast.success('נשלח מייל הטבת חבר-מביא-חבר!');
+            } catch (err) {
+                console.error('Failed to send referral email', err);
+            }
         }
     };
 
@@ -738,6 +881,17 @@ export default function ClientDetailsPage() {
                     });
                 }
                 await saveData('policies', list);
+                
+                // Trigger automation
+                if (formData.id) {
+                    const oldPolicy = client.policies.find(p => p.id === formData.id);
+                    if (oldPolicy?.status !== formData.status) {
+                        triggerPolicyAutomations(formData as Policy);
+                    }
+                } else {
+                    triggerPolicyAutomations(formData as Policy);
+                }
+
                 toast.success('פוליסה עודכנה בהצלחה');
             } else if (type === 'task') {
                 const priorityMap: any = { נמוכה: 'low', בינונית: 'medium', גבוהה: 'high' };
@@ -1402,6 +1556,25 @@ ${clipped}`;
         });
     };
 
+    const handleImportComplete = async (importedPolicies: ImportedPolicy[]) => {
+        const mappedPolicies: Policy[] = importedPolicies.map((p) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            type: p.type,
+            company: p.company,
+            policyNumber: p.policyNumber,
+            premium: `₪${p.premium.toLocaleString()}`,
+            coverage: 'מידע ייובא',
+            startDate: p.startDate || new Date().toISOString().split('T')[0],
+            renewalDate: '',
+            status: p.status === 'פעיל' ? 'פעיל' : 'לא פעיל',
+            color: 'from-slate-600 to-slate-800',
+            icon: '📄',
+        }));
+
+        const updatedPolicies = [...client.policies, ...mappedPolicies];
+        await saveData('policies', updatedPolicies);
+    };
+
     const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
     const handleGenerateAIInsights = async () => {
         setIsGeneratingInsights(true);
@@ -1472,17 +1645,14 @@ ${clipped}`;
     );
 
     const tabs = [
-        'סיכום',
+        'מבט על',
         'סטטוס',
-        'לביצוע מכירה',
-        'פרטים אישיים',
+        'לביצוע מכירת פרט',
         'אלמנטרי',
         'פוליסות',
         'מסמכים',
-        'משימות',
         'תקשורת',
         'פיננסי',
-        'הר הביטוח',
         'תובנות AI',
     ];
 
@@ -1532,6 +1702,14 @@ ${clipped}`;
                                                     {client.name.split(' ').slice(1).join(' ')}
                                                 </span>
                                             </h1>
+                                            <div
+                                                className={`flex items-center gap-2 rounded-2xl border px-4 py-2 font-black italic shadow-2xl transition-all duration-500 hover:scale-110 ${clientRating.border} ${clientRating.bg} ${clientRating.color} ${clientRating.shadow}`}
+                                            >
+                                                <Star size={20} fill="currentColor" className="animate-pulse" />
+                                                <span className="text-2xl uppercase">
+                                                    דירוג {clientRating.label}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="flex gap-2">
                                             {client.salesStatus === 'closed_won' ? (
@@ -1655,7 +1833,7 @@ ${clipped}`;
                 </div>
 
                 {/* --- Tab Content: Summary --- */}
-                {activeTab === 'סיכום' && (
+                {activeTab === 'מבט על' && (
                     <div className="stagger-children space-y-10">
                         {/* Key Financial Cards */}
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -2092,6 +2270,129 @@ ${clipped}`;
                                 </div>
                             </NeonCard>
                         </div>
+
+                        {/* Address & Employment - Integrated from Personal Info */}
+                        <div className="grid gap-8 lg:grid-cols-2">
+                            <NeonCard title="📍 כתובת מגורים">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <NeonInput label="עיר" value={client.address.city} readOnly />
+                                    <NeonInput
+                                        label="רחוב ומספר"
+                                        value={`${client.address.street} ${client.address.num}`}
+                                        readOnly
+                                    />
+                                </div>
+                            </NeonCard>
+
+                            <NeonCard title="💼 תעסוקה">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <NeonInput
+                                        label="סטטוס"
+                                        value={client.employment.status}
+                                        readOnly
+                                    />
+                                    <NeonInput
+                                        label="עיסוק"
+                                        value={client.employment.occupation}
+                                        readOnly
+                                    />
+                                </div>
+                            </NeonCard>
+                        </div>
+
+                        {/* Elementary Insurance Summary */}
+                        <NeonCard title="🚗 אלמנטרי ופלטינום">
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+                                    <p className="mb-2 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+                                        מוצרי פלטינום בסל
+                                    </p>
+                                    <p className="text-3xl font-black text-white italic">
+                                        {(client.platinumSales || []).length}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+                                    <p className="mb-2 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+                                        סטטוס הפקה
+                                    </p>
+                                    <div className="flex gap-2 text-white">
+                                        <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30">
+                                            {client.platinumSales?.filter(s => s.status === 'ממתין להפקה').length || 0} ממתינים
+                                        </Badge>
+                                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                                            {client.platinumSales?.filter(s => s.status === 'נשלח לפלטינום').length || 0} נשלחו
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </div>
+                        </NeonCard>
+
+                        {/* Family Members Section - Moved from Personal Info */}
+                        <NeonCard title="👨‍👩‍👧‍👦 בני משפחה קשורים">
+                            <div className="mb-6 flex justify-end">
+                                <NeonButton
+                                    onClick={() => handleEdit('family')}
+                                    variant="secondary"
+                                    size="sm"
+                                >
+                                    <Plus size={16} className="ml-2" /> הוסף בן משפחה
+                                </NeonButton>
+                            </div>
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 text-right">
+                                {client.family.map((member, i) => (
+                                    <div
+                                        key={member.id}
+                                        className="group relative rounded-[2rem] border border-slate-800 bg-slate-900/50 p-6 transition-all duration-300 hover:border-amber-500/30"
+                                    >
+                                        <div className="absolute top-4 left-4 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                                            <button
+                                                onClick={() => handleEdit('family', member)}
+                                                className="rounded-xl bg-slate-800 p-2 text-slate-400 transition-colors hover:text-amber-400"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteItem('family', member.id)}
+                                                className="rounded-xl bg-slate-800 p-2 text-slate-400 transition-colors hover:text-red-500"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                        <div className="mb-4 flex items-center gap-4">
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-xl font-black text-amber-500">
+                                                {member.name[0]}
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-black text-white">
+                                                    {member.name}
+                                                </p>
+                                                <p className="mt-1 flex items-center gap-2 text-xs font-bold text-slate-500">
+                                                    <span className="rounded-full bg-slate-800 px-3 py-0.5">
+                                                        {member.relation}
+                                                    </span>
+                                                    <span className="rounded-full bg-slate-800 px-3 py-0.5">
+                                                        גיל {member.age}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div
+                                            className={`inline-flex items-center rounded-full border px-4 py-1.5 text-[10px] font-black tracking-widest uppercase ${member.insured ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}
+                                        >
+                                            {member.insured ? '✓ מבוטח' : '✗ לא מבוטח'}
+                                        </div>
+                                    </div>
+                                ))}
+                                {client.family.length === 0 && (
+                                    <div className="col-span-2 rounded-[2rem] border-2 border-dashed border-slate-800/50 bg-slate-900/20 py-16 text-center">
+                                        <div className="mb-4 text-6xl opacity-10">👨‍👩‍👧‍👦</div>
+                                        <p className="font-bold text-slate-500 italic">
+                                            אין בני משפחה רשומים
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </NeonCard>
                     </div>
                 )}
 
@@ -2101,7 +2402,7 @@ ${clipped}`;
                 )}
 
                 {/* --- Tab Content: Sales Execution --- */}
-                {activeTab === 'לביצוע מכירה' && (
+                {activeTab === 'לביצוע מכירת פרט' && (
                     <div className="stagger-children grid gap-8 lg:grid-cols-2">
                         {/* Pension Sales Section */}
                         <NeonCard title="📊 מכירה פנסיונית">
@@ -2227,6 +2528,12 @@ ${clipped}`;
                                     className="flex flex-1 items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 font-black text-white transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
                                 >
                                     <span className="text-xl">🤖</span> ניתוח שוק (AI)
+                                </button>
+                                <button
+                                    onClick={() => setShowComparisonWizard(true)}
+                                    className="flex flex-1 items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-amber-500 to-orange-600 font-black text-white transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                                >
+                                    <span className="text-xl">📋</span> השוואת ביטוח
                                 </button>
                             </div>
 
@@ -3001,17 +3308,17 @@ ${clipped}`;
                                                                 onClick={() =>
                                                                     setPlatinumPaymentForm({
                                                                         ...platinumPaymentForm,
-                                                                        accountType: 'עו&quot;ש',
+                                                                        accountType: 'עו"ש',
                                                                     })
                                                                 }
                                                                 className={`rounded-2xl border-2 p-4 text-xs font-black transition-all ${
                                                                     platinumPaymentForm.accountType ===
-                                                                    'עו&quot;ש'
+                                                                    'עו"ש'
                                                                         ? 'border-blue-600 bg-blue-600 text-white shadow-lg'
                                                                         : 'border-slate-800 bg-slate-900/50 text-slate-400'
                                                                 }`}
                                                             >
-                                                                עו&quot;ש
+                                                                עו"ש
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -3143,102 +3450,7 @@ ${clipped}`;
                     </div>
                 )}
 
-                {/* --- Tab Content: Personal --- */}
-                {activeTab === 'פרטים אישיים' && (
-                    <div className="stagger-children grid gap-8">
-                        <NeonCard title="📍 כתובת מגורים">
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <NeonInput label="עיר" value={client.address.city} readOnly />
-                                <NeonInput
-                                    label="רחוב ומספר"
-                                    value={`${client.address.street} ${client.address.num}`}
-                                    readOnly
-                                />
-                            </div>
-                        </NeonCard>
 
-                        <NeonCard title="💼 תעסוקה">
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <NeonInput
-                                    label="סטטוס"
-                                    value={client.employment.status}
-                                    readOnly
-                                />
-                                <NeonInput
-                                    label="עיסוק"
-                                    value={client.employment.occupation}
-                                    readOnly
-                                />
-                            </div>
-                        </NeonCard>
-
-                        {/* Family Members Section */}
-                        <NeonCard title="👨‍👩‍👧‍👦 בני משפחה">
-                            <div className="mb-6 flex justify-end">
-                                <NeonButton
-                                    onClick={() => handleEdit('family')}
-                                    variant="secondary"
-                                >
-                                    <Plus size={16} className="ml-2" /> הוסף בן משפחה
-                                </NeonButton>
-                            </div>
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                {client.family.map((member, i) => (
-                                    <div
-                                        key={member.id}
-                                        className="group relative rounded-[2rem] border border-slate-800 bg-slate-900/50 p-6 transition-all duration-300 hover:border-amber-500/30"
-                                    >
-                                        <div className="absolute top-4 left-4 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                            <button
-                                                onClick={() => handleEdit('family', member)}
-                                                className="rounded-xl bg-slate-800 p-2 text-slate-400 transition-colors hover:text-amber-400"
-                                            >
-                                                <Edit2 size={14} />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteItem('family', member.id)}
-                                                className="rounded-xl bg-slate-800 p-2 text-slate-400 transition-colors hover:text-red-500"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                        <div className="mb-4 flex items-center gap-4">
-                                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-xl font-black text-amber-500">
-                                                {member.name[0]}
-                                            </div>
-                                            <div>
-                                                <p className="text-lg font-black text-white">
-                                                    {member.name}
-                                                </p>
-                                                <p className="mt-1 flex items-center gap-2 text-xs font-bold text-slate-500">
-                                                    <span className="rounded-full bg-slate-800 px-3 py-0.5">
-                                                        {member.relation}
-                                                    </span>
-                                                    <span className="rounded-full bg-slate-800 px-3 py-0.5">
-                                                        גיל {member.age}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div
-                                            className={`inline-flex items-center rounded-full border px-4 py-1.5 text-[10px] font-black tracking-widest uppercase ${member.insured ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}
-                                        >
-                                            {member.insured ? '✓ מבוטח' : '✗ לא מבוטח'}
-                                        </div>
-                                    </div>
-                                ))}
-                                {client.family.length === 0 && (
-                                    <div className="col-span-2 rounded-[2rem] border-2 border-dashed border-slate-800/50 bg-slate-900/20 py-16 text-center">
-                                        <div className="mb-4 text-6xl opacity-10">👨‍👩‍👧‍👦</div>
-                                        <p className="font-bold text-slate-500 italic">
-                                            אין בני משפחה רשומים
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </NeonCard>
-                    </div>
-                )}
 
                 {/* --- Tab Content: Elementary (Car/Home) --- */}
                 {activeTab === 'אלמנטרי' && (
@@ -3500,13 +3712,24 @@ ${clipped}`;
                 {/* --- Tab Content: Policies --- */}
                 {activeTab === 'פוליסות' && (
                     <div className="stagger-children space-y-8">
-                        <div className="flex justify-end">
-                            <NeonButton onClick={() => handleEdit('policy')} variant="secondary">
-                                <Plus size={16} className="ml-2" /> הוסף פוליסה
-                                <span className="mr-2 text-[10px] font-black tracking-widest opacity-60">
-                                    (תפעול בלבד)
-                                </span>
-                            </NeonButton>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-2xl font-black text-white italic">תיק ביטוחי פעיל</h3>
+                            <div className="flex gap-4">
+                                <NeonButton 
+                                    onClick={() => setShowImportModal(true)} 
+                                    variant="secondary"
+                                    className="border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
+                                >
+                                    <Database size={16} className="ml-2" />
+                                    ייבוא חכם (מסלקה/הר הביטוח)
+                                </NeonButton>
+                                <NeonButton onClick={() => handleEdit('policy')} variant="secondary">
+                                    <Plus size={16} className="ml-2" /> הוסף פוליסה
+                                    <span className="mr-2 text-[10px] font-black tracking-widest opacity-60">
+                                        (תפעול בלבד)
+                                    </span>
+                                </NeonButton>
+                            </div>
                         </div>
                         <div className="grid gap-8">
                             {client.policies.map((policy, index) => (
@@ -3603,22 +3826,240 @@ ${clipped}`;
 
                 {/* --- Tab Content: Documents --- */}
                 {activeTab === 'מסמכים' && (
-                    <DocumentsTab
-                        documents={client.documents || []}
-                        onUpload={handleUploadDocument}
-                        onDelete={handleDeleteDocument}
-                        onUpdateDocument={(docId, updates) => {
-                            const updatedDocs = client.documents.map((doc) =>
-                                doc.id === docId ? { ...doc, ...updates } : doc
-                            );
-                            saveData('documents', updatedDocs);
-                            toast.success('המסמך עודכן בהצלחה');
-                        }}
-                    />
+                    <div className="space-y-8">
+                        <div className="flex justify-between items-center bg-slate-900/50 p-6 rounded-[2rem] border border-white/5">
+                            <div>
+                                <h4 className="text-xl font-black text-white italic">ניהול מסמכי ביטוח</h4>
+                                <p className="text-xs font-bold text-slate-500 mt-1">כאן ניתן לנהל מסמכים ולהפיק דוחות השוואה חכמים</p>
+                            </div>
+                            <div className="flex gap-4">
+                                <NeonButton onClick={() => setShowCancellationModal(true)} variant="secondary" className="border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20">
+                                    <Mail size={18} className="ml-2" /> מכתב ביטול רשמי
+                                </NeonButton>
+                                <NeonButton onClick={() => setShowComparisonWizard(true)} variant="secondary">
+                                    <FileText size={18} className="ml-2" /> יצירת דוח השוואה מהיר
+                                </NeonButton>
+                            </div>
+                        </div>
+                        <DocumentsTab
+                            documents={client.documents || []}
+                            onUpload={handleUploadDocument}
+                            onDelete={handleDeleteDocument}
+                            onUpdateDocument={(docId, updates) => {
+                                const updatedDocs = client.documents.map((doc) =>
+                                    doc.id === docId ? { ...doc, ...updates } : doc
+                                );
+                                saveData('documents', updatedDocs);
+                                toast.success('המסמך עודכן בהצלחה');
+                            }}
+                        />
+
+                        {/* Integrated Har Habituach Section */}
+                        <div className="mt-12 border-t border-slate-800 pt-12">
+                            <NeonCard title="🏔️ ייבוא נתונים מהר הביטוח">
+                                <div className="grid items-center gap-8 md:grid-cols-2">
+                                    <div>
+                                        <p className="mb-6 leading-relaxed font-bold text-slate-400">
+                                            העלה דוח מסלקה או הר הביטוח (Excel/PDF) כדי לזהות כפל
+                                            ביטוחי, חוסרים בכיסוי והזדמנויות לחיסכון עבור הלקוח.
+                                        </p>
+                                        <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-[10px] font-black tracking-widest text-amber-500 uppercase">
+                                            <span>💡</span> המערכת תבצע ניתוח אוטומטי ותטמיע את הממצאים
+                                            בתיק
+                                        </div>
+                                    </div>
+                                    <div className="relative">
+                                        {isAnalyzing ? (
+                                            <div className="rounded-2.5xl flex animate-pulse flex-col items-center justify-center border border-slate-800 bg-slate-900/50 p-12">
+                                                <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
+                                                <span className="text-xs font-black tracking-[0.2em] text-indigo-400 uppercase">
+                                                    מפענח נתונים...
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="group transition-all">
+                                                <FileUpload
+                                                    onUpload={handleUploadHarHabituach}
+                                                    label="גרור דוח לכאן או לחץ לבחירה"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </NeonCard>
+
+                            {client.externalPolicies && client.externalPolicies.length > 0 ? (
+                                <NeonCard title="🔍 פוליסות חיצוניות שאותרו" className="mt-8">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full border-separate border-spacing-y-3 text-right">
+                                            <thead>
+                                                <tr className="px-4 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+                                                    <th className="pr-6 pb-4">חברה</th>
+                                                    <th className="pb-4">סוג מוצר</th>
+                                                    <th className="pb-4">פרמיה</th>
+                                                    <th className="pb-4">תום תקופה</th>
+                                                    <th className="pb-4">סטטוס</th>
+                                                    <th className="pb-4 pl-6 text-left">פעולות</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {client.externalPolicies.map((policy) => (
+                                                    <tr
+                                                        key={policy.id}
+                                                        className="group transition-all hover:bg-slate-900/50"
+                                                    >
+                                                        <td className="rounded-r-2xl border-y border-r border-slate-900 py-5 pr-6 font-black text-white group-hover:border-slate-800">
+                                                            {policy.company}
+                                                        </td>
+                                                        <td className="border-y border-slate-900 py-5 font-bold text-slate-400 group-hover:border-slate-800">
+                                                            {policy.productType}
+                                                        </td>
+                                                        <td className="border-y border-slate-900 py-5 font-black text-amber-500 italic group-hover:border-slate-800">
+                                                            {policy.premium}
+                                                        </td>
+                                                        <td className="border-y border-slate-900 py-5 text-xs font-bold text-slate-500 uppercase group-hover:border-slate-800">
+                                                            {new Date(
+                                                                policy.endDate
+                                                            ).toLocaleDateString('he-IL')}
+                                                        </td>
+                                                        <td className="border-y border-slate-900 py-5 group-hover:border-slate-800">
+                                                            <Badge className="border-slate-700 bg-slate-800 px-3 text-[10px] font-black text-slate-500 uppercase">
+                                                                {policy.status}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="flex items-center justify-end gap-3 rounded-l-2xl border-y border-l border-slate-900 py-5 pl-6 group-hover:border-slate-800">
+                                                            <NeonButton
+                                                                onClick={() => handleImportLead(policy)}
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="px-5! py-2! text-[10px]!"
+                                                            >
+                                                                + צור ליד
+                                                            </NeonButton>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleDeleteExternalPolicy(
+                                                                        policy.id
+                                                                    )
+                                                                }
+                                                                className="rounded-xl border border-transparent p-2.5 text-slate-600 transition-all hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-500"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </NeonCard>
+                            ) : null}
+                        </div>
+                    </div>
                 )}
                 {/* --- Tab Content: Communication --- */}
                 {activeTab === 'תקשורת' && (
-                    <div className="animate-in fade-in space-y-8 duration-700">
+                    <div className="animate-in fade-in space-y-12 duration-700">
+                        {/* Integrated Tasks Section */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between px-4">
+                                <h4 className="text-3xl font-black tracking-tighter text-white italic">
+                                    ⚡ משימות לביצוע
+                                </h4>
+                                <NeonButton
+                                    onClick={() => handleEdit('task')}
+                                    variant="secondary"
+                                    size="sm"
+                                >
+                                    <Plus size={16} className="ml-2" /> משימה חדשה
+                                </NeonButton>
+                            </div>
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                {clientTasks.map((task) => {
+                                    const priorityLabel =
+                                        { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[
+                                            task.priority as string
+                                        ] || 'בינונית';
+                                    const statusLabel =
+                                        {
+                                            pending: 'ממתינה',
+                                            overdue: 'באיחור',
+                                            completed: 'הושלמה',
+                                            transferred: 'הועבר',
+                                        }[task.status as string] || 'ממתינה';
+
+                                    return (
+                                        <NeonCard
+                                            key={task.id}
+                                            className="group p-6! transition-all hover:scale-[1.01]"
+                                        >
+                                            <div className="absolute top-6 left-6 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                                                <button
+                                                    onClick={() =>
+                                                        handleEdit('task', {
+                                                            ...task,
+                                                            priority: priorityLabel,
+                                                            status: statusLabel,
+                                                            dueDate: task.date,
+                                                        })
+                                                    }
+                                                    className="rounded-xl border border-slate-700 bg-slate-800 p-2 text-slate-400 transition-colors hover:text-amber-400"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteItem('tasks', task.id)}
+                                                    className="rounded-xl border border-slate-700 bg-slate-800 p-2 text-slate-400 transition-colors hover:text-red-500"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <div
+                                                    className={`mt-2 h-3 w-3 flex-shrink-0 rounded-full shadow-[0_0_10px_currentColor] ${
+                                                        task.priority === 'high'
+                                                            ? 'bg-red-500 text-red-500'
+                                                            : task.priority === 'medium'
+                                                              ? 'bg-amber-500 text-amber-500'
+                                                              : 'bg-emerald-500 text-emerald-500'
+                                                    }`}
+                                                />
+                                                <div className="flex-1 overflow-hidden text-right">
+                                                    <h5 className="mb-3 truncate text-lg font-black tracking-tight text-white italic transition-colors group-hover:text-amber-500">
+                                                        {task.title}
+                                                    </h5>
+                                                    <div className="flex flex-wrap gap-3 text-[9px] font-black tracking-widest text-slate-500 uppercase">
+                                                        <span className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/50 px-2.5 py-1">
+                                                            <span className="text-amber-500">📅</span>{' '}
+                                                            {task.date || task.dueDate}
+                                                        </span>
+                                                        <span
+                                                            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 ${
+                                                                statusLabel === 'הושלמה'
+                                                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                                                                    : statusLabel === 'באיחור'
+                                                                      ? 'border-red-500/20 bg-red-500/10 text-red-400'
+                                                                      : 'border-slate-800 bg-slate-900/50 text-slate-400'
+                                                            }`}
+                                                        >
+                                                            {statusLabel}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </NeonCard>
+                                    );
+                                })}
+                                {clientTasks.length === 0 && (
+                                    <div className="col-span-full rounded-[2rem] border-2 border-dashed border-slate-800/30 bg-slate-900/10 py-12 text-center opacity-50">
+                                        <p className="font-bold text-slate-600 italic">אין משימות פתוחות</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="h-px w-full bg-linear-to-r from-transparent via-slate-800 to-transparent" />
+
                         <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
                             {/* Input Area */}
                             <div className="lg:col-span-1">
@@ -3764,119 +4205,7 @@ ${clipped}`;
                     </div>
                 )}
 
-                {/* --- Tab Content: Har HaBituach --- */}
-                {activeTab === 'הר הביטוח' && (
-                    <div className="animate-in fade-in space-y-8 duration-700">
-                        <NeonCard title="🏔️ ייבוא נתונים מהר הביטוח">
-                            <div className="grid items-center gap-8 md:grid-cols-2">
-                                <div>
-                                    <p className="mb-6 leading-relaxed font-bold text-slate-400">
-                                        העלה דוח מסלקה או הר הביטוח (Excel/PDF) כדי לזהות כפל
-                                        ביטוחי, חוסרים בכיסוי והזדמנויות לחיסכון עבור הלקוח.
-                                    </p>
-                                    <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-[10px] font-black tracking-widest text-amber-500 uppercase">
-                                        <span>💡</span> המערכת תבצע ניתוח אוטומטי ותטמיע את הממצאים
-                                        בתיק
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                    {isAnalyzing ? (
-                                        <div className="rounded-2.5xl flex animate-pulse flex-col items-center justify-center border border-slate-800 bg-slate-900/50 p-12">
-                                            <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
-                                            <span className="text-xs font-black tracking-[0.2em] text-indigo-400 uppercase">
-                                                מפענח נתונים...
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="group transition-all">
-                                            <FileUpload
-                                                onUpload={handleUploadHarHabituach}
-                                                label="גרור דוח לכאן או לחץ לבחירה"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </NeonCard>
 
-                        {client.externalPolicies && client.externalPolicies.length > 0 ? (
-                            <NeonCard title="🔍 פוליסות חיצוניות שאותרו">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-separate border-spacing-y-3 text-right">
-                                        <thead>
-                                            <tr className="px-4 text-[10px] font-black tracking-widest text-slate-500 uppercase">
-                                                <th className="pr-6 pb-4">חברה</th>
-                                                <th className="pb-4">סוג מוצר</th>
-                                                <th className="pb-4">פרמיה</th>
-                                                <th className="pb-4">תום תקופה</th>
-                                                <th className="pb-4">סטטוס</th>
-                                                <th className="pb-4 pl-6 text-left">פעולות</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {client.externalPolicies.map((policy) => (
-                                                <tr
-                                                    key={policy.id}
-                                                    className="group transition-all hover:bg-slate-900/50"
-                                                >
-                                                    <td className="rounded-r-2xl border-y border-r border-slate-900 py-5 pr-6 font-black text-white group-hover:border-slate-800">
-                                                        {policy.company}
-                                                    </td>
-                                                    <td className="border-y border-slate-900 py-5 font-bold text-slate-400 group-hover:border-slate-800">
-                                                        {policy.productType}
-                                                    </td>
-                                                    <td className="border-y border-slate-900 py-5 font-black text-amber-500 italic group-hover:border-slate-800">
-                                                        {policy.premium}
-                                                    </td>
-                                                    <td className="border-y border-slate-900 py-5 text-xs font-bold text-slate-500 uppercase group-hover:border-slate-800">
-                                                        {new Date(
-                                                            policy.endDate
-                                                        ).toLocaleDateString('he-IL')}
-                                                    </td>
-                                                    <td className="border-y border-slate-900 py-5 group-hover:border-slate-800">
-                                                        <Badge className="border-slate-700 bg-slate-800 px-3 text-[10px] font-black text-slate-500 uppercase">
-                                                            {policy.status}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="flex items-center justify-end gap-3 rounded-l-2xl border-y border-l border-slate-900 py-5 pl-6 group-hover:border-slate-800">
-                                                        <NeonButton
-                                                            onClick={() => handleImportLead(policy)}
-                                                            size="sm"
-                                                            variant="secondary"
-                                                            className="px-5! py-2! text-[10px]!"
-                                                        >
-                                                            + צור ליד
-                                                        </NeonButton>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleDeleteExternalPolicy(
-                                                                    policy.id
-                                                                )
-                                                            }
-                                                            className="rounded-xl border border-transparent p-2.5 text-slate-600 transition-all hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-500"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </NeonCard>
-                        ) : (
-                            <div className="rounded-[3rem] border-2 border-dashed border-slate-800/20 bg-slate-900/10 py-24 text-center shadow-inner">
-                                <div className="mb-6 text-7xl opacity-5 grayscale">🏞️</div>
-                                <h3 className="text-xl font-black tracking-tight text-slate-600 italic">
-                                    טרם הועלו נתוני עבר לבחינה
-                                </h3>
-                                <p className="mt-2 text-xs font-bold tracking-widest text-slate-700 uppercase">
-                                    העלה קובץ מסלקה כדי להתחיל בניתוח
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
                 {/* --- Tab Content: AI Insights --- */}
                 {activeTab === 'תובנות AI' && (
                     <div className="animate-in fade-in space-y-10 duration-700">
@@ -3909,6 +4238,13 @@ ${clipped}`;
                                 </div>
                             </div>
                         )}
+
+                        <div className="mb-12">
+                            <GoldenShieldRiskAnalyzer 
+                                policies={client.policies}
+                                clientAge={calculateAge(client.birthDate || '')}
+                            />
+                        </div>
 
                         {client.aiInsights ? (
                             <div className="space-y-8">
@@ -4196,7 +4532,7 @@ ${clipped}`;
                                                     ללקוח אין קופת גמל או קרן פנסיה פעילה בתיק.
                                                 </p>
                                                 <NeonButton
-                                                    onClick={() => setActiveTab('לביצוע מכירה')}
+                                                    onClick={() => setActiveTab('לביצוע מכירת פרט')}
                                                     size="sm"
                                                     variant="secondary"
                                                     className="mt-4 text-[10px]!"
@@ -4219,7 +4555,7 @@ ${clipped}`;
                                                     מומלץ להציע ביטוח משלים או פרטי ללקוח זה.
                                                 </p>
                                                 <NeonButton
-                                                    onClick={() => setActiveTab('לביצוע מכירה')}
+                                                    onClick={() => setActiveTab('לביצוע מכירת פרט')}
                                                     size="sm"
                                                     variant="secondary"
                                                     className="mt-4 text-[10px]!"
@@ -4248,112 +4584,7 @@ ${clipped}`;
                         </div>
                     </div>
                 )}
-                {/* --- Tab Content: Tasks --- */}
-                {activeTab === 'משימות' && (
-                    <div className="animate-in fade-in space-y-8 duration-700">
-                        <div className="flex items-center justify-between px-4">
-                            <h4 className="text-3xl font-black tracking-tighter text-white italic">
-                                ⚡ משימות לביצוע
-                            </h4>
-                            <NeonButton
-                                onClick={() => handleEdit('task')}
-                                variant="secondary"
-                                size="sm"
-                            >
-                                <Plus size={16} className="ml-2" /> משימה חדשה
-                            </NeonButton>
-                        </div>
-                        <div className="grid gap-6">
-                            {clientTasks.map((task) => {
-                                const priorityLabel =
-                                    { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה' }[
-                                        task.priority as string
-                                    ] || 'בינונית';
-                                const statusLabel =
-                                    {
-                                        pending: 'ממתינה',
-                                        overdue: 'באיחור',
-                                        completed: 'הושלמה',
-                                        transferred: 'הועבר',
-                                    }[task.status as string] || 'ממתינה';
 
-                                return (
-                                    <NeonCard
-                                        key={task.id}
-                                        className="group p-6! transition-all hover:scale-[1.01]"
-                                    >
-                                        <div className="absolute top-6 left-6 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                            <button
-                                                onClick={() =>
-                                                    handleEdit('task', {
-                                                        ...task,
-                                                        priority: priorityLabel,
-                                                        status: statusLabel,
-                                                        dueDate: task.date,
-                                                    })
-                                                }
-                                                className="rounded-xl border border-slate-700 bg-slate-800 p-2 text-slate-400 transition-colors hover:text-amber-400"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteItem('tasks', task.id)}
-                                                className="rounded-xl border border-slate-700 bg-slate-800 p-2 text-slate-400 transition-colors hover:text-red-500"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                        <div className="flex items-start gap-6">
-                                            <div
-                                                className={`mt-2 h-4 w-4 rounded-full shadow-[0_0_15px_currentColor] ${
-                                                    task.priority === 'high'
-                                                        ? 'bg-red-500 text-red-500'
-                                                        : task.priority === 'medium'
-                                                          ? 'bg-amber-500 text-amber-500'
-                                                          : 'bg-emerald-500 text-emerald-500'
-                                                }`}
-                                            />
-                                            <div className="flex-1">
-                                                <h5 className="mb-4 text-xl font-black tracking-tight text-white italic transition-colors group-hover:text-amber-500">
-                                                    {task.title}
-                                                </h5>
-                                                <div className="flex flex-wrap gap-6 text-[10px] font-black tracking-widest text-slate-500 uppercase">
-                                                    <span className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-2">
-                                                        <span className="text-amber-500">📅</span>{' '}
-                                                        {task.date || task.dueDate}
-                                                    </span>
-                                                    <span
-                                                        className={`flex items-center gap-2 rounded-xl border px-4 py-2 ${
-                                                            statusLabel === 'הושלמה'
-                                                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
-                                                                : statusLabel === 'באיחור'
-                                                                  ? 'border-red-500/20 bg-red-500/10 text-red-400'
-                                                                  : 'border-slate-800 bg-slate-900/50 text-slate-400'
-                                                        }`}
-                                                    >
-                                                        {statusLabel}
-                                                    </span>
-                                                    <span className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-2">
-                                                        <span className="text-blue-400">👤</span>{' '}
-                                                        {task.assignee}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </NeonCard>
-                                );
-                            })}
-                            {clientTasks.length === 0 && (
-                                <div className="rounded-[3rem] border-2 border-dashed border-slate-800/30 bg-slate-900/10 py-20 text-center shadow-inner">
-                                    <div className="mb-6 text-6xl opacity-10">🎯</div>
-                                    <p className="text-lg font-black text-slate-600 italic">
-                                        המצפון נקי - אין משימות פתוחות
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* --- Unified Edit Modal --- */}
                 {editMode ? (
@@ -4645,232 +4876,98 @@ ${clipped}`;
                     </NeonModal>
                 ) : null}
 
-                {/* --- Market Analysis Modal --- */}
-                {showMarketModal ? (
-                    <div
-                        className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm duration-200"
-                        dir="rtl"
-                    >
-                        <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border-none bg-white shadow-2xl">
-                            <div className="space-y-8 p-8">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="font-display flex items-center gap-3 text-3xl font-black text-slate-800">
-                                            <span className="text-4xl">🤖</span> ניתוח שוק והשוואת
-                                            תשואות
-                                        </h2>
-                                        <p className="mt-1 font-medium text-slate-500">
-                                            האלגוריתם סורק את ביצועי הקרנות המובילות במסלול S&P 500
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowMarketModal(false)}
-                                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xl text-slate-500 hover:bg-slate-200"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                                    {/* Sources */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-black tracking-widest text-slate-400 uppercase">
-                                            מקורות מידע חיצוניים
-                                        </h4>
-                                        <a
-                                            href="https://www.mygemel.net/%D7%A7%D7%A8%D7%A0%D7%95%D7%AA-%D7%94%D7%A9%D7%AA%D7%9C%D7%9E%D7%95%D7%AA"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-all hover:border-emerald-200 hover:bg-emerald-50"
-                                        >
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-lg text-emerald-600 transition-transform group-hover:scale-110">
-                                                📈
-                                            </div>
-                                            <div>
-                                                <div className="font-black text-slate-700 group-hover:text-emerald-700">
-                                                    MyGemel
-                                                </div>
-                                                <div className="text-xs text-slate-400">
-                                                    השוואת קרנות השתלמות
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a
-                                            href="https://pensyanet.cma.gov.il/"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-all hover:border-blue-200 hover:bg-blue-50"
-                                        >
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-lg text-blue-600 transition-transform group-hover:scale-110">
-                                                🏛️
-                                            </div>
-                                            <div>
-                                                <div className="font-black text-slate-700 group-hover:text-blue-700">
-                                                    פנסיה-נט
-                                                </div>
-                                                <div className="text-xs text-slate-400">
-                                                    מערכת משרד האוצר
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a
-                                            href="https://big.hcsra.co.il/graph/"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-all hover:border-purple-200 hover:bg-purple-50"
-                                        >
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-lg text-purple-600 transition-transform group-hover:scale-110">
-                                                📊
-                                            </div>
-                                            <div>
-                                                <div className="font-black text-slate-700 group-hover:text-purple-700">
-                                                    ביטוח-נט (Big)
-                                                </div>
-                                                <div className="text-xs text-slate-400">
-                                                    גרפים וניתוח ביטוח
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                    {/* Comparison Table */}
-                                    <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 lg:col-span-2">
-                                        <h4 className="mb-4 text-sm font-black tracking-widest text-slate-400 uppercase">
-                                            השוואת מסלולי S&P 500 (תשואה מצטברת)
-                                        </h4>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-right">
-                                                <thead>
-                                                    <tr className="border-b border-slate-200 text-xs text-slate-400">
-                                                        <th className="pr-2 pb-3">שם הקרן</th>
-                                                        <th className="pb-3">מתחילת שנה</th>
-                                                        <th className="pb-3">3 שנים</th>
-                                                        <th className="pb-3">5 שנים</th>
-                                                        <th className="pb-3">דמי ניהול ממוצע</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-200/50 text-sm font-bold text-slate-600">
-                                                    {[
-                                                        {
-                                                            name: 'אלטשולר שחם S&P 500',
-                                                            ytd: '18.4%',
-                                                            y3: '42.1%',
-                                                            y5: '76.5%',
-                                                            fee: '0.7%',
-                                                        },
-                                                        {
-                                                            name: 'הפניקס S&P 500',
-                                                            ytd: '17.9%',
-                                                            y3: '40.8%',
-                                                            y5: '74.2%',
-                                                            fee: '0.65%',
-                                                        },
-                                                        {
-                                                            name: 'מיטב S&P 500',
-                                                            ytd: '18.1%',
-                                                            y3: '41.5%',
-                                                            y5: '75.1%',
-                                                            fee: '0.68%',
-                                                        },
-                                                        {
-                                                            name: 'מנורה מבטחים S&P 500',
-                                                            ytd: '17.6%',
-                                                            y3: '39.9%',
-                                                            y5: '73.0%',
-                                                            fee: '0.62%',
-                                                        },
-                                                        {
-                                                            name: 'הראל S&P 500',
-                                                            ytd: '17.8%',
-                                                            y3: '40.3%',
-                                                            y5: '73.8%',
-                                                            fee: '0.65%',
-                                                        },
-                                                    ].map((fund, i) => (
-                                                        <tr
-                                                            key={i}
-                                                            className="group transition-colors hover:bg-white"
-                                                        >
-                                                            <td className="py-4 pr-2 font-black text-slate-700">
-                                                                {fund.name}
-                                                            </td>
-                                                            <td className="ltr py-4 text-emerald-600">
-                                                                {fund.ytd}
-                                                            </td>
-                                                            <td className="ltr py-4 text-emerald-600">
-                                                                {fund.y3}
-                                                            </td>
-                                                            <td className="ltr py-4 text-emerald-600">
-                                                                {fund.y5}
-                                                            </td>
-                                                            <td className="ltr py-4 text-slate-400">
-                                                                {fund.fee}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div className="mt-4 flex items-start gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-4">
-                                            <span className="text-xl">💡</span>
-                                            <p className="text-xs leading-relaxed font-bold text-yellow-800">
-                                                המלצת המערכת: אלטשולר שחם ומיטב מציגים את הביצועים
-                                                העקביים ביותר לאורך זמן במסלול זה. עם זאת, שים לב
-                                                לדמי הניהול - ניתן לרוב להשיג הנחה של 0.1-0.2%
-                                                במיקוח.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    </div>
-                ) : null}
+            <PensionAnalysisWizard
+                isOpen={showMarketModal}
+                onClose={() => setShowMarketModal(false)}
+                clientData={client}
+                onSaveAnalysis={async (result) => {
+                    if (id) {
+                        try {
+                            await firestoreService.addPensionAnalysis(id as string, result);
+                            toast.success('ניתוח פנסיוני נשמר בהצלחה בכרטיס הלקוח');
+                        } catch (error) {
+                            console.error('Error saving pension analysis:', error);
+                            toast.error('שגיאה בשמירת הניתוח');
+                        }
+                    }
+                }}
+            />
                 {/* --- Referral Modal --- */}
-                {showReferralModal ? (
-                    <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm duration-200">
-                        <div className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 text-center shadow-2xl">
-                            <button
-                                onClick={() => setShowReferralModal(false)}
-                                className="absolute top-6 right-6 text-slate-300 hover:text-slate-600"
-                            >
-                                <X size={20} />
-                            </button>
-                            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                                <Share2 size={32} />
+                {showReferralModal ? <NeonModal
+                        isOpen={showReferralModal}
+                        onClose={() => setShowReferralModal(false)}
+                        title="🚀 הפניית לקוח לגורם מקצועי"
+                        maxWidth="max-w-md"
+                        hideFooter
+                    >
+                        <div className="space-y-8 text-center">
+                            <div className="mx-auto mb-2 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shadow-inner">
+                                <Share2 size={40} />
                             </div>
-                            <h3 className="mb-2 text-xl font-black text-slate-800">
-                                לאן תרצה להפנות את הלקוח?
-                            </h3>
-                            <p className="mb-8 text-sm font-medium text-slate-500">
-                                המערכת תשלח מייל אוטומטי עם פרטי הלקוח לגורם הרלוונטי.
-                            </p>
+                            <div>
+                                <h3 className="mb-3 text-2xl font-black text-white italic tracking-tight">לאן תרצה להפנות?</h3>
+                                <p className="text-sm font-bold text-slate-500 leading-relaxed">
+                                    המערכת תשלח מייל אוטומטי עם פרטי הלקוח לגורם הרלוונטי ותתעד את ההפניה בתיק הלקוח.
+                                </p>
+                            </div>
 
-                            <div className="space-y-3">
+                            <div className="grid gap-3">
                                 {[
-                                    { label: 'ביטוח אלמנטרי', icon: '🚗' },
-                                    { label: 'החזרי מס', icon: '💰' },
-                                    { label: 'תכנון פרישה', icon: '📈' },
-                                    { label: 'כתב שירות תלפיות', icon: '📄' },
+                                    { label: 'ביטוח אלמנטרי', icon: '🚗', color: 'hover:border-red-500/30' },
+                                    { label: 'החזרי מס', icon: '💰', color: 'hover:border-emerald-500/30' },
+                                    { label: 'תכנון פרישה', icon: '📈', color: 'hover:border-amber-500/30' },
+                                    { label: 'כתב שירות תלפיות', icon: '📄', color: 'hover:border-blue-500/30' },
                                 ].map((option) => (
                                     <button
                                         key={option.label}
                                         onClick={() => handleReferral(option.label)}
-                                        className="group flex w-full items-center justify-between rounded-xl border border-slate-100 p-4 transition-all hover:border-indigo-500 hover:bg-indigo-50"
+                                        className={`group flex items-center justify-between p-5 bg-slate-900 border border-slate-800 rounded-2.5xl transition-all ${option.color}`}
                                     >
-                                        <span className="font-bold text-slate-700 group-hover:text-indigo-700">
+                                        <span className="font-black text-white italic group-hover:text-amber-500 transition-colors">
                                             {option.label}
                                         </span>
-                                        <span className="text-2xl transition-transform group-hover:scale-110">
+                                        <span className="text-3xl transition-transform group-hover:scale-110 grayscale group-hover:grayscale-0">
                                             {option.icon}
                                         </span>
                                     </button>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                ) : null}
+                    </NeonModal> : null}
             </div>
+            {/* --- Modals --- */}
+            <InsuranceComparisonWizard 
+                isOpen={showComparisonWizard}
+                onClose={() => setShowComparisonWizard(false)}
+                clientData={{
+                    id: client.id,
+                    name: client.name,
+                    age: calculateAge(client.birthDate || ''),
+                    currentPremium: totalPremium,
+                    policies: client.policies.map((p) => ({
+                        type: p.type,
+                        company: p.company,
+                        premium: parseInt(p.premium.replace(/[^\d]/g, '')),
+                    })),
+                }}
+                onSaveReport={handleSaveComparisonReport}
+            />
+
+            {/* Smart Insurance Import Modal */}
+            <InsuranceImportModal 
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                onImportComplete={handleImportComplete}
+            />
+
+            <CancellationLetterModal 
+                isOpen={showCancellationModal}
+                onClose={() => setShowCancellationModal(false)}
+                clientData={{
+                    ...client,
+                    spouseId: client.family?.find(f => f.relation.includes('בן זוג'))?.idNumber || ''
+                }}
+            />
         </DashboardShell>
     );
 }

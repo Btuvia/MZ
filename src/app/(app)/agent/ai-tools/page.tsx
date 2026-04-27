@@ -1,11 +1,11 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { generateWithGemini } from "@/app/actions/gemini";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function AIToolsPage() {
     const router = useRouter();
@@ -23,7 +23,7 @@ export default function AIToolsPage() {
     ];
 
     const handleGenerate = async () => {
-        if (inputText!.trim()) return;
+        if (!inputText.trim()) return;
 
         setLoading(true);
         setOutputText("");
@@ -54,7 +54,7 @@ export default function AIToolsPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10">
                         <h1 className="text-4xl font-black font-display leading-none mb-4">כלי AI</h1>
                         <p className="text-sm font-medium text-white/80 max-w-2xl">
@@ -114,7 +114,7 @@ export default function AIToolsPage() {
                                 variant="secondary"
                                 className="w-full py-4 shadow-xl shadow-accent/20"
                                 onClick={handleGenerate}
-                                disabled={loading || inputText!.trim()}
+                                disabled={loading || !inputText.trim()}
                             >
                                 {loading ? "מעבד..." : "🤖 צור עם AI"}
                             </Button>
@@ -146,8 +146,7 @@ export default function AIToolsPage() {
                                 </div>
                             )}
                         </div>
-                        {outputText && loading! && (
-                            <div className="flex gap-3 mt-4">
+                        {outputText && !loading ? <div className="flex gap-3 mt-4">
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -164,8 +163,7 @@ export default function AIToolsPage() {
                                 >
                                     🗑️ נקה
                                 </Button>
-                            </div>
-                        )}
+                            </div> : null}
                     </Card>
                 </div>
 

@@ -7,9 +7,9 @@ import { Shield, User, ArrowRight, Sparkles, Lock, Mail, Users } from 'lucide-re
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { NeonCard, NeonButton, NeonInput } from '@/components/ui/neon-form';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { auth, db } from '@/lib/firebase/firebase';
-import { NeonCard, NeonButton, NeonInput } from '@/components/ui/neon-form';
 
 type UserRole = 'admin' | 'agent' | 'client';
 
@@ -22,7 +22,7 @@ export default function LoginPage() {
     const { demoLogin } = useAuth();
 
     const handleDemoLogin = () => {
-        if (selectedRole!) {
+        if (!selectedRole) {
             toast.error('אנא בחר סוג משתמש');
             return;
         }
@@ -62,13 +62,13 @@ export default function LoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedRole!) { toast.error('אנא בחר סוג משתמש'); return; }
+        if (!selectedRole) { toast.error('אנא בחר סוג משתמש'); return; }
         setLoading(true);
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const userDocRef = doc(db, 'users', userCredential.user.uid);
             const userDoc = await getDoc(userDocRef);
-            if (userDoc!.exists()) throw new Error('משתמש לא נמצא במערכת');
+            if (!userDoc.exists()) throw new Error('משתמש לא נמצא במערכת');
             const userData = userDoc.data();
             if (userData.role !== selectedRole) { await auth.signOut(); throw new Error('תפקיד לא תואם'); }
             localStorage.setItem('userRole', userData.role);
@@ -102,7 +102,7 @@ export default function LoginPage() {
                 </div>
 
                 <AnimatePresence mode="wait">
-                    {selectedRole! ? (
+                    {!selectedRole ? (
                         <motion.div 
                             key="role-selection"
                             initial={{ opacity: 0, y: 20 }}

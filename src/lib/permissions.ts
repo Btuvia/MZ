@@ -2,7 +2,7 @@
 // PERMISSIONS SYSTEM
 // ============================================
 
-import { UserRole } from '@/types';
+import { type UserRole } from '@/types';
 
 /**
  * Permission definitions for task management

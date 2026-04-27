@@ -12,19 +12,7 @@ import { toast } from "sonner";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { CLIENT_NAV_ITEMS } from "@/lib/navigation-config";
-
-interface Claim {
-    id: string;
-    type: string;
-    policyName: string;
-    policyNumber: string;
-    date: string;
-    status: 'draft' | 'submitted' | 'processing' | 'approved' | 'rejected' | 'paid';
-    amount?: number;
-    description: string;
-    documents: string[];
-    timeline: {label: string; date: string; completed: boolean}[];
-}
+import { Claim } from "@/types/claim";
 
 type ClaimType = {
     id: string;
@@ -49,6 +37,8 @@ export default function ClaimsPage() {
     const claims: Claim[] = [
         {
             id: '1',
+            clientId: 'client_1',
+            clientName: 'ישראל ישראלי',
             type: 'תאונה',
             policyName: 'ביטוח רכב מקיף',
             policyNumber: 'CAR-123456',
@@ -56,7 +46,11 @@ export default function ClaimsPage() {
             status: 'processing',
             amount: 8500,
             description: 'נזק לפגוש האחורי כתוצאה מתאונה בחניה',
-            documents: ['תמונות נזק', 'דוח משטרה'],
+            missingDocuments: ['אישור משטרה מקורי', 'רישיון נהיגה'],
+            documents: [
+                { id: 'd1', name: 'תמונות נזק', isVisibleToClient: true, uploadedAt: '2025-12-15' },
+                { id: 'd2', name: 'דוח שמאי פנימי', isVisibleToClient: false, uploadedAt: '2025-12-16' }
+            ],
             timeline: [
                 { label: 'הגשת תביעה', date: '2025-12-15', completed: true },
                 { label: 'קבלת מסמכים', date: '2025-12-16', completed: true },
@@ -66,6 +60,8 @@ export default function ClaimsPage() {
         },
         {
             id: '2',
+            clientId: 'client_1',
+            clientName: 'ישראל ישראלי',
             type: 'ביטוח בריאות',
             policyName: 'ביטוח בריאות פרימיום',
             policyNumber: 'HLT-789012',
@@ -73,7 +69,11 @@ export default function ClaimsPage() {
             status: 'approved',
             amount: 3200,
             description: 'החזר עבור ניתוח פלסטי רפואי',
-            documents: ['אישור רופא', 'חשבונית'],
+            missingDocuments: [],
+            documents: [
+                { id: 'd3', name: 'אישור רופא', isVisibleToClient: true, uploadedAt: '2025-11-28' },
+                { id: 'd4', name: 'חשבונית', isVisibleToClient: true, uploadedAt: '2025-11-28' }
+            ],
             timeline: [
                 { label: 'הגשת תביעה', date: '2025-11-28', completed: true },
                 { label: 'בדיקת מסמכים', date: '2025-11-30', completed: true },
@@ -83,6 +83,8 @@ export default function ClaimsPage() {
         },
         {
             id: '3',
+            clientId: 'client_1',
+            clientName: 'ישראל ישראלי',
             type: 'נזק לדירה',
             policyName: 'ביטוח דירה',
             policyNumber: 'HOM-345678',
@@ -90,7 +92,12 @@ export default function ClaimsPage() {
             status: 'paid',
             amount: 12000,
             description: 'נזקי הצפה בחדר האמבטיה',
-            documents: ['תמונות נזק', 'הצעת מחיר לתיקון', 'דוח אינסטלטור'],
+            missingDocuments: [],
+            documents: [
+                { id: 'd5', name: 'תמונות נזק', isVisibleToClient: true, uploadedAt: '2025-10-10' },
+                { id: 'd6', name: 'הצעת מחיר לתיקון', isVisibleToClient: true, uploadedAt: '2025-10-10' },
+                { id: 'd7', name: 'דוח חקירה', isVisibleToClient: false, uploadedAt: '2025-10-12' }
+            ],
             timeline: [
                 { label: 'הגשת תביעה', date: '2025-10-10', completed: true },
                 { label: 'שמאי ביקר', date: '2025-10-15', completed: true },
@@ -100,6 +107,8 @@ export default function ClaimsPage() {
         },
         {
             id: '4',
+            clientId: 'client_1',
+            clientName: 'ישראל ישראלי',
             type: 'ביטוח בריאות',
             policyName: 'ביטוח בריאות פרימיום',
             policyNumber: 'HLT-789012',
@@ -107,7 +116,11 @@ export default function ClaimsPage() {
             status: 'rejected',
             amount: 1500,
             description: 'בקשה להחזר עבור טיפולי ספא',
-            documents: ['חשבונית'],
+            missingDocuments: [],
+            documents: [
+                { id: 'd8', name: 'חשבונית', isVisibleToClient: true, uploadedAt: '2025-08-15' },
+                { id: 'd9', name: 'מכתב דחייה', isVisibleToClient: true, uploadedAt: '2025-08-20' }
+            ],
             timeline: [
                 { label: 'הגשת תביעה', date: '2025-08-15', completed: true },
                 { label: 'בדיקת מסמכים', date: '2025-08-17', completed: true },
@@ -163,6 +176,13 @@ export default function ClaimsPage() {
             case 'rejected': return { color: 'red', label: 'נדחה', icon: XCircle };
             case 'paid': return { color: 'green', label: 'שולם', icon: DollarSign };
         }
+    };
+
+    const getTrafficLightColor = (status: Claim['status']) => {
+        if (['approved', 'paid'].includes(status)) return 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+        if (['processing', 'submitted'].includes(status)) return 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]';
+        if (['rejected'].includes(status)) return 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+        return 'bg-slate-500';
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,10 +295,13 @@ export default function ClaimsPage() {
                                                     <div className="text-xl font-black text-amber-400">₪{claim.amount.toLocaleString()}</div>
                                                     <div className="text-xs text-slate-500">סכום התביעה</div>
                                                 </div> : null}
-                                            <Badge className={`bg-${statusConfig.color}-500/20 text-${statusConfig.color}-400 border-${statusConfig.color}-500/30`}>
-                                                <StatusIcon size={14} className="ml-1" />
-                                                {statusConfig.label}
-                                            </Badge>
+                                                
+                                            {/* Traffic Light */}
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-full border border-slate-700">
+                                                <div className={`w-3 h-3 rounded-full ${getTrafficLightColor(claim.status)}`} />
+                                                <span className={`text-sm font-bold text-${statusConfig.color}-400`}>{statusConfig.label}</span>
+                                            </div>
+                                            
                                             <ChevronDown 
                                                 size={20} 
                                                 className={`text-slate-500 transition-transform ${selectedClaim?.id === claim.id ? 'rotate-180' : ''}`} 
@@ -295,6 +318,27 @@ export default function ClaimsPage() {
                                                 exit={{ opacity: 0, height: 0 }}
                                                 className="mt-6 pt-6 border-t border-slate-700/50"
                                             >
+                                                {/* Missing Documents Alert */}
+                                                {claim.missingDocuments && claim.missingDocuments.length > 0 && (
+                                                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                                                        <div className="flex items-start gap-3">
+                                                            <AlertCircle className="text-red-400 mt-0.5" size={20} />
+                                                            <div>
+                                                                <h4 className="font-bold text-red-400 mb-1">חסרים חומרים להמשך טיפול</h4>
+                                                                <ul className="text-sm text-red-300/80 space-y-1">
+                                                                    {claim.missingDocuments.map((doc, idx) => (
+                                                                        <li key={idx}>• {doc}</li>
+                                                                    ))}
+                                                                </ul>
+                                                                <Button size="sm" className="mt-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30">
+                                                                    <Upload size={14} className="ml-2" />
+                                                                    העלאת מסמכים חסרים
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {/* Timeline */}
                                                 <div className="mb-6">
                                                     <h4 className="font-bold text-slate-300 mb-4">מעקב התביעה</h4>
@@ -322,10 +366,10 @@ export default function ClaimsPage() {
                                                 <div className="mb-4">
                                                     <h4 className="font-bold text-slate-300 mb-2">מסמכים שהוגשו</h4>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {claim.documents.map((doc, index) => (
+                                                        {claim.documents.filter(d => d.isVisibleToClient).map((doc, index) => (
                                                             <Badge key={index} className="bg-slate-700/50">
                                                                 <FileText size={14} className="ml-1" />
-                                                                {doc}
+                                                                {doc.name}
                                                             </Badge>
                                                         ))}
                                                     </div>
@@ -466,7 +510,7 @@ export default function ClaimsPage() {
                                         <Button 
                                             onClick={() => setNewClaimStep(3)}
                                             className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900"
-                                            disabled={claimForm!.description || claimForm!.date}
+                                            disabled={!claimForm.description || !claimForm.date}
                                         >
                                             המשך להעלאת מסמכים
                                             <ChevronRight size={18} className="mr-2" />

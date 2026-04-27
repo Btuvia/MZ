@@ -257,9 +257,7 @@ export default function WorkflowsPage() {
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-slate-900 text-lg">{workflow.name}</h3>
                                                 {workflow.category ? <Badge variant="outline" className="text-xs">{workflow.category}</Badge> : null}
-                                                {workflow!.isActive && (
-                                                    <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge>
-                                                )}
+                                                {workflow!.isActive ? <Badge className="bg-slate-100 text-slate-600 text-xs">לא פעיל</Badge> : null}
                                             </div>
                                             {workflow.description ? <p className="text-sm text-slate-500">{workflow.description}</p> : null}
                                             <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">

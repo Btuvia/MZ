@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Card, Button } from "@/components/ui/base";
-import { NeonCard, NeonButton, NeonInput, NeonSelect } from "@/components/ui/neon-form";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { NeonCard, NeonButton, NeonInput, NeonSelect } from "@/components/ui/neon-form";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
@@ -179,8 +179,7 @@ export default function NewClientPage() {
                             )}
                         </NeonButton>
 
-                        {showFallback && (
-                            <NeonCard title="⚠️ התראה מהמערכת" className="bg-red-500/5! border-red-500/20!">
+                        {showFallback ? <NeonCard title="⚠️ התראה מהמערכת" className="bg-red-500/5! border-red-500/20!">
                                 <div className="space-y-6">
                                     <p className="text-slate-400 font-bold leading-relaxed text-right">
                                         זיהינו עיכוב בתקשורת. בדוק את חיבור האינטרנט או הרשאות Firebase.
@@ -195,8 +194,7 @@ export default function NewClientPage() {
                                         חזרה לרשימת הלקוחות
                                     </NeonButton>
                                 </div>
-                            </NeonCard>
-                        )}
+                            </NeonCard> : null}
 
                         <button
                             type="button"

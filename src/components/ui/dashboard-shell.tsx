@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useReminders } from "@/lib/hooks/useReminders";
 import { NotificationsPanel } from "./notifications-panel";
+import { UpdatesPanel } from "./updates-panel";
 
 interface NavItem {
     label: string;
@@ -101,10 +102,15 @@ export default function DashboardShell({ children, role, navItems = [] }: Dashbo
                     <div className={`flex items-center justify-between h-20 px-8 transition-all duration-500 ${scrolled ? 'glass-card rounded-3xl shadow-xl border border-amber-500/20' : 'bg-transparent'}`}>
                         <div className="flex items-center gap-4">
                             <div className="lg:hidden h-12 w-12 rounded-xl bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-black text-xl shadow-lg shadow-amber-500/40">🛡️</div>
+                            {user && <UpdatesPanel userId={user.uid} />}
                         </div>
 
                         <div className="flex items-center gap-4">
-                            {user ? <NotificationsPanel userId={user.uid} /> : null}
+                            {user ? (
+                                <>
+                                    <NotificationsPanel userId={user.uid} />
+                                </>
+                            ) : null}
 
                             <div className="flex items-center gap-3 p-1.5 bg-linear-to-r from-slate-800 to-slate-900 rounded-2xl shadow-xl border border-amber-500/30 hover:border-amber-500/50 transition-all">
                                 <div className="h-10 w-10 rounded-xl bg-linear-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-black shadow-inner neon-gold">🛡️</div>

@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { generateWithGemini } from "@/app/actions/gemini";
 import { Card, Button } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { NeonModal, NeonInput, NeonTextarea, NeonButton } from "@/components/ui/neon-form";
 import { useCampaigns, useCreateCampaign, useDeleteCampaign, useDeals } from "@/lib/hooks/useQueryHooks";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
@@ -68,7 +69,7 @@ export default function CampaignsPage() {
     };
 
     const handleAnalyzeAndSave = async () => {
-        if (formData!.company || formData!.target || formData!.productType) {
+        if (!formData.company || !formData.target || !formData.productType) {
             alert("אנא מלא את כל שדות החובה");
             return;
         }
@@ -109,7 +110,7 @@ export default function CampaignsPage() {
     };
 
     const handleDeleteCampaign = async (id: string) => {
-        if (confirm!("האם למחוק קמפיין זה?")) return;
+        if (!confirm("האם למחוק קמפיין זה?")) return;
         try {
             await deleteCampaign.mutateAsync(id);
         } catch (error) {
@@ -118,7 +119,7 @@ export default function CampaignsPage() {
     };
 
     const getDaysLeft = (endDate: string) => {
-        if (endDate!) return 0;
+        if (!endDate) return 0;
         const diff = new Date(endDate).getTime() - new Date().getTime();
         const days = Math.ceil(diff / (1000 * 3600 * 24));
         return days > 0 ? days : 0;
@@ -280,111 +281,76 @@ export default function CampaignsPage() {
                 )}
 
                 {/* New Campaign Modal */}
-                {showModal ? <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-                        <Card className="w-full max-w-2xl bg-white border-none shadow-2xl overflow-y-auto max-h-[90vh] rounded-3xl">
-                            <div className="p-8">
-                                <div className="flex justify-between items-center mb-8">
-                                    <h2 className="text-2xl font-black text-indigo-900 flex items-center gap-3">
-                                        <Sparkles className="text-fuchsia-500" />
-                                        הקמת מבצע חדש
-                                    </h2>
-                                    <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                        <X size={24} />
+                <NeonModal
+                    isOpen={showModal}
+                    onClose={() => setShowModal(false)}
+                    title="הקמת מבצע חדש"
+                    onSave={handleAnalyzeAndSave}
+                    saveLabel={loadingAi || createCampaign.isPending ? "מנתח נתונים..." : "הפעל מבצע + ניתוח AI"}
+                    isSaving={loadingAi || createCampaign.isPending}
+                    maxWidth="max-w-2xl"
+                >
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="col-span-2 space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mr-1">חברת ביטוח</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {["הפניקס", "מנורה", "איילון", "הראל"].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setFormData({ ...formData, company: c as Campaign['company'] })}
+                                        className={`p-3 rounded-xl border-2 font-black transition-all ${formData.company === c 
+                                            ? 'border-amber-500 bg-amber-500/10 text-amber-500' 
+                                            : 'border-slate-800 text-slate-500 hover:border-slate-700'}`}
+                                    >
+                                        {c}
                                     </button>
-                                </div>
-
-                                <div className="grid md:grid-cols-2 gap-6 space-y-2">
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">חברת ביטוח</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {["הפניקס", "מנורה", "איילון", "הראל"].map(c => (
-                                                <button
-                                                    key={c}
-                                                    onClick={() => setFormData({ ...formData, company: c as Campaign['company'] })}
-                                                    className={`p-3 rounded-xl border-2 font-black transition-all ${formData.company === c ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400 hover:border-slate-200'}`}
-                                                >
-                                                    {c}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">תאריך התחלה</label>
-                                        <input
-                                            type="date"
-                                            className="w-full bg-slate-50 border-none rounded-xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                            value={formData.startDate || ''}
-                                            onChange={e => setFormData({ ...formData, startDate: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">תאריך סיום</label>
-                                        <input
-                                            type="date"
-                                            className="w-full bg-slate-50 border-none rounded-xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                            value={formData.endDate || ''}
-                                            onChange={e => setFormData({ ...formData, endDate: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">יעד מכירות (₪)</label>
-                                        <input
-                                            type="number"
-                                            placeholder="לדוגמה: 100000"
-                                            className="w-full bg-slate-50 border-none rounded-xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                            value={formData.target || ''}
-                                            onChange={e => setFormData({ ...formData, target: +e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">אחוז הנחה (%)</label>
-                                        <input
-                                            type="number"
-                                            placeholder="לדוגמה: 10"
-                                            className="w-full bg-slate-50 border-none rounded-xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                            value={formData.discountPercent || ''}
-                                            onChange={e => setFormData({ ...formData, discountPercent: +e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="col-span-2">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-2">סוג המוצר</label>
-                                        <textarea
-                                            rows={4}
-                                            placeholder="תאר את סוג המוצר (לדוגמה: ביטוח חיים, פנסיה, בריאות...)"
-                                            className="w-full bg-slate-50 border-none rounded-xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
-                                            value={formData.productType || ''}
-                                            onChange={e => setFormData({ ...formData, productType: e.target.value })}
-                                        />
-                                        <div className="bg-indigo-50 mt-2 p-3 rounded-xl flex items-center gap-2 text-indigo-600 text-xs font-bold">
-                                            <Sparkles size={14} />
-                                            תיאור ברור יעזור בהתאמת הקמפיין ללקוחות.
-                                        </div>
-                                    </div>
-
-                                    <div className="col-span-2 pt-4">
-                                        <Button
-                                            onClick={handleAnalyzeAndSave}
-                                            disabled={loadingAi || createCampaign.isPending}
-                                            className="w-full py-5 text-lg font-black bg-linear-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700 text-white shadow-xl rounded-2xl flex items-center justify-center gap-2"
-                                        >
-                                            {loadingAi || createCampaign.isPending ? (
-                                                <>
-                                                    <RefreshCcw size={20} className="animate-spin" /> מנתח נתונים...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Brain size={20} /> הפעל מבצע + ניתוח AI
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
-                        </Card>
-                    </div> : null}
+                        </div>
+
+                        <NeonInput
+                            label="תאריך התחלה"
+                            type="date"
+                            value={formData.startDate || ''}
+                            onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                        />
+                        <NeonInput
+                            label="תאריך סיום"
+                            type="date"
+                            value={formData.endDate || ''}
+                            onChange={e => setFormData({ ...formData, endDate: e.target.value })}
+                        />
+
+                        <NeonInput
+                            label="יעד מכירות (₪)"
+                            type="number"
+                            placeholder="לדוגמה: 100000"
+                            value={formData.target || ''}
+                            onChange={e => setFormData({ ...formData, target: +e.target.value })}
+                        />
+                        <NeonInput
+                            label="אחוז הנחה (%)"
+                            type="number"
+                            placeholder="לדוגמה: 10"
+                            value={formData.discountPercent || ''}
+                            onChange={e => setFormData({ ...formData, discountPercent: +e.target.value })}
+                        />
+
+                        <div className="col-span-2">
+                            <NeonTextarea
+                                label="סוג המוצר"
+                                rows={4}
+                                placeholder="תאר את סוג המוצר (לדוגמה: ביטוח חיים, פנסיה, בריאות...)"
+                                value={formData.productType || ''}
+                                onChange={e => setFormData({ ...formData, productType: e.target.value })}
+                            />
+                            <div className="bg-amber-500/5 mt-3 p-4 rounded-2xl flex items-center gap-3 text-amber-500/80 text-xs font-bold border border-amber-500/10">
+                                <Sparkles size={16} className="text-amber-500" />
+                                תיאור ברור יעזור לבינה המלאכותית לנתח את המבצע בצורה מדויקת.
+                            </div>
+                        </div>
+                    </div>
+                </NeonModal>
             </div>
         </DashboardShell>
     );

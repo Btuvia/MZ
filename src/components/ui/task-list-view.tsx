@@ -1,9 +1,10 @@
 "use client";
 
-import { Task } from "@/types";
-import { Card, Badge } from "./base";
 import { Clock, User, Tag, GitBranch, CheckCircle2, Circle, Edit2, Trash2, MoreVertical } from "lucide-react";
+import Link from "next/link";
 import { getTaskTypeMetadata, getTaskStatusMetadata, getTaskPriorityMetadata } from "@/lib/task-constants";
+import { type Task } from "@/types";
+import { Card, Badge } from "./base";
 
 // Helper function for date formatting
 function formatDate(dateStr: string): string {
@@ -128,11 +129,9 @@ export function TaskListView({ tasks, onTaskClick, onTaskComplete, onTaskDelete 
                                                     </div>
                                                 </div>
 
-                                                {task.description && (
-                                                    <p className="text-sm text-slate-500 line-clamp-2 mb-2">
+                                                {task.description ? <p className="text-sm text-slate-500 line-clamp-2 mb-2">
                                                         {task.description}
-                                                    </p>
-                                                )}
+                                                    </p> : null}
 
                                                 {/* Metadata */}
                                                 <div className="flex items-center gap-3 flex-wrap text-xs">
@@ -159,43 +158,46 @@ export function TaskListView({ tasks, onTaskClick, onTaskComplete, onTaskDelete 
                                                     </span>
 
                                                     {/* Client */}
-                                                    {task.clientName && (
-                                                        <span className="flex items-center gap-1 text-slate-600">
-                                                            <User size={12} />
-                                                            {task.clientName}
-                                                        </span>
-                                                    )}
+                                                     {task.clientName ? (
+                                                        task.clientId ? (
+                                                            <Link 
+                                                                href={`/admin/clients/${task.clientId}`}
+                                                                className="flex items-center gap-1 text-indigo-600 hover:text-indigo-500 hover:underline font-bold"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <User size={12} />
+                                                                {task.clientName}
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1 text-slate-600">
+                                                                <User size={12} />
+                                                                {task.clientName}
+                                                            </span>
+                                                        )
+                                                    ) : null}
 
                                                     {/* Subject */}
-                                                    {task.subjectName && (
-                                                        <span className="flex items-center gap-1 text-slate-600">
+                                                    {task.subjectName ? <span className="flex items-center gap-1 text-slate-600">
                                                             <Tag size={12} />
                                                             {task.subjectName}
-                                                        </span>
-                                                    )}
+                                                        </span> : null}
 
                                                     {/* Workflow */}
-                                                    {task.workflowName && (
-                                                        <span className="flex items-center gap-1 text-purple-600">
+                                                    {task.workflowName ? <span className="flex items-center gap-1 text-purple-600">
                                                             <GitBranch size={12} />
                                                             {task.workflowName}
-                                                        </span>
-                                                    )}
+                                                        </span> : null}
 
                                                     {/* Assignee */}
-                                                    {task.assignedTo && task.assignedTo !== 'admin' && (
-                                                        <span className="text-slate-500">
+                                                    {task.assignedTo && task.assignedTo !== 'admin' ? <span className="text-slate-500">
                                                             👤 {task.assignedTo}
-                                                        </span>
-                                                    )}
+                                                        </span> : null}
                                                 </div>
 
                                                 {/* Subtasks */}
-                                                {task.subtasks && task.subtasks.length > 0 && (
-                                                    <div className="mt-2 text-xs text-slate-500">
+                                                {task.subtasks && task.subtasks.length > 0 ? <div className="mt-2 text-xs text-slate-500">
                                                         {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} תתי-משימות הושלמו
-                                                    </div>
-                                                )}
+                                                    </div> : null}
                                             </div>
                                         </div>
                                     </Card>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
 import { UploadCloud, FileText, X } from "lucide-react";
+import { useState, useRef } from "react";
 
 interface FileUploadProps {
     onUpload: (file: File) => void;
@@ -55,7 +55,7 @@ export function FileUpload({ onUpload, accept = ".pdf,.doc,.docx", label = "גר
 
     return (
         <div
-            className={`relative border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group ${dragActive ? "border-accent bg-accent/5 scale-[1.02]" : "border-slate-200 hover:border-accent/50 hover:bg-slate-50"
+            className={`relative border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer group ${dragActive ? "border-accent bg-accent/5 scale-[1.02]" : "border-white/10 hover:border-accent/50 hover:bg-white/5"
                 }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -90,13 +90,13 @@ export function FileUpload({ onUpload, accept = ".pdf,.doc,.docx", label = "גר
                     </div>
                 ) : (
                     <>
-                        <div className={`h-20 w-20 rounded-full flex items-center justify-center transition-all duration-500 ${dragActive ? "bg-accent/20 text-accent" : "bg-slate-100 text-slate-400 group-hover:bg-accent/10 group-hover:text-accent group-hover:scale-110"
+                        <div className={`h-20 w-20 rounded-full flex items-center justify-center transition-all duration-500 ${dragActive ? "bg-accent/20 text-accent" : "bg-white/5 text-slate-500 group-hover:bg-accent/10 group-hover:text-accent group-hover:scale-110"
                             }`}>
                             <UploadCloud size={32} />
                         </div>
                         <div>
-                            <p className="text-lg font-black text-primary mb-1">{label}</p>
-                            <p className="text-xs font-medium text-slate-400">PDF, DOCX עד 10MB</p>
+                            <p className="text-lg font-black text-white mb-1">{label}</p>
+                            <p className="text-xs font-medium text-slate-500">PDF, DOCX עד 10MB</p>
                         </div>
                     </>
                 )}

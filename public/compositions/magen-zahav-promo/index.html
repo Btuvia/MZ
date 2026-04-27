@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #020617;
+      overflow: hidden;
+      font-family: 'Heebo', sans-serif;
+    }
+
+    #stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      background: linear-gradient(135deg, #020617 0%, #0a1628 30%, #0c1929 50%, #0a1628 70%, #020617 100%);
+      overflow: hidden;
+    }
+
+    /* ═══ Background Particles ═══ */
+    .bg-particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .bg-glow-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(212,163,26,0.12) 0%, transparent 70%);
+      top: -100px; right: -100px;
+    }
+
+    .bg-glow-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
+    }
+
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+");
+      opacity: 0.5;
+    }
+
+    /* ═══ Shimmer Line ═══ */
+    .shimmer-line {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: #0a1628;
+      overflow: hidden;
+      z-index: 50;
+    }
+
+    .shimmer-sweep {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, #d4a31a, transparent);
+      box-shadow: 0 0 20px #f59e0b;
+      transform: translateX(-100%);
+    }
+
+    /* ═══ Scene 1: Logo Reveal ═══ */
+    .scene-logo {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      /* visible by default — GSAP fades it out */
+    }
+
+    .logo-icon {
+      width: 140px; height: 140px;
+      border-radius: 32px;
+      background: linear-gradient(135deg, #d4a31a 0%, #fbbf24 50%, #ffd700 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      font-weight: 900;
+      font-style: italic;
+      color: #020617;
+      box-shadow: 0 20px 60px rgba(212,163,26,0.5), 0 0 100px rgba(212,163,26,0.3);
+      margin-bottom: 40px;
+    }
+
+    .logo-text {
+      font-size: 96px;
+      font-weight: 900;
+      font-style: italic;
+      color: white;
+      letter-spacing: -2px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .logo-text .gold { color: #fbbf24; }
+
+    .logo-subtitle {
+      font-size: 24px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-top: 20px;
+      letter-spacing: 12px;
+      text-transform: uppercase;
+    }
+
+    .logo-divider {
+      width: 200px; height: 4px;
+      background: linear-gradient(90deg, transparent, #d4a31a, transparent);
+      border-radius: 2px;
+      margin-top: 30px;
+    }
+
+    /* ═══ Scene 2: Stats ═══ */
+    .scene-stats {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0; /* hidden by default, GSAP reveals */
+    }
+
+    .stats-container {
+      display: flex;
+      gap: 80px;
+      align-items: flex-start;
+    }
+
+    .stat-card {
+      text-align: center;
+      padding: 50px 40px;
+      border-radius: 32px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(212,163,26,0.2);
+      backdrop-filter: blur(20px);
+      min-width: 320px;
+    }
+
+    .stat-icon {
+      width: 80px; height: 80px;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+
+    .stat-icon.gold { background: rgba(212,163,26,0.15); border: 1px solid rgba(212,163,26,0.3); }
+    .stat-icon.emerald { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); }
+    .stat-icon.blue { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); }
+
+    .stat-number {
+      font-size: 72px;
+      font-weight: 900;
+      font-style: italic;
+      color: white;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 16px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+    }
+
+    .stat-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      margin-top: 24px;
+      overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    .stat-bar-fill.gold { background: linear-gradient(90deg, #d4a31a, #fbbf24); }
+    .stat-bar-fill.emerald { background: linear-gradient(90deg, #059669, #10b981); }
+    .stat-bar-fill.blue { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+
+    /* ═══ Scene 3: Services ═══ */
+    .scene-services {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0; /* hidden by default, GSAP reveals */
+    }
+
+    .services-title {
+      font-size: 56px;
+      font-weight: 900;
+      font-style: italic;
+      color: white;
+      margin-bottom: 60px;
+      text-align: center;
+    }
+
+    .services-title .gold { color: #fbbf24; }
+
+    .services-grid {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1600px;
+    }
+
+    .service-item {
+      text-align: center;
+      padding: 40px 30px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      min-width: 240px;
+      max-width: 260px;
+      transition: all 0.3s;
+    }
+
+    .service-icon-wrap {
+      width: 72px; height: 72px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(212,163,26,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
+    }
+
+    .service-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      font-style: italic;
+    }
+
+    /* ═══ Scene 4: CTA ═══ */
+    .scene-cta {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0; /* hidden by default, GSAP reveals */
+    }
+
+    .cta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: #fbbf24;
+      padding: 12px 32px;
+      border-radius: 999px;
+      margin-bottom: 40px;
+    }
+
+    .cta-badge span {
+      font-size: 16px;
+      font-weight: 900;
+      color: #020617;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+    }
+
+    .cta-headline {
+      font-size: 88px;
+      font-weight: 900;
+      font-style: italic;
+      color: white;
+      text-align: center;
+      letter-spacing: -3px;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .cta-headline .gold {
+      background: linear-gradient(90deg, #d4a31a, #fbbf24, #fff, #fbbf24, #d4a31a);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-sub {
+      font-size: 28px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      padding: 28px 64px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #d4a31a, #fbbf24);
+      color: #020617;
+      font-size: 32px;
+      font-weight: 900;
+      font-style: italic;
+      border: none;
+      box-shadow: 0 20px 60px rgba(212,163,26,0.4), 0 0 100px rgba(212,163,26,0.2);
+    }
+
+    .cta-trust {
+      display: flex;
+      gap: 48px;
+      margin-top: 40px;
+    }
+
+    .cta-trust span {
+      font-size: 14px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cta-trust .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.green { background: #10b981; box-shadow: 0 0 10px #10b981; }
+    .dot.blue { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
+    .dot.gold { background: #d4a31a; box-shadow: 0 0 10px #d4a31a; }
+  </style>
+</head>
+<body>
+  <div id="stage"
+       data-composition-id="magen-zahav-promo"
+       data-start="0"
+       data-width="1920"
+       data-height="1080">
+
+    <!-- Background -->
+    <div class="bg-grid"></div>
+    <div class="bg-particle bg-glow-1" id="glow1"></div>
+    <div class="bg-particle bg-glow-2" id="glow2"></div>
+    <div class="shimmer-line" id="shimmer"><div class="shimmer-sweep" id="shimmer-sweep"></div></div>
+
+    <!-- ═══ Scene 1: Logo Reveal (0s – 3.5s) ═══ -->
+    <div class="scene-logo clip" id="scene-logo"
+         data-start="0" data-duration="4" data-track-index="0">
+      <div class="logo-icon" id="logo-icon">Z</div>
+      <div class="logo-text" id="logo-text">
+        מגדל <span class="gold">זהב</span>
+      </div>
+      <div class="logo-subtitle" id="logo-subtitle">ביטוח ופנסיה מובילה</div>
+      <div class="logo-divider" id="logo-divider"></div>
+    </div>
+
+    <!-- ═══ Scene 2: Stats Counter (3s – 7.5s) ═══ -->
+    <div class="scene-stats clip" id="scene-stats"
+         data-start="3" data-duration="5" data-track-index="1">
+      <div class="stats-container">
+        <div class="stat-card" id="stat1">
+          <div class="stat-icon gold">👥</div>
+          <div class="stat-number" id="stat1-num">12,450+</div>
+          <div class="stat-label">לקוחות פעילים</div>
+          <div class="stat-bar"><div class="stat-bar-fill gold" id="bar1"></div></div>
+        </div>
+        <div class="stat-card" id="stat2">
+          <div class="stat-icon emerald">💰</div>
+          <div class="stat-number" id="stat2-num">₪480M</div>
+          <div class="stat-label">סה״כ נחסכו</div>
+          <div class="stat-bar"><div class="stat-bar-fill emerald" id="bar2"></div></div>
+        </div>
+        <div class="stat-card" id="stat3">
+          <div class="stat-icon blue">🎯</div>
+          <div class="stat-number" id="stat3-num">98%</div>
+          <div class="stat-label">הצלחה בתביעות</div>
+          <div class="stat-bar"><div class="stat-bar-fill blue" id="bar3"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Scene 3: Services (7s – 11.5s) ═══ -->
+    <div class="scene-services clip" id="scene-services"
+         data-start="7" data-duration="5" data-track-index="2">
+      <div class="services-title" id="svc-title">
+        ביטוח שעובד <span class="gold">בשבילך</span>
+      </div>
+      <div class="services-grid">
+        <div class="service-item" id="svc1">
+          <div class="service-icon-wrap">❤️</div>
+          <div class="service-name">ביטוח חיים</div>
+        </div>
+        <div class="service-item" id="svc2">
+          <div class="service-icon-wrap">🛡️</div>
+          <div class="service-name">אובדן כושר</div>
+        </div>
+        <div class="service-item" id="svc3">
+          <div class="service-icon-wrap">🏥</div>
+          <div class="service-name">בריאות פרטי</div>
+        </div>
+        <div class="service-item" id="svc4">
+          <div class="service-icon-wrap">💼</div>
+          <div class="service-name">ביטוח עסקי</div>
+        </div>
+        <div class="service-item" id="svc5">
+          <div class="service-icon-wrap">🏠</div>
+          <div class="service-name">ביטוח משכנתא</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Scene 4: CTA (11s – 15s) ═══ -->
+    <div class="scene-cta clip" id="scene-cta"
+         data-start="11" data-duration="4" data-track-index="3">
+      <div class="cta-badge" id="cta-badge">
+        <span>⚡ מעל 20 שנה של מצוינות</span>
+      </div>
+      <div class="cta-headline" id="cta-headline">
+        בדיקת פנסיה<br/>
+        <span class="gold">חינם</span>
+      </div>
+      <div class="cta-sub" id="cta-sub">שלוות נפש מתחילה בבדיקה אחת</div>
+      <div class="cta-button" id="cta-btn">
+        ⚡ התחל עכשיו
+      </div>
+      <div class="cta-trust" id="cta-trust">
+        <span><span class="dot green"></span> מאובטח SSL</span>
+        <span><span class="dot blue"></span> ללא התחייבות</span>
+        <span><span class="dot gold"></span> מענה תוך 30 דק׳</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GSAP CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+
+  <script>
+    // Create a master paused timeline and register it for Hyperframes
+    const tl = gsap.timeline({ paused: true });
+
+    // ═══ Background ambient animations ═══
+    tl.to("#glow1", { scale: 1.3, opacity: 0.8, duration: 15, ease: "sine.inOut", yoyo: true, repeat: -1 }, 0);
+    tl.to("#glow2", { scale: 1.2, opacity: 0.6, duration: 12, ease: "sine.inOut", yoyo: true, repeat: -1 }, 0);
+
+    // Shimmer line sweep (real element, not pseudo)
+    tl.fromTo("#shimmer-sweep", { x: "-100%" }, { x: "100%", duration: 3, ease: "linear", repeat: -1 }, 0);
+
+    // ═══ Scene 1: Logo Reveal (0s – 3.5s) ═══
+    // scene-logo already visible via CSS
+    tl.from("#logo-icon", { scale: 0, rotation: -180, opacity: 0, duration: 1, ease: "back.out(2)" }, 0);
+    tl.from("#logo-text", { y: 60, opacity: 0, duration: 0.8, ease: "power3.out" }, 0.5);
+    tl.from("#logo-subtitle", { y: 30, opacity: 0, duration: 0.6, ease: "power2.out" }, 1.0);
+    tl.from("#logo-divider", { scaleX: 0, opacity: 0, duration: 0.8, ease: "power2.out" }, 1.2);
+    // Hold then fade out
+    tl.to("#scene-logo", { opacity: 0, duration: 0.5, ease: "power2.in" }, 3.0);
+
+    // ═══ Scene 2: Stats Counter (3s – 7.5s) ═══
+    // scene-stats starts hidden via CSS
+    tl.to("#scene-stats", { opacity: 1, duration: 0.5, ease: "power2.out" }, 3.0);
+    tl.from("#stat1", { y: 80, opacity: 0, scale: 0.8, duration: 0.7, ease: "back.out(1.4)" }, 3.2);
+    tl.from("#stat2", { y: 80, opacity: 0, scale: 0.8, duration: 0.7, ease: "back.out(1.4)" }, 3.5);
+    tl.from("#stat3", { y: 80, opacity: 0, scale: 0.8, duration: 0.7, ease: "back.out(1.4)" }, 3.8);
+
+    // Animate bars growing
+    tl.fromTo("#bar1", { width: "0%" }, { width: "92%", duration: 1.2, ease: "power2.out" }, 4.0);
+    tl.fromTo("#bar2", { width: "0%" }, { width: "85%", duration: 1.2, ease: "power2.out" }, 4.2);
+    tl.fromTo("#bar3", { width: "0%" }, { width: "98%", duration: 1.2, ease: "power2.out" }, 4.4);
+
+    // Fade out
+    tl.to("#scene-stats", { opacity: 0, duration: 0.5, ease: "power2.in" }, 7.0);
+
+    // ═══ Scene 3: Services Showcase (7s – 11.5s) ═══
+    // scene-services starts hidden via CSS
+    tl.to("#scene-services", { opacity: 1, duration: 0.5, ease: "power2.out" }, 7.0);
+    tl.from("#svc-title", { y: -40, opacity: 0, duration: 0.6, ease: "power3.out" }, 7.2);
+
+    // Stagger services
+    tl.from("#svc1", { y: 40, opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.2)" }, 7.6);
+    tl.from("#svc2", { y: 40, opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.2)" }, 7.8);
+    tl.from("#svc3", { y: 40, opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.2)" }, 8.0);
+    tl.from("#svc4", { y: 40, opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.2)" }, 8.2);
+    tl.from("#svc5", { y: 40, opacity: 0, scale: 0.9, duration: 0.5, ease: "back.out(1.2)" }, 8.4);
+
+    // Glow on service items
+    tl.to("#svc1", { boxShadow: "0 0 30px rgba(212,163,26,0.3)", borderColor: "rgba(212,163,26,0.4)", duration: 0.4 }, 9.0);
+    tl.to("#svc2", { boxShadow: "0 0 30px rgba(212,163,26,0.3)", borderColor: "rgba(212,163,26,0.4)", duration: 0.4 }, 9.2);
+    tl.to("#svc3", { boxShadow: "0 0 30px rgba(212,163,26,0.3)", borderColor: "rgba(212,163,26,0.4)", duration: 0.4 }, 9.4);
+    tl.to("#svc4", { boxShadow: "0 0 30px rgba(212,163,26,0.3)", borderColor: "rgba(212,163,26,0.4)", duration: 0.4 }, 9.6);
+    tl.to("#svc5", { boxShadow: "0 0 30px rgba(212,163,26,0.3)", borderColor: "rgba(212,163,26,0.4)", duration: 0.4 }, 9.8);
+
+    // Fade out
+    tl.to("#scene-services", { opacity: 0, duration: 0.5, ease: "power2.in" }, 10.5);
+
+    // ═══ Scene 4: CTA Pulse (11s – 15s) ═══
+    // scene-cta starts hidden via CSS
+    tl.to("#scene-cta", { opacity: 1, duration: 0.5, ease: "power2.out" }, 11.0);
+    tl.from("#cta-badge", { y: -30, opacity: 0, scale: 0.8, duration: 0.5, ease: "back.out(1.5)" }, 11.2);
+    tl.from("#cta-headline", { y: 40, opacity: 0, duration: 0.7, ease: "power3.out" }, 11.5);
+    tl.from("#cta-sub", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, 12.0);
+    tl.from("#cta-btn", { scale: 0.5, opacity: 0, duration: 0.6, ease: "back.out(2)" }, 12.3);
+    tl.from("#cta-trust", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, 12.8);
+
+    // CTA button pulse
+    tl.to("#cta-btn", {
+      scale: 1.05,
+      boxShadow: "0 25px 80px rgba(212,163,26,0.6), 0 0 120px rgba(212,163,26,0.3)",
+      duration: 0.6,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: 3
+    }, 13.0);
+
+    // Register timeline for Hyperframes
+    window.__timelines = window.__timelines || {};
+    window.__timelines["magen-zahav-promo"] = tl;
+  </script>
+</body>
+</html>

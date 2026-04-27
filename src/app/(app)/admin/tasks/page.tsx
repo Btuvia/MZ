@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { SmartTaskModal } from "@/components/SmartTaskModal";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useUsers } from "@/lib/hooks/useQueryHooks";
 import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 import type { Task, TaskStatus, TaskPriority, TaskType } from "@/types";
-import { SmartTaskModal } from "@/components/SmartTaskModal";
 
 // View modes
 type ViewMode = 'kanban' | 'list';
@@ -146,6 +146,52 @@ export default function TaskCenterPage() {
         }
     };
 
+    const handleToggleTimer = async (task: Task) => {
+        const now = new Date().toISOString();
+        const isRunning = task.timerStatus === 'running';
+
+        try {
+            if (isRunning) {
+                // Stop timer
+                const startTime = new Date(task.timerStartTime!).getTime();
+                const endTime = new Date().getTime();
+                const elapsed = Math.floor((endTime - startTime) / 1000);
+                const total = (task.totalTimeSpent || 0) + elapsed;
+
+                await updateTask.mutateAsync({
+                    id: task.id,
+                    data: {
+                        timerStatus: 'paused',
+                        totalTimeSpent: total,
+                        timerStartTime: ""
+                    } as any
+                });
+                toast.info("הטיימר נעצר");
+            } else {
+                // Start timer
+                await updateTask.mutateAsync({
+                    id: task.id,
+                    data: {
+                        timerStatus: 'running',
+                        timerStartTime: now,
+                        status: 'in_progress'
+                    } as any
+                });
+                toast.success("הטיימר הופעל");
+            }
+        } catch (error) {
+            console.error("Error toggling timer:", error);
+            toast.error("שגיאה בעדכון הטיימר");
+        }
+    };
+
+    const formatTimeSpent = (seconds: number) => {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${hrs > 0 ? `${hrs}:` : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
     const handleDeleteTask = async (id: string) => {
         if (confirm!("האם למחוק משימה זו?")) return;
 
@@ -180,6 +226,22 @@ export default function TaskCenterPage() {
     // Task Card Component
     const TaskCard = ({ task }: { task: Task }) => {
         const priorityConfig = getPriorityConfig(task.priority);
+        const [liveTime, setLiveTime] = useState(task.totalTimeSpent || 0);
+
+        useEffect(() => {
+            let interval: any;
+            if (task.timerStatus === 'running' && task.timerStartTime) {
+                const start = new Date(task.timerStartTime).getTime();
+                interval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const elapsed = Math.floor((now - start) / 1000);
+                    setLiveTime((task.totalTimeSpent || 0) + elapsed);
+                }, 1000);
+            } else {
+                setLiveTime(task.totalTimeSpent || 0);
+            }
+            return () => clearInterval(interval);
+        }, [task.timerStatus, task.timerStartTime, task.totalTimeSpent]);
         
         return (
             <motion.div
@@ -189,14 +251,22 @@ export default function TaskCenterPage() {
                 exit={{ opacity: 0, y: -10 }}
                 draggable
                 onDragEnd={(e, info) => {}}
-                className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-amber-500/30 transition-all cursor-grab active:cursor-grabbing group"
+                className={`bg-slate-800/50 border rounded-xl p-4 transition-all cursor-grab active:cursor-grabbing group ${task.timerStatus === 'running' ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-slate-700/50 hover:border-amber-500/30'}`}
             >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-${priorityConfig.color}-500/20 text-${priorityConfig.color}-400`}>
-                        {priorityConfig.icon}
-                        {priorityConfig.label}
-                    </span>
+                    <div className="flex gap-2">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-${priorityConfig.color}-500/20 text-${priorityConfig.color}-400`}>
+                            {priorityConfig.icon}
+                            {priorityConfig.label}
+                        </span>
+                        {task.isReminder && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/20 text-indigo-400">
+                                <Clock size={10} />
+                                תזכורת
+                            </span>
+                        )}
+                    </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={() => openEditModal(task)}
@@ -218,6 +288,45 @@ export default function TaskCenterPage() {
 
                 {/* Description */}
                 {task.description ? <p className="text-xs text-slate-400 mb-3 line-clamp-2">{task.description}</p> : null}
+
+                {/* Timer Control */}
+                <div className="bg-slate-900/50 rounded-xl p-3 mb-4 flex items-center justify-between border border-slate-700/30">
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">זמן בפועל</span>
+                        <span className={`text-sm font-mono font-black ${task.timerStatus === 'running' ? 'text-amber-400 animate-pulse' : 'text-slate-300'}`}>
+                            {formatTimeSpent(liveTime)}
+                        </span>
+                    </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleTimer(task);
+                        }}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                            task.timerStatus === 'running' 
+                            ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' 
+                            : 'bg-amber-500/20 text-amber-500 hover:bg-amber-500/30'
+                        }`}
+                    >
+                        {task.timerStatus === 'running' ? <X size={18} /> : <Timer size={18} />}
+                    </button>
+                </div>
+
+                {/* Progress Bar (if estimated duration exists) */}
+                {task.estimatedDuration ? (
+                    <div className="mb-4">
+                        <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1">
+                            <span>התקדמות</span>
+                            <span>מוערך: {task.estimatedDuration} דק'</span>
+                        </div>
+                        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                                className={`h-full transition-all duration-500 ${liveTime / (task.estimatedDuration * 60) > 1 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-amber-500'}`}
+                                style={{ width: `${Math.min(100, (liveTime / (task.estimatedDuration * 60)) * 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                ) : null}
 
                 {/* Meta */}
                 <div className="flex items-center justify-between text-[10px] text-slate-500">
@@ -294,12 +403,12 @@ export default function TaskCenterPage() {
                         </Button>
 
                         <Button 
+                            variant="gold"
                             onClick={() => {
                                 setEditingTask(null);
                                 resetForm();
                                 setShowNewTaskModal(true);
                             }}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-900"
                         >
                             <Plus size={18} className="ml-2" />
                             משימה חדשה
@@ -313,6 +422,7 @@ export default function TaskCenterPage() {
                         { label: 'סה"כ משימות', value: stats.total, icon: ListTodo, color: 'blue' },
                         { label: 'ממתינות', value: stats.pending, icon: Circle, color: 'slate' },
                         { label: 'בעבודה', value: stats.inProgress, icon: Timer, color: 'amber' },
+                        { label: 'תזכורות', value: tasks.filter(t => t.isReminder).length, icon: Clock, color: 'indigo' },
                         { label: 'הושלמו', value: stats.completed, icon: CheckCircle2, color: 'emerald' },
                         { label: 'עדיפות גבוהה', value: stats.highPriority, icon: AlertTriangle, color: 'red' },
                     ].map((stat) => {
@@ -386,8 +496,8 @@ export default function TaskCenterPage() {
                         <h3 className="text-xl font-black text-amber-100 mb-2">אין משימות עדיין</h3>
                         <p className="text-slate-400 mb-6">התחל להוסיף משימות כדי לנהל את העבודה שלך</p>
                         <Button 
+                            variant="gold"
                             onClick={() => setShowNewTaskModal(true)}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-900"
                         >
                             <Plus size={16} className="ml-2" />
                             צור משימה ראשונה
@@ -459,6 +569,7 @@ export default function TaskCenterPage() {
                                             <th className="px-6 py-4">משימה</th>
                                             <th className="px-4 py-4">עדיפות</th>
                                             <th className="px-4 py-4">סטטוס</th>
+                                            <th className="px-4 py-4">זמן (בפועל/מוערך)</th>
                                             <th className="px-4 py-4">תאריך</th>
                                             <th className="px-4 py-4">משויך ל</th>
                                             <th className="px-4 py-4 text-center">פעולות</th>
@@ -470,9 +581,16 @@ export default function TaskCenterPage() {
                                             return (
                                                 <tr key={task.id} className="hover:bg-amber-500/5 group transition-all">
                                                     <td className="px-6 py-4">
-                                                        <div>
-                                                            <div className="font-bold text-slate-200">{task.title}</div>
-                                                            {task.description ? <div className="text-xs text-slate-500 truncate max-w-xs">{task.description}</div> : null}
+                                                        <div className="flex items-center gap-3">
+                                                            {task.isReminder && (
+                                                                <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                                                    <Clock size={12} />
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <div className="font-bold text-slate-200">{task.title}</div>
+                                                                {task.description ? <div className="text-xs text-slate-500 truncate max-w-xs">{task.description}</div> : null}
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
@@ -490,6 +608,16 @@ export default function TaskCenterPage() {
                                                             <option value="in_progress">בעבודה</option>
                                                             <option value="completed">הושלם</option>
                                                         </select>
+                                                    </td>
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-xs font-mono font-bold ${task.timerStatus === 'running' ? 'text-amber-400' : 'text-slate-400'}`}>
+                                                                {formatTimeSpent(task.totalTimeSpent || 0)}
+                                                            </span>
+                                                            {task.estimatedDuration ? (
+                                                                <span className="text-[10px] text-slate-600 font-bold">/ {task.estimatedDuration}m</span>
+                                                            ) : null}
+                                                        </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-xs text-slate-400">
                                                         {task.date}

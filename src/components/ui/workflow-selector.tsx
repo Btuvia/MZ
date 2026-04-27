@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from 'react';
-import { Workflow } from '@/types/workflow';
-import { Card } from './base';
 import { Check, GitBranch, Layers } from 'lucide-react';
+import { useState } from 'react';
+import { type Workflow } from '@/types/workflow';
+import { Card } from './base';
 
 interface WorkflowSelectorProps {
     value?: string;
@@ -31,7 +31,7 @@ export function WorkflowSelector({
         <div className="relative">
             <label className="block text-sm font-bold text-slate-700 mb-2">
                 תהליך
-                {value! && <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span>}
+                {value! ? <span className="text-slate-400 font-normal mr-1">(אופציונלי)</span> : null}
             </label>
 
             <button
@@ -54,7 +54,7 @@ export function WorkflowSelector({
                             <div className="font-bold text-slate-800">{selectedWorkflow.name}</div>
                             <div className="text-xs text-slate-500">
                                 {selectedWorkflow.steps.length} שלבים
-                                {selectedWorkflow.estimatedDuration && ` • ${selectedWorkflow.estimatedDuration} ימים`}
+                                {selectedWorkflow.estimatedDuration ? ` • ${selectedWorkflow.estimatedDuration} ימים` : null}
                             </div>
                         </div>
                     </div>
@@ -75,8 +75,7 @@ export function WorkflowSelector({
                 </svg>
             </button>
 
-            {isOpen && disabled! && (
-                <>
+            {isOpen && disabled! ? <>
                     {/* Backdrop */}
                     <div
                         className="fixed inset-0 z-10"
@@ -87,8 +86,7 @@ export function WorkflowSelector({
                     <Card className="absolute z-20 w-full mt-2 max-h-96 overflow-y-auto shadow-2xl border-2 border-slate-200">
                         <div className="p-2 space-y-1">
                             {/* Clear option */}
-                            {allowClear && value && (
-                                <>
+                            {allowClear && value ? <>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -100,8 +98,7 @@ export function WorkflowSelector({
                                         <span className="text-slate-400 text-sm">ללא תהליך</span>
                                     </button>
                                     <div className="border-t border-slate-100 my-1" />
-                                </>
-                            )}
+                                </> : null}
 
                             {activeWorkflows.length === 0 ? (
                                 <div className="px-3 py-4 text-center text-slate-400 text-sm">
@@ -130,29 +127,21 @@ export function WorkflowSelector({
                                         <div className="flex-1 text-right">
                                             <div className="font-bold text-slate-800 flex items-center gap-2">
                                                 {workflow.name}
-                                                {workflow.category && (
-                                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                                                {workflow.category ? <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
                                                         {workflow.category}
-                                                    </span>
-                                                )}
+                                                    </span> : null}
                                             </div>
                                             <div className="text-xs text-slate-500 flex items-center gap-3 mt-1">
                                                 <span className="flex items-center gap-1">
                                                     <Layers size={12} />
                                                     {workflow.steps.length} שלבים
                                                 </span>
-                                                {workflow.estimatedDuration && (
-                                                    <span>⏱ {workflow.estimatedDuration} ימים</span>
-                                                )}
-                                                {workflow.successRate && (
-                                                    <span>✓ {workflow.successRate}%</span>
-                                                )}
+                                                {workflow.estimatedDuration ? <span>⏱ {workflow.estimatedDuration} ימים</span> : null}
+                                                {workflow.successRate ? <span>✓ {workflow.successRate}%</span> : null}
                                             </div>
-                                            {workflow.description && (
-                                                <div className="text-xs text-slate-400 mt-1 line-clamp-1">
+                                            {workflow.description ? <div className="text-xs text-slate-400 mt-1 line-clamp-1">
                                                     {workflow.description}
-                                                </div>
-                                            )}
+                                                </div> : null}
                                         </div>
 
                                         {value === workflow.id && (
@@ -163,8 +152,7 @@ export function WorkflowSelector({
                             )}
                         </div>
                     </Card>
-                </>
-            )}
+                </> : null}
         </div>
     );
 }

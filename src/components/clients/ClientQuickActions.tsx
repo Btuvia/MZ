@@ -44,7 +44,7 @@ export function ClientQuickActions({
     const containerClasses = {
         horizontal: 'flex gap-3 items-center',
         vertical: 'flex flex-col gap-3',
-        grid: 'grid grid-cols-2 gap-3',
+        grid: 'flex flex-wrap gap-2.5 items-center justify-center sm:justify-start',
     }[variant];
 
     return (
@@ -102,18 +102,13 @@ export function ClientQuickActions({
                         </div>
                     </div>
 
-                    <div className="group relative flex aspect-square w-56 items-center justify-center overflow-hidden rounded-[2.5rem] border-8 border-slate-900 bg-white p-6 shadow-[0_0_50px_-12px_rgba(251,191,36,0.3)]">
+                    <div className="group relative flex aspect-square w-full max-w-64 items-center justify-center overflow-hidden rounded-[3rem] border-8 border-slate-900 bg-white p-2 shadow-[0_0_80px_-15px_rgba(251,191,36,0.4)] transition-all hover:scale-105">
                         <div className="absolute inset-0 bg-amber-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
-                        {/* Simulated QR Code */}
-                        <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                            <QrCode size={80} className="mb-3 text-slate-900" />
-                            <span className="text-[10px] leading-none font-black tracking-widest text-slate-400 uppercase italic">
-                                Scan to Refer
-                            </span>
-                            <span className="mt-2 rounded-full bg-amber-50 px-3 py-1 text-[9px] font-black text-amber-600">
-                                ID: {clientId}
-                            </span>
-                        </div>
+                        <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/referral/${clientId}`)}&bgcolor=ffffff&color=0f172a&margin=10`}
+                            alt="Referral QR Code"
+                            className="h-full w-full rounded-[2.2rem] object-contain p-2"
+                        />
                     </div>
 
                     <div className="w-full space-y-4 pt-4">

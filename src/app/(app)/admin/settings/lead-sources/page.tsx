@@ -58,7 +58,7 @@ export default function LeadSourcesPage() {
     };
 
     const handleSave = async () => {
-        if (editingSource! || editingSource!.name) return;
+        if (!editingSource || !editingSource.name) return;
 
         try {
             if ('id' in editingSource && editingSource.id) {

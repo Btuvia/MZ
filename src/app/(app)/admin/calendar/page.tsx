@@ -153,7 +153,7 @@ export default function CalendarPage() {
 
     const toggleTaskStatus = async (taskId: string) => {
         const task = tasks.find(t => t.id === taskId);
-        if (task!) return;
+        if (!task) return;
 
         const newStatus: TaskStatus = task.status === 'completed' ? 'new' : 'completed';
         const updatedTask = { ...task, status: newStatus };

@@ -206,9 +206,7 @@ export function NotificationsPanel({ userId }: NotificationsPanelProps) {
                                                         <h4 className="text-sm font-bold text-slate-900">
                                                             {notification.title}
                                                         </h4>
-                                                        {notification!.isRead && (
-                                                            <div className="w-2 h-2 bg-indigo-600 rounded-full shrink-0 mt-1" />
-                                                        )}
+                                                        {notification!.isRead ? <div className="w-2 h-2 bg-indigo-600 rounded-full shrink-0 mt-1" /> : null}
                                                     </div>
                                                     <p className="text-sm text-slate-600 mb-2">
                                                         {notification.message}

@@ -11,7 +11,7 @@ import {
     UserPlus, Building2, ExternalLink, ArrowRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
@@ -78,12 +78,7 @@ export default function EmailCenterPage() {
     const [showComposeModal, setShowComposeModal] = useState(false);
     const [showCampaignModal, setShowCampaignModal] = useState(false);
 
-    // Load data
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setIsLoading(true);
         await new Promise(resolve => setTimeout(resolve, 600));
 
@@ -304,7 +299,15 @@ export default function EmailCenterPage() {
         setTemplates(mockTemplates);
         setCampaigns(mockCampaigns);
         setIsLoading(false);
-    };
+    }, []);
+
+    // Load data
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            loadData();
+        }, 0);
+        return () => clearTimeout(timeout);
+    }, [loadData]);
 
     // Filter emails
     const filteredEmails = emails.filter(email => 

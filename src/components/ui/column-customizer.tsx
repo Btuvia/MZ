@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from 'react';
-import { ColumnDefinition } from '@/lib/task-constants';
-import { Card, Button } from './base';
 import { X, Check, Columns, GripVertical } from 'lucide-react';
+import { useState } from 'react';
+import { type ColumnDefinition } from '@/lib/task-constants';
+import { Card, Button } from './base';
 
 interface ColumnCustomizerProps {
     availableColumns: ColumnDefinition[];
@@ -110,22 +110,20 @@ export function ColumnCustomizer({
                                             : 'bg-white border-slate-300'
                                         }
                   `}>
-                                        {isSelected && <Check size={16} className="text-white" strokeWidth={3} />}
+                                        {isSelected ? <Check size={16} className="text-white" strokeWidth={3} /> : null}
                                     </div>
 
                                     {/* Column Info */}
                                     <div className="flex-1 text-right">
                                         <div className="font-bold text-slate-900 flex items-center gap-2">
                                             {column.labelHe}
-                                            {isDefault && (
-                                                <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                                            {isDefault ? <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
                                                     ברירת מחדל
-                                                </span>
-                                            )}
+                                                </span> : null}
                                         </div>
                                         <div className="text-xs text-slate-500 mt-0.5">
                                             {column.label}
-                                            {column.sortable && ' • ניתן למיון'}
+                                            {column.sortable ? ' • ניתן למיון' : null}
                                         </div>
                                     </div>
                                 </button>

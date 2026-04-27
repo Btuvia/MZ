@@ -1,11 +1,11 @@
 "use client";
 
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { ClientQuickActions } from "@/components/clients/ClientQuickActions";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
 
 export default function ClientsPage() {
     const [searchQuery, setSearchQuery] = useState("");
@@ -48,7 +48,7 @@ export default function ClientsPage() {
             <div className="space-y-8 animate-in fade-in duration-700" dir="rtl">
                 {/* Header */}
                 <div className="bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
                     <div className="relative z-10 flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-black font-display leading-none mb-4">הלקוחות שלי</h1>

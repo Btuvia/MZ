@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Card, Button, Badge } from "@/components/ui/base";
 import DashboardShell from "@/components/ui/dashboard-shell";
+import { NeonCard, NeonButton } from "@/components/ui/neon-form";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { firestoreService } from "@/lib/firebase/firestore-service";
 import { AGENT_NAV_ITEMS } from "@/lib/navigation-config";
@@ -24,11 +24,7 @@ const getGreeting = () => {
 
 // Skeleton loader for stats
 const StatCardSkeleton = () => (
-    <Card className="p-6 animate-pulse">
-        <div className="h-3 w-20 bg-slate-700/50 rounded mb-4" />
-        <div className="h-10 w-16 bg-slate-700/50 rounded mb-2" />
-        <div className="h-3 w-24 bg-slate-700/30 rounded" />
-    </Card>
+    <div className="p-10 rounded-[3rem] bg-[#0d1326] border border-slate-800 animate-pulse h-48" />
 );
 
 export default function AgentDashboard() {
@@ -41,7 +37,7 @@ export default function AgentDashboard() {
         renewalsCount: 0,
         renewalsValue: 0,
         salesGoalProgress: 0,
-        salesGoalTotal: 60000, // Monthly goal
+        salesGoalTotal: 60000,
         closedValue: 0
     });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -57,32 +53,24 @@ export default function AgentDashboard() {
                     firestoreService.getClients()
                 ]);
 
-                // --- 1. Tasks Logic ---
                 const today = new Date().toISOString().split('T')[0];
-                const todaysTasks = allTasks.filter((t: any) => t.dueDate === today || t.dueDate < today && t.status !== 'completed'); // Due today or overdue
+                const todaysTasks = allTasks.filter((t: any) => t.dueDate === today || t.dueDate < today && t.status !== 'completed');
                 const urgentTasks = todaysTasks.filter((t: any) => t.priority === 'high').length;
 
-                // --- 2. Sales Logic ---
                 const closedDeals = allDeals.filter((d: any) => d.stage === 'closed');
                 const closedValue = closedDeals.reduce((sum: number, d: any) => sum + Number(d.value || 0), 0);
 
-                // --- 3. Renewals Logic (Mocking "upcoming" based on policies) ---
                 let upcomingRenewals = 0;
                 let potentialValue = 0;
                 const recentClients: any[] = [];
 
                 allClients.forEach((client: any) => {
-                    // Check policies for renewal (simplified: just checking if any exist for now as data might be sparse)
                     if (client.policies && Array.isArray(client.policies)) {
                         client.policies.forEach((p: any) => {
-                            // In a real app, compare p.renewalDate to next 30 days
-                            // For demo: if status is 'active', count it randomly or if standard date format matches
                             if (p.status === 'פעיל' && p.endDate) {
                                 const endDate = new Date(p.endDate);
                                 const diffTime = endDate.getTime() - new Date().getTime();
                                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                                // Check if renewal is within next 30 days
                                 if (diffDays >= 0 && diffDays <= 30) {
                                     upcomingRenewals++;
                                     potentialValue += Number(p.premium || 0);
@@ -100,7 +88,6 @@ export default function AgentDashboard() {
                     });
                 });
 
-                // Sort recent clients by date (mock or real) - taking last 5
                 const sortedClients = recentClients.slice(0, 5);
 
                 setStats({
@@ -124,32 +111,22 @@ export default function AgentDashboard() {
         loadDashboardData();
     }, []);
 
-    // Loading skeleton
     if (loading) {
         return (
             <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
-                <div className="space-y-8" dir="rtl">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="max-w-7xl mx-auto space-y-12 p-8" dir="rtl">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
                         <div>
-                            <h2 className="text-3xl font-black text-gradient-gold neon-text-gold">
-                                היי {userName}, {greeting.text}! {greeting.emoji}
-                            </h2>
-                            <p className="text-slate-400 mt-1">טוען את הנתונים שלך...</p>
+                            <div className="h-12 w-64 bg-slate-800 rounded-2xl animate-pulse mb-3" />
+                            <div className="h-4 w-40 bg-slate-800 rounded-lg animate-pulse" />
                         </div>
                     </div>
-                    <div className="grid gap-6 sm:grid-cols-3">
+                    <div className="grid gap-10 sm:grid-cols-3">
                         <StatCardSkeleton />
                         <StatCardSkeleton />
                         <StatCardSkeleton />
                     </div>
-                    <Card className="p-6 animate-pulse">
-                        <div className="h-6 w-40 bg-slate-700/50 rounded mb-4" />
-                        <div className="space-y-3">
-                            {[1,2,3,4].map(i => (
-                                <div key={i} className="h-12 bg-slate-700/30 rounded" />
-                            ))}
-                        </div>
-                    </Card>
+                    <div className="p-10 rounded-[3rem] bg-[#0d1326] border border-slate-800 animate-pulse h-96" />
                 </div>
             </DashboardShell>
         );
@@ -157,171 +134,164 @@ export default function AgentDashboard() {
 
     return (
         <DashboardShell role="סוכן" navItems={AGENT_NAV_ITEMS}>
-            <div className="space-y-8 animate-in slide-in-from-bottom duration-500" dir="rtl">
+            <div className="max-w-7xl mx-auto space-y-12 p-8 animate-in fade-in slide-in-from-bottom-10 duration-1000" dir="rtl">
                 
-                {/* Header with greeting */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-3xl font-black text-gradient-gold neon-text-gold">
-                            היי {userName}, {greeting.text}! {greeting.emoji}
-                        </h2>
-                        <p className="text-slate-400 mt-1">הנה סיכום היום שלך</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Link href="/agent/leads">
-                            <Button variant="outline" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
-                                <Zap size={16} className="ml-2" />
-                                ניהול לידים
-                            </Button>
-                        </Link>
-                        <Link href="/agent/sales">
-                            <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg shadow-amber-500/20">
-                                <Plus size={16} className="ml-2" />
-                                הוספת עסקה
-                            </Button>
-                        </Link>
+                {/* Header Premium Section */}
+                <div className="relative group p-12 rounded-[3rem] overflow-hidden border border-slate-800 bg-[#0d1326] shadow-2xl">
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2" />
+                    <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-8">
+                        <div>
+                            <h2 className="text-5xl font-black text-white italic tracking-tighter flex items-center gap-4">
+                                היי {userName}, <span className="text-amber-500">{greeting.text}!</span> {greeting.emoji}
+                            </h2>
+                            <p className="text-slate-500 font-bold mt-4 text-xl tracking-tight">מרכז הבקרה האישי שלך לסגירת עסקאות וניהול תיק הלקוחות</p>
+                        </div>
+                        <div className="flex gap-4">
+                            <Link href="/agent/leads">
+                                <NeonButton variant="blue" className="px-10 py-6 text-lg shadow-xl shadow-blue-500/10 group">
+                                    <Zap size={20} className="ml-2 group-hover:animate-pulse" />
+                                    ניהול לידים
+                                </NeonButton>
+                            </Link>
+                            <Link href="/agent/sales">
+                                <NeonButton className="px-10 py-6 text-lg shadow-xl shadow-amber-500/10 group">
+                                    <Plus size={20} className="ml-2 group-hover:rotate-90 transition-transform" />
+                                    הוספת עסקה
+                                </NeonButton>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
-                {/* Urgent Alerts */}
+                {/* Urgent Alerts Neon */}
                 {stats.urgentTasks > 0 && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-card border border-red-500/30 bg-red-500/10 p-4 rounded-2xl flex items-center gap-3"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative group p-6 rounded-[2rem] border border-red-500/20 bg-red-500/5 flex items-center gap-6 overflow-hidden"
                     >
-                        <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
-                            <AlertTriangle size={20} className="text-red-400" />
+                        <div className="absolute inset-0 bg-linear-to-r from-red-500/5 to-transparent animate-pulse" />
+                        <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center relative z-10">
+                            <AlertTriangle size={32} className="text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
                         </div>
-                        <div className="flex-1">
-                            <p className="font-bold text-red-400">יש לך {stats.urgentTasks} משימות דחופות!</p>
-                            <p className="text-sm text-slate-400">לחץ כדי לצפות בהן</p>
+                        <div className="flex-1 relative z-10">
+                            <p className="text-xl font-black text-red-500 italic">שים לב! {stats.urgentTasks} משימות דחופות ממתינות לך</p>
+                            <p className="text-slate-400 font-medium">טיפול מיידי ישפר את אחוז הסגירה שלך היום</p>
                         </div>
-                        <Link href="/agent/tasks">
-                            <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white">
+                        <Link href="/agent/tasks" className="relative z-10">
+                            <NeonButton variant="secondary" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
                                 צפה עכשיו
-                            </Button>
+                            </NeonButton>
                         </Link>
                     </motion.div>
                 )}
 
-                {/* Stats Cards */}
-                <div className="grid gap-6 sm:grid-cols-3">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                        <Card className="border-r-4 border-r-amber-500 p-6 flex flex-col justify-between neon-gold">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">משימות להיום</span>
-                                <Clock size={18} className="text-amber-500" />
-                            </div>
-                            <div className="flex items-end justify-between mt-2">
-                                <p className="text-4xl font-black text-amber-100 tracking-tighter">
+                {/* Stats Cards Neon */}
+                <div className="grid gap-10 sm:grid-cols-3">
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                        <NeonCard title="📊 משימות להיום">
+                            <div className="flex items-end justify-between">
+                                <p className="text-6xl font-black text-white italic tracking-tighter drop-shadow-2xl">
                                     {stats.tasksToday}
                                 </p>
-                                <Badge className={stats.urgentTasks > 0 ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"}>
+                                <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase ${stats.urgentTasks > 0 ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"}`}>
                                     {stats.urgentTasks} דחופות
-                                </Badge>
+                                </div>
                             </div>
-                        </Card>
+                            <p className="text-slate-500 font-bold mt-4">משימות פתוחות וטיפול בלידים</p>
+                        </NeonCard>
                     </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                        <Card className="border-r-4 border-r-orange-500 p-6 flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">חידושים קרובים</span>
-                                <RefreshCw size={18} className="text-orange-500" />
-                            </div>
-                            <div className="flex items-end justify-between mt-2">
-                                <p className="text-4xl font-black text-amber-100 tracking-tighter">
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                        <NeonCard title="🔄 חיחידושים קרובים">
+                            <div className="flex items-end justify-between">
+                                <p className="text-6xl font-black text-white italic tracking-tighter drop-shadow-2xl">
                                     {stats.renewalsCount}
                                 </p>
-                                <span className="text-xs font-bold text-orange-400 pb-1">₪{stats.renewalsValue.toLocaleString()}</span>
+                                <span className="text-xl font-black text-orange-400 drop-shadow-lg">₪{stats.renewalsValue.toLocaleString()}</span>
                             </div>
-                        </Card>
+                            <p className="text-slate-500 font-bold mt-4">פוטנציאל שימור החודש</p>
+                        </NeonCard>
                     </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                        <Card className="border-r-4 border-r-emerald-500 p-6 flex flex-col justify-between overflow-hidden relative">
-                            <div className="absolute top-[-10px] left-[-10px] h-20 w-20 bg-emerald-500/10 rounded-full blur-2xl" />
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">יעד מכירות חודשי</span>
-                                <Target size={18} className="text-emerald-500" />
-                            </div>
-                            <div className="flex items-end justify-between mt-2">
-                                <p className="text-4xl font-black text-amber-100 tracking-tighter">
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                        <NeonCard title="🎯 יעד מכירות">
+                            <div className="flex items-end justify-between">
+                                <p className="text-6xl font-black text-white italic tracking-tighter drop-shadow-2xl">
                                     {Math.round(stats.salesGoalProgress)}%
                                 </p>
-                                <span className="text-xs font-bold text-emerald-400 pb-1">₪{stats.closedValue.toLocaleString()} / ₪{stats.salesGoalTotal.toLocaleString()}</span>
+                                <span className="text-sm font-black text-emerald-400">₪{stats.closedValue.toLocaleString()} / ₪{stats.salesGoalTotal.toLocaleString()}</span>
                             </div>
-                            <div className="h-2 w-full bg-slate-700/50 rounded-full mt-4 overflow-hidden">
+                            <div className="h-4 w-full bg-slate-900 border border-slate-800 rounded-full mt-6 overflow-hidden relative">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${Math.min(stats.salesGoalProgress, 100)}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className="h-full bg-linear-to-r from-emerald-500 to-emerald-400 rounded-full shadow-lg shadow-emerald-500/30"
+                                    transition={{ duration: 1.5, ease: "circOut" }}
+                                    className="h-full bg-linear-to-r from-emerald-600 via-teal-500 to-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                                  />
                             </div>
-                        </Card>
+                        </NeonCard>
                     </motion.div>
                 </div>
 
-                {/* Recent Clients Table */}
-                <Card className="border-amber-500/20 overflow-hidden">
-                    <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
-                        <div>
-                            <h3 className="text-lg font-bold text-amber-100 tracking-tight flex items-center gap-2">
-                                <Users size={18} className="text-amber-500" />
-                                לקוחות אחרונים
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-0.5">דוח בזמן אמת</p>
-                        </div>
-                        <Link href="/agent/clients" className="text-xs font-bold text-amber-400 hover:underline">צפה בכל הלקוחות</Link>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-right text-sm">
-                            <thead className="bg-slate-800/50">
-                                <tr className="border-b border-slate-700/50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                                    <th className="px-6 py-4 font-black">לקוח</th>
-                                    <th className="px-6 py-4 font-black">סוג פוליסה</th>
-                                    <th className="px-6 py-4 font-black">סטטוס</th>
-                                    <th className="px-6 py-4 font-black">חברה</th>
-                                    <th className="px-6 py-4 font-black">עודכן</th>
-                                    <th className="px-6 py-4 font-black" />
+                {/* Recent Clients Table Premium */}
+                <NeonCard 
+                    title="👥 לקוחות אחרונים" 
+                    action={
+                        <Link href="/agent/clients" className="text-[10px] font-black text-amber-500 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">
+                            צפה בכל הלקוחות <RefreshCw size={12} />
+                        </Link>
+                    }
+                >
+                    <div className="overflow-x-auto -mx-2">
+                        <table className="w-full text-right">
+                            <thead>
+                                <tr className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-800">
+                                    <th className="px-4 py-6">לקוח</th>
+                                    <th className="px-4 py-6">סוג פוליסה</th>
+                                    <th className="px-4 py-6">סטטוס</th>
+                                    <th className="px-4 py-6">חברה</th>
+                                    <th className="px-4 py-6">עודכן</th>
+                                    <th className="px-4 py-6 text-left">פעולה</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-700/50">
+                            <tbody className="divide-y divide-slate-800/50">
                                 {recentActivity.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-10 text-slate-500">אין פעילות אחרונה</td>
+                                        <td colSpan={6} className="text-center py-20 text-slate-500 italic font-black">אין פעילות אחרונה במערכת</td>
                                     </tr>
                                 ) : (
                                     recentActivity.map((row, i) => (
                                         <motion.tr 
                                             key={i} 
-                                            initial={{ opacity: 0, x: -20 }}
+                                            initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: i * 0.1 }}
-                                            className="hover:bg-slate-800/50 transition-colors group"
+                                            transition={{ delay: i * 0.05 }}
+                                            className="hover:bg-slate-900/30 transition-all group"
                                         >
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-9 w-9 rounded-xl bg-linear-to-br from-amber-500 to-amber-600 flex items-center justify-center font-bold text-slate-900 group-hover:scale-110 transition-all text-xs shadow-lg shadow-amber-500/20">
+                                            <td className="px-4 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-12 w-12 rounded-2xl bg-linear-to-br from-amber-500/20 to-orange-600/20 border border-amber-500/30 flex items-center justify-center font-black text-amber-500 group-hover:scale-110 transition-all text-sm shadow-inner overflow-hidden">
+                                                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                         {row.name ? row.name.charAt(0) : '?'}
                                                     </div>
-                                                    <span className="font-bold text-slate-200">{row.name}</span>
+                                                    <span className="font-black text-white italic">{row.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 text-slate-400 font-medium">{row.type}</td>
-                                            <td className="px-6 py-5">
-                                                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">{row.status}</Badge>
+                                            <td className="px-4 py-6 text-slate-400 font-bold">{row.type}</td>
+                                            <td className="px-4 py-6">
+                                                <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                    {row.status}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-5 text-slate-400 font-bold">{row.company}</td>
-                                            <td className="px-6 py-5 text-slate-500 font-medium">{row.updatedAt}</td>
-                                            <td className="px-6 py-5">
+                                            <td className="px-4 py-6 text-slate-400 font-black">{row.company}</td>
+                                            <td className="px-4 py-6 text-slate-600 font-medium">{row.updatedAt}</td>
+                                            <td className="px-4 py-6 text-left">
                                                 <Link href={`/agent/clients/${row.id}`}>
-                                                    <Button variant="outline" size="sm" className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10">
-                                                        <Phone size={14} className="ml-1" />
+                                                    <NeonButton variant="secondary" size="sm" className="px-6 py-2 border-amber-500/20 hover:border-amber-500 transition-all">
+                                                        <Phone size={12} className="ml-2" />
                                                         ניהול
-                                                    </Button>
+                                                    </NeonButton>
                                                 </Link>
                                             </td>
                                         </motion.tr>
@@ -330,7 +300,7 @@ export default function AgentDashboard() {
                             </tbody>
                         </table>
                     </div>
-                </Card>
+                </NeonCard>
             </div>
         </DashboardShell>
     );

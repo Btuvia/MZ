@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import DashboardShell from "@/components/ui/dashboard-shell";
-import { Card, Button, Badge } from "@/components/ui/base";
-import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     Scale, Sparkles, Zap, Shield, Heart, Car, Home, 
     ArrowRight, Check, X, Search, Info, TrendingUp,
     Gift, MessageSquare, Plus, Brain, LayoutGrid
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useMemo } from "react";
+import { Card, Button, Badge } from "@/components/ui/base";
+import DashboardShell from "@/components/ui/dashboard-shell";
+import { ADMIN_NAV_ITEMS } from "@/lib/navigation-config";
 
 interface BenefitRule {
     id: string;

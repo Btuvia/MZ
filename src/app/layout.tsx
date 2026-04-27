@@ -43,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="he" dir="rtl" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="he" dir="rtl" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <head>
         {/* PWA Meta Tags */}
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -51,7 +51,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="מגן זהב" />
       </head>
-      <body className="font-sans antialiased text-slate-900 selection:bg-accent/10 selection:text-accent overflow-x-hidden">
+      <body className="font-sans antialiased text-slate-900 selection:bg-accent/10 selection:text-accent overflow-x-hidden" suppressHydrationWarning>
         {children}
       </body>
     </html>
