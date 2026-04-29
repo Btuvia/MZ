@@ -18,6 +18,11 @@ import {
     ArrowRight,
     Database,
     Star,
+    HeartPulse,
+    Shield,
+    Briefcase,
+    Car,
+    Home,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -479,6 +484,24 @@ export default function ClientDetailsPage() {
         if (totalPremium > 100) return { label: 'B', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', shadow: 'shadow-blue-500/20' };
         return { label: 'C', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30', shadow: 'shadow-slate-500/20' };
     }, [totalPremium]);
+
+    const hasInsurance = useCallback((category: string) => {
+        if (!client) return false;
+        switch (category) {
+            case 'health':
+                return client.policies.some(p => p.type.includes('בריאות')) || client.insuranceSales.some(p => p.productType.includes('בריאות'));
+            case 'life':
+                return client.policies.some(p => p.type.includes('חיים') || p.type.includes('ריסק')) || client.insuranceSales.some(p => p.productType.includes('חיים') || p.productType.includes('ריסק'));
+            case 'pension':
+                return client.policies.some(p => p.type.includes('פנסיה') || p.type.includes('גמל') || p.type.includes('השתלמות')) || client.pensionSales.length > 0;
+            case 'car':
+                return client.elementaryInsurances?.some(p => p.category === 'רכב');
+            case 'home':
+                return client.elementaryInsurances?.some(p => p.category === 'דירה');
+            default:
+                return false;
+        }
+    }, [client]);
 
     // AI State
     const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
@@ -1777,6 +1800,28 @@ ${clipped}`;
                                         {client.phone}
                                     </p>
                                 </div>
+                            </div>
+
+                            {/* Insurance Types Icons Row */}
+                            <div className="mb-10 flex flex-wrap justify-center gap-6 sm:gap-10 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-lg">
+                                {[
+                                    { id: 'health', label: 'בריאות', icon: HeartPulse },
+                                    { id: 'life', label: 'חיים', icon: Shield },
+                                    { id: 'pension', label: 'פנסיה ופיננסים', icon: Briefcase },
+                                    { id: 'car', label: 'רכב', icon: Car },
+                                    { id: 'home', label: 'דירה', icon: Home },
+                                ].map(type => {
+                                    const hasIt = hasInsurance(type.id);
+                                    const Icon = type.icon;
+                                    return (
+                                        <div key={type.id} className="flex flex-col items-center gap-3 group/icon">
+                                            <div className={`flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all duration-300 ${hasIt ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] group-hover/icon:bg-emerald-500/30 group-hover/icon:scale-110' : 'border-red-500/50 bg-red-500/10 text-red-400/80 shadow-[0_0_15px_rgba(239,68,68,0.15)] group-hover/icon:bg-red-500/20 group-hover/icon:text-red-400 group-hover/icon:scale-105'}`}>
+                                                <Icon size={28} />
+                                            </div>
+                                            <span className="text-xs font-black tracking-wide text-slate-300">{type.label}</span>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             {/* Bottom Row: Status Bar */}
